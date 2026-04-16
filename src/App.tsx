@@ -1,727 +1,716 @@
-import { useState, useEffect } from 'react'
-import './App.css'
+import { useEffect, useState } from 'react'
+import type { Session } from '@supabase/supabase-js'
 import { supabase } from './lib/supabase'
-import LoginPage from './LoginPage'
-import type { User } from '@supabase/supabase-js'
+import './App.css'
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface Note {
-  id: string
-  title: string
-  content: string
-  createdAt: string
-  updatedAt: string
-}
-
-interface Folder {
+type Property = {
   id: string
   name: string
-  color: string
-  notes: Note[]
+  type: string | null
+  street: string | null
+  number: string | null
+  complement: string | null
+  neighborhood: string | null
+  city: string | null
+  state: string | null
+  zip_code: string | null
+  iptu_number: string | null
+  registration_number: string | null
+  total_area: number | null
+  bedrooms: number | null
+  bathrooms: number | null
+  parking_spots: number | null
+  status: string | null
+  acquisition_date: string | null
+  acquisition_value: number | null
+  current_value: number | null
+  notes: string | null
+  address: string | null
+  created_at: string
 }
 
-type ModalType = 'imovel' | 'carro' | 'produto' | null
-
-// ─── Calculator ───────────────────────────────────────────────────────────────
-
-function Calculator({ onClose }: { onClose: () => void }) {
-  const [display, setDisplay] = useState('0')
-  const [prev, setPrev] = useState<string | null>(null)
-  const [op, setOp] = useState<string | null>(null)
-  const [waiting, setWaiting] = useState(false)
-
-  const input = (n: string) => {
-    if (waiting) { setDisplay(n); setWaiting(false) }
-    else setDisplay(display === '0' ? n : display + n)
-  }
-
-  const decimal = () => {
-    if (waiting) { setDisplay('0.'); setWaiting(false); return }
-    if (!display.includes('.')) setDisplay(display + '.')
-  }
-
-  const calc = (a: number, o: string, b: number) => {
-    if (o === '+') return a + b
-    if (o === '−') return a - b
-    if (o === '×') return a * b
-    if (o === '÷') return b !== 0 ? a / b : 0
-    return b
-  }
-
-  const operator = (o: string) => {
-    const cur = parseFloat(display)
-    if (prev !== null && !waiting) {
-      const res = calc(parseFloat(prev), op!, cur)
-      const str = parseFloat(res.toFixed(10)).toString()
-      setDisplay(str); setPrev(str)
-    } else { setPrev(display) }
-    setOp(o); setWaiting(true)
-  }
-
-  const equals = () => {
-    if (prev === null || op === null) return
-    const res = calc(parseFloat(prev), op, parseFloat(display))
-    const str = parseFloat(res.toFixed(10)).toString()
-    setDisplay(str); setPrev(null); setOp(null); setWaiting(true)
-  }
-
-  const clear = () => { setDisplay('0'); setPrev(null); setOp(null); setWaiting(false) }
-  const sign = () => setDisplay(String(parseFloat(display) * -1))
-  const pct = () => setDisplay(String(parseFloat(display) / 100))
-  const back = () => display.length > 1 ? setDisplay(display.slice(0, -1)) : setDisplay('0')
-
-  const Btn = ({ label, variant = 'num', wide = false, action }: {
-    label: string; variant?: 'num' | 'fn' | 'op' | 'eq'; wide?: boolean; action: () => void
-  }) => (
-    <button className={`cb cb-${variant}${wide ? ' cb-wide' : ''}`} onClick={action}>{label}</button>
-  )
-
-  return (
-    <div className="calc-wrap">
-      <div className="panel-header">
-        <div className="panel-header-left">
-          <div className="panel-icon calc-icon-header">
-            <svg viewBox="0 0 20 20" fill="none">
-              <rect x="2" y="2" width="16" height="16" rx="3" stroke="currentColor" strokeWidth="1.5"/>
-              <rect x="5" y="5" width="10" height="3" rx="1" fill="currentColor" opacity=".6"/>
-              <circle cx="6.5" cy="11.5" r="1" fill="currentColor"/>
-              <circle cx="10" cy="11.5" r="1" fill="currentColor"/>
-              <circle cx="13.5" cy="11.5" r="1" fill="currentColor"/>
-              <circle cx="6.5" cy="15" r="1" fill="currentColor"/>
-              <circle cx="10" cy="15" r="1" fill="currentColor"/>
-              <circle cx="13.5" cy="15" r="1" fill="currentColor"/>
-            </svg>
-          </div>
-          <span>Calculadora</span>
-        </div>
-        <button className="panel-close" onClick={onClose}>
-          <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-        </button>
-      </div>
-      <div className="calc-display">
-        <div className="calc-expr">{prev && op ? `${prev} ${op}` : ''}</div>
-        <div className="calc-val">{display.length > 12 ? parseFloat(parseFloat(display).toExponential(4)).toString() : display}</div>
-      </div>
-      <div className="calc-grid">
-        <Btn label="AC" variant="fn" action={clear} />
-        <Btn label="+/−" variant="fn" action={sign} />
-        <Btn label="%" variant="fn" action={pct} />
-        <Btn label="÷" variant="op" action={() => operator('÷')} />
-
-        <Btn label="7" action={() => input('7')} />
-        <Btn label="8" action={() => input('8')} />
-        <Btn label="9" action={() => input('9')} />
-        <Btn label="×" variant="op" action={() => operator('×')} />
-
-        <Btn label="4" action={() => input('4')} />
-        <Btn label="5" action={() => input('5')} />
-        <Btn label="6" action={() => input('6')} />
-        <Btn label="−" variant="op" action={() => operator('−')} />
-
-        <Btn label="1" action={() => input('1')} />
-        <Btn label="2" action={() => input('2')} />
-        <Btn label="3" action={() => input('3')} />
-        <Btn label="+" variant="op" action={() => operator('+')} />
-
-        <Btn label="⌫" action={back} />
-        <Btn label="0" action={() => input('0')} />
-        <Btn label="." action={decimal} />
-        <Btn label="=" variant="eq" action={equals} />
-      </div>
-    </div>
-  )
+type Bill = {
+  id: string
+  property_id: string
+  description: string
+  category: string | null
+  amount: number
+  due_date: string
+  status: string
+  paid_at: string | null
+  notes: string | null
+  created_at: string
 }
 
-// ─── Notepad ──────────────────────────────────────────────────────────────────
-
-const FOLDER_COLORS = ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16']
-
-function Notepad({ onClose }: { onClose: () => void }) {
-  const [folders, setFolders] = useState<Folder[]>(() => {
-    try { return JSON.parse(localStorage.getItem('np-folders') || 'null') || defaultFolders() } catch { return defaultFolders() }
-  })
-  const [folderId, setFolderId] = useState<string | null>(null)
-  const [noteId, setNoteId] = useState<string | null>(null)
-  const [draft, setDraft] = useState<{ title: string; content: string } | null>(null)
-  const [view, setView] = useState<'folders' | 'notes' | 'edit'>('folders')
-  const [newFolder, setNewFolder] = useState(false)
-  const [nfName, setNfName] = useState('')
-  const [nfColor, setNfColor] = useState(FOLDER_COLORS[0])
-  const [editFolderId, setEditFolderId] = useState<string | null>(null)
-
-  useEffect(() => { localStorage.setItem('np-folders', JSON.stringify(folders)) }, [folders])
-
-  const folder = folders.find(f => f.id === folderId)
-  const note = folder?.notes.find(n => n.id === noteId)
-
-  const addFolder = () => {
-    if (!nfName.trim()) return
-    const f: Folder = { id: Date.now().toString(), name: nfName.trim(), color: nfColor, notes: [] }
-    setFolders([...folders, f]); setNfName(''); setNewFolder(false); setNfColor(FOLDER_COLORS[0])
-  }
-
-  const delFolder = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    setFolders(folders.filter(f => f.id !== id))
-    if (folderId === id) { setFolderId(null); setView('folders') }
-  }
-
-  const addNote = () => {
-    if (!folderId) return
-    const n: Note = { id: Date.now().toString(), title: 'Nova Nota', content: '', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
-    setFolders(folders.map(f => f.id === folderId ? { ...f, notes: [...f.notes, n] } : f))
-    setNoteId(n.id); setDraft({ title: n.title, content: n.content }); setView('edit')
-  }
-
-  const saveNote = () => {
-    if (!folderId || !noteId || !draft) return
-    setFolders(folders.map(f => f.id === folderId
-      ? { ...f, notes: f.notes.map(n => n.id === noteId ? { ...n, ...draft, updatedAt: new Date().toISOString() } : n) }
-      : f))
-    setView('notes')
-  }
-
-  const delNote = (nid: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    if (!folderId) return
-    setFolders(folders.map(f => f.id === folderId ? { ...f, notes: f.notes.filter(n => n.id !== nid) } : f))
-    if (noteId === nid) { setNoteId(null); setView('notes') }
-  }
-
-  const formatDate = (iso: string) => {
-    const d = new Date(iso)
-    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
-  }
-
-  return (
-    <div className="np-wrap">
-      <div className="panel-header">
-        <div className="panel-header-left">
-          {view !== 'folders' && (
-            <button className="back-btn" onClick={() => view === 'edit' ? setView('notes') : setView('folders')}>
-              <svg viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-            </button>
-          )}
-          <div className="panel-icon np-icon-header">
-            <svg viewBox="0 0 20 20" fill="none">
-              <rect x="3" y="2" width="14" height="16" rx="2" stroke="currentColor" strokeWidth="1.5"/>
-              <path d="M7 7h6M7 10.5h6M7 14h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-              <path d="M3 5h1M16 5h1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity=".4"/>
-            </svg>
-          </div>
-          <span>
-            {view === 'folders' ? 'Bloco de Notas'
-              : view === 'notes' ? folder?.name ?? 'Notas'
-              : note?.title ?? 'Editar'}
-          </span>
-        </div>
-        <button className="panel-close" onClick={onClose}>
-          <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-        </button>
-      </div>
-
-      {view === 'folders' && (
-        <div className="np-body">
-          <div className="np-folders">
-            {folders.map(f => (
-              <div
-                key={f.id}
-                className="np-folder"
-                style={{ '--fc': f.color } as React.CSSProperties}
-                onClick={() => { setFolderId(f.id); setView('notes') }}
-              >
-                <div className="np-folder-icon">
-                  <svg viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M20 6h-8l-2-2H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"/>
-                  </svg>
-                </div>
-                <div className="np-folder-body">
-                  {editFolderId === f.id ? (
-                    <input
-                      className="np-folder-rename"
-                      defaultValue={f.name}
-                      autoFocus
-                      onClick={e => e.stopPropagation()}
-                      onBlur={e => {
-                        const val = e.target.value.trim()
-                        if (val) setFolders(folders.map(x => x.id === f.id ? { ...x, name: val } : x))
-                        setEditFolderId(null)
-                      }}
-                      onKeyDown={e => {
-                        if (e.key === 'Enter') (e.target as HTMLInputElement).blur()
-                        if (e.key === 'Escape') setEditFolderId(null)
-                      }}
-                    />
-                  ) : (
-                    <span className="np-folder-name" onDoubleClick={e => { e.stopPropagation(); setEditFolderId(f.id) }}>{f.name}</span>
-                  )}
-                  <span className="np-folder-count">{f.notes.length} nota{f.notes.length !== 1 ? 's' : ''}</span>
-                </div>
-                <button className="np-folder-del" onClick={e => delFolder(f.id, e)}>
-                  <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                </button>
-              </div>
-            ))}
-          </div>
-
-          {newFolder ? (
-            <div className="np-new-folder">
-              <input
-                className="np-input"
-                placeholder="Nome da pasta..."
-                value={nfName}
-                onChange={e => setNfName(e.target.value)}
-                onKeyDown={e => e.key === 'Enter' && addFolder()}
-                autoFocus
-              />
-              <div className="np-colors">
-                {FOLDER_COLORS.map(c => (
-                  <button key={c} className={`np-color${nfColor === c ? ' active' : ''}`} style={{ background: c }} onClick={() => setNfColor(c)} />
-                ))}
-              </div>
-              <div className="np-form-row">
-                <button className="btn-ghost" onClick={() => setNewFolder(false)}>Cancelar</button>
-                <button className="btn-accent" onClick={addFolder}>Criar Pasta</button>
-              </div>
-            </div>
-          ) : (
-            <button className="np-add" onClick={() => setNewFolder(true)}>
-              <svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-              Nova Pasta
-            </button>
-          )}
-        </div>
-      )}
-
-      {view === 'notes' && folder && (
-        <div className="np-body">
-          {folder.notes.length === 0
-            ? <div className="np-empty"><p>Nenhuma nota nesta pasta</p></div>
-            : <div className="np-notes">
-                {folder.notes.map(n => (
-                  <div key={n.id} className="np-note" onClick={() => { setNoteId(n.id); setDraft({ title: n.title, content: n.content }); setView('edit') }}>
-                    <div className="np-note-top">
-                      <span className="np-note-title">{n.title}</span>
-                      <button className="np-note-del" onClick={e => delNote(n.id, e)}>
-                        <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                      </button>
-                    </div>
-                    <span className="np-note-preview">{n.content ? n.content.substring(0, 70) + (n.content.length > 70 ? '…' : '') : 'Sem conteúdo'}</span>
-                    <span className="np-note-date">{formatDate(n.updatedAt)}</span>
-                  </div>
-                ))}
-              </div>
-          }
-          <button className="np-add" onClick={addNote}>
-            <svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-            Nova Nota
-          </button>
-        </div>
-      )}
-
-      {view === 'edit' && draft && (
-        <div className="np-body np-edit">
-          <input
-            className="np-title-input"
-            value={draft.title}
-            onChange={e => setDraft({ ...draft, title: e.target.value })}
-            placeholder="Título da nota..."
-          />
-          <textarea
-            className="np-content-input"
-            value={draft.content}
-            onChange={e => setDraft({ ...draft, content: e.target.value })}
-            placeholder="Escreva sua nota aqui..."
-          />
-          <button className="btn-accent full" onClick={saveNote}>
-            <svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-            Salvar Nota
-          </button>
-        </div>
-      )}
-    </div>
-  )
+type DocItem = {
+  id: string
+  property_id: string
+  name: string
+  category: string | null
+  file_url: string | null
+  file_name: string | null
+  notes: string | null
+  created_at: string
 }
 
-function defaultFolders(): Folder[] {
-  return [
-    { id: '1', name: 'Imóveis', color: '#3b82f6', notes: [] },
-    { id: '2', name: 'Veículos', color: '#f59e0b', notes: [] },
-    { id: '3', name: 'Produtos', color: '#10b981', notes: [] },
-  ]
-}
-
-// ─── New Item Modal ───────────────────────────────────────────────────────────
-
-interface FieldDef {
-  key: string
-  label: string
-  type: string
-  placeholder?: string
-  options?: string[]
-}
-
-const MODAL_CONFIG: Record<string, { title: string; icon: React.ReactNode; color: string; fields: FieldDef[] }> = {
-  imovel: {
-    title: 'Novo Imóvel',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-      </svg>
-    ),
-    color: 'blue',
-    fields: [
-      { key: 'descricao', label: 'Descrição', type: 'text', placeholder: 'Ex: Apartamento Jardins' },
-      { key: 'tipo', label: 'Tipo', type: 'select', options: ['Residencial', 'Comercial', 'Rural', 'Terreno', 'Galpão'] },
-      { key: 'valor', label: 'Valor de Compra (R$)', type: 'number', placeholder: '0,00' },
-      { key: 'valorAtual', label: 'Valor Atual (R$)', type: 'number', placeholder: '0,00' },
-      { key: 'endereco', label: 'Endereço', type: 'text', placeholder: 'Rua, número, cidade' },
-      { key: 'area', label: 'Área (m²)', type: 'number', placeholder: '0' },
-    ],
-  },
-  carro: {
-    title: 'Novo Veículo',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <rect x="1" y="9" width="22" height="11" rx="2"/>
-        <path d="M6 9V7a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
-        <circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/>
-      </svg>
-    ),
-    color: 'amber',
-    fields: [
-      { key: 'marca', label: 'Marca', type: 'text', placeholder: 'Ex: BMW, Toyota, Fiat' },
-      { key: 'modelo', label: 'Modelo', type: 'text', placeholder: 'Ex: X5, Corolla, Pulse' },
-      { key: 'ano', label: 'Ano', type: 'number', placeholder: '2024' },
-      { key: 'placa', label: 'Placa', type: 'text', placeholder: 'ABC-1234' },
-      { key: 'valor', label: 'Valor de Compra (R$)', type: 'number', placeholder: '0,00' },
-      { key: 'valorAtual', label: 'Valor Atual (R$)', type: 'number', placeholder: '0,00' },
-      { key: 'km', label: 'Quilometragem', type: 'number', placeholder: '0' },
-    ],
-  },
-  produto: {
-    title: 'Novo Produto',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-        <line x1="12" y1="22.08" x2="12" y2="12"/>
-      </svg>
-    ),
-    color: 'green',
-    fields: [
-      { key: 'nome', label: 'Nome do Produto', type: 'text', placeholder: 'Ex: MacBook Pro 14"' },
-      { key: 'categoria', label: 'Categoria', type: 'text', placeholder: 'Ex: Eletrônico, Móvel' },
-      { key: 'valor', label: 'Valor Unitário (R$)', type: 'number', placeholder: '0,00' },
-      { key: 'quantidade', label: 'Quantidade', type: 'number', placeholder: '1' },
-      { key: 'fornecedor', label: 'Fornecedor', type: 'text', placeholder: 'Nome do fornecedor' },
-      { key: 'descricao', label: 'Descrição', type: 'text', placeholder: 'Detalhes adicionais' },
-    ],
-  },
-}
-
-function NewItemModal({ type, onClose }: { type: ModalType; onClose: () => void }) {
-  const [form, setForm] = useState<Record<string, string>>({})
-  if (!type) return null
-  const cfg = MODAL_CONFIG[type]
-
-  return (
-    <div className="overlay" onClick={onClose}>
-      <div className={`modal modal-${cfg.color}`} onClick={e => e.stopPropagation()}>
-        <div className="modal-header">
-          <div className={`modal-icon-wrap icon-${cfg.color}`}>{cfg.icon}</div>
-          <h2 className="modal-title">{cfg.title}</h2>
-          <button className="panel-close" onClick={onClose}>
-            <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-          </button>
-        </div>
-        <div className="modal-body">
-          <div className="modal-fields">
-            {cfg.fields.map(f => (
-              <div key={f.key} className="field">
-                <label className="field-label">{f.label}</label>
-                {f.type === 'select' ? (
-                  <select className="field-select" value={form[f.key] || ''} onChange={e => setForm({ ...form, [f.key]: e.target.value })}>
-                    <option value="">Selecione...</option>
-                    {f.options?.map((o: string) => <option key={o}>{o}</option>)}
-                  </select>
-                ) : (
-                  <input className="field-input" type={f.type} placeholder={f.placeholder} value={form[f.key] || ''} onChange={e => setForm({ ...form, [f.key]: e.target.value })} />
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-        <div className="modal-footer">
-          <button className="btn-ghost" onClick={onClose}>Cancelar</button>
-          <button className={`btn-modal btn-${cfg.color}`} onClick={onClose}>
-            <svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-            Salvar
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// ─── Activity data ────────────────────────────────────────────────────────────
-
-const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
-  blue: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-      <polyline points="9 22 9 12 15 12 15 22"/>
-    </svg>
-  ),
-  amber: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <rect x="1" y="9" width="22" height="11" rx="2"/>
-      <path d="M6 9V7a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
-      <circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/>
-    </svg>
-  ),
-  green: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-      <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-      <line x1="12" y1="22.08" x2="12" y2="12"/>
-    </svg>
-  ),
-  purple: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-    </svg>
-  ),
-}
-
-const ACTIVITY = [
-  { icon: 'blue',   title: 'Ap. Jardins adicionado',  sub: 'Imóvel · R$ 850.000',   time: '2h atrás', color: 'blue' },
-  { icon: 'amber',  title: 'BMW X5 atualizado',        sub: 'Veículo · R$ 290.000',  time: '5h atrás', color: 'amber' },
-  { icon: 'green',  title: 'Novo lote de produtos',    sub: '45 itens · R$ 12.500',  time: '1d atrás', color: 'green' },
-  { icon: 'blue',   title: 'Casa Alphaville avaliada', sub: 'Imóvel · R$ 1.100.000', time: '2d atrás', color: 'blue' },
-]
-
-// ─── App ──────────────────────────────────────────────────────────────────────
-
-export default function App() {
-  const [showCalc, setShowCalc] = useState(false)
-  const [showNp, setShowNp] = useState(false)
-  const [modal, setModal] = useState<ModalType>(null)
-  const [user, setUser] = useState<User | null>(null)
-  const [authReady, setAuthReady] = useState(false)
+function App() {
+  const [session, setSession] = useState<Session | null>(null)
+  const [loadingSession, setLoadingSession] = useState(true)
 
   useEffect(() => {
-    if (!supabase) { setAuthReady(true); return }
-    supabase.auth.getSession().then(({ data }) => {
-      setUser(data.session?.user ?? null)
-      setAuthReady(true)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session); setLoadingSession(false)
     })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
-    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, s) => setSession(s))
     return () => subscription.unsubscribe()
   }, [])
 
-  const handleLogout = async () => {
-    await supabase?.auth.signOut()
+  if (loadingSession) return <div className="loading-screen">Carregando...</div>
+  if (!session) return <Login />
+  return <Shell onLogout={() => supabase.auth.signOut()} userEmail={session.user.email} />
+}
+
+function Login() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault(); setLoading(true); setError('')
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
+    if (error) setError('Email ou senha incorretos')
+    setLoading(false)
   }
 
-  const displayName = user?.user_metadata?.full_name ?? user?.email ?? ''
-  const initials = displayName
-    .split(/\s|@/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((s: string) => s[0].toUpperCase())
-    .join('')
-
-  const toggleCalc = () => { setShowCalc(v => !v); setShowNp(false) }
-  const toggleNp = () => { setShowNp(v => !v); setShowCalc(false) }
-
-  if (!authReady) return null
-  if (supabase && !user) return <LoginPage />
-
   return (
-    <div className="app">
-      {/* ── Header ── */}
-      <header className="header">
-        <div className="header-brand">
-          <div className="brand-mark">
-            <svg viewBox="0 0 32 32" fill="none">
-              <rect width="32" height="32" rx="10" fill="url(#bg)"/>
-              <path d="M8 22L13 10l5 8 4-5 4 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <defs>
-                <linearGradient id="bg" x1="0" y1="0" x2="32" y2="32">
-                  <stop stopColor="#7c3aed"/>
-                  <stop offset="1" stopColor="#4f46e5"/>
-                </linearGradient>
-              </defs>
-            </svg>
-          </div>
-          <div>
-            <div className="brand-name">Lion Admin</div>
-            <div className="brand-sub">Gestão Financeira</div>
-          </div>
+    <div className="login-container">
+      <div className="login-card">
+        <div className="login-header">
+          <h1>Lion</h1>
+          <p>Administração de imóveis</p>
         </div>
-        <div className="header-right">
-          <div className="header-date">
-            {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
+        <form onSubmit={handleLogin}>
+          <div className="field">
+            <label>Email</label>
+            <input type="email" placeholder="seu@email.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
           </div>
-          <div className="header-user">
-            <div className="header-avatar">{initials || '?'}</div>
-            <span className="header-username">{displayName}</span>
-            <button className="logout-btn" onClick={handleLogout} title="Sair">
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M13 15l3-5-3-5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M16 10H7" strokeLinecap="round"/>
-                <path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" strokeLinecap="round"/>
-              </svg>
-            </button>
+          <div className="field">
+            <label>Senha</label>
+            <input type="password" placeholder="••••••••" value={password} onChange={(e) => setPassword(e.target.value)} required />
           </div>
-        </div>
-      </header>
-
-      <main className="main">
-        {/* ── Summary Cards ── */}
-        <section className="cards">
-          {[
-            {
-              label: 'Patrimônio Total', value: 'R$ 2.847.500', change: '+12,4%', pos: true, color: 'purple',
-              icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            },
-            {
-              label: 'Imóveis', value: 'R$ 1.950.000', change: '3 ativos', pos: true, color: 'blue',
-              icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            },
-            {
-              label: 'Veículos', value: 'R$ 387.500', change: '2 veículos', pos: false, color: 'amber',
-              icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="9" width="22" height="11" rx="2"/><path d="M6 9V7a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg>
-            },
-            {
-              label: 'Produtos', value: 'R$ 510.000', change: '+8,2%', pos: true, color: 'green',
-              icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-            },
-          ].map(c => (
-            <div key={c.label} className={`card card-${c.color}`}>
-              <div className={`card-icon-wrap ci-${c.color}`}>{c.icon}</div>
-              <div className="card-body">
-                <span className="card-label">{c.label}</span>
-                <span className="card-value">{c.value}</span>
-                <span className={`card-change${c.pos ? ' pos' : ''}`}>{c.pos ? '↑ ' : ''}{c.change}</span>
-              </div>
-            </div>
-          ))}
-        </section>
-
-        <div className="content-grid">
-          {/* ── Quick Actions ── */}
-          <section className="section">
-            <div className="section-header">
-              <h2 className="section-title">Adicionar Ativo</h2>
-            </div>
-            <div className="actions">
-              <button className="action action-blue" onClick={() => setModal('imovel')}>
-                <div className="action-icon-wrap">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                    <polyline points="9 22 9 12 15 12 15 22"/>
-                  </svg>
-                </div>
-                <div className="action-body">
-                  <span className="action-title">Novo Imóvel</span>
-                  <span className="action-sub">Casas, aptos, terrenos</span>
-                </div>
-                <svg className="action-arrow" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-              </button>
-
-              <button className="action action-amber" onClick={() => setModal('carro')}>
-                <div className="action-icon-wrap">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <rect x="1" y="9" width="22" height="11" rx="2"/>
-                    <path d="M6 9V7a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
-                    <circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/>
-                  </svg>
-                </div>
-                <div className="action-body">
-                  <span className="action-title">Novo Carro</span>
-                  <span className="action-sub">Veículos e frota</span>
-                </div>
-                <svg className="action-arrow" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-              </button>
-
-              <button className="action action-green" onClick={() => setModal('produto')}>
-                <div className="action-icon-wrap">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-                    <line x1="12" y1="22.08" x2="12" y2="12"/>
-                  </svg>
-                </div>
-                <div className="action-body">
-                  <span className="action-title">Novo Produto</span>
-                  <span className="action-sub">Estoque e inventário</span>
-                </div>
-                <svg className="action-arrow" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-              </button>
-            </div>
-          </section>
-
-          {/* ── Recent Activity ── */}
-          <section className="section">
-            <div className="section-header">
-              <h2 className="section-title">Atividade Recente</h2>
-              <button className="see-all">Ver todas</button>
-            </div>
-            <div className="activity">
-              {ACTIVITY.map((a, i) => (
-                <div key={i} className={`act-item act-${a.color}`}>
-                  <div className={`act-icon act-icon-${a.color}`}>{ACTIVITY_ICONS[a.icon]}</div>
-                  <div className="act-body">
-                    <span className="act-title">{a.title}</span>
-                    <span className="act-sub">{a.sub}</span>
-                  </div>
-                  <span className="act-time">{a.time}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
-      </main>
-
-      {/* ── Floating Buttons ── */}
-      <div className="floats">
-        <button className={`float-btn float-np${showNp ? ' float-active' : ''}`} onClick={toggleNp} title="Bloco de Notas">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <polyline points="14 2 14 8 20 8"/>
-            <line x1="8" y1="13" x2="16" y2="13"/>
-            <line x1="8" y1="17" x2="13" y2="17"/>
-          </svg>
-        </button>
-        <button className={`float-btn float-calc${showCalc ? ' float-active' : ''}`} onClick={toggleCalc} title="Calculadora">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <rect x="4" y="2" width="16" height="20" rx="3"/>
-            <rect x="7" y="5" width="10" height="4" rx="1" fill="currentColor" opacity=".3" stroke="none"/>
-            <circle cx="8.5" cy="13" r=".8" fill="currentColor" stroke="none"/>
-            <circle cx="12" cy="13" r=".8" fill="currentColor" stroke="none"/>
-            <circle cx="15.5" cy="13" r=".8" fill="currentColor" stroke="none"/>
-            <circle cx="8.5" cy="17" r=".8" fill="currentColor" stroke="none"/>
-            <circle cx="12" cy="17" r=".8" fill="currentColor" stroke="none"/>
-            <circle cx="15.5" cy="17" r=".8" fill="currentColor" stroke="none"/>
-          </svg>
-        </button>
+          {error && <p className="error">{error}</p>}
+          <button type="submit" className="primary full" disabled={loading}>{loading ? 'Entrando...' : 'Entrar'}</button>
+        </form>
       </div>
-
-      {/* ── Panels ── */}
-      <div className={`float-panel panel-np${showNp ? ' panel-open' : ''}`}>
-        <Notepad onClose={() => setShowNp(false)} />
-      </div>
-      <div className={`float-panel panel-calc${showCalc ? ' panel-open' : ''}`}>
-        <Calculator onClose={() => setShowCalc(false)} />
-      </div>
-
-      {/* ── Modals ── */}
-      {modal && <NewItemModal type={modal} onClose={() => setModal(null)} />}
     </div>
   )
 }
+
+function Shell({ onLogout, userEmail }: { onLogout: () => void; userEmail?: string }) {
+  const [selectedProperty, setSelectedProperty] = useState<Property | null>(null)
+  return (
+    <div className="app">
+      <nav className="navbar">
+        <div className="nav-content">
+          <div className="brand" style={{ cursor: 'pointer' }} onClick={() => setSelectedProperty(null)}>
+            <span className="brand-icon">L</span>
+            <div>
+              <h1>Lion</h1>
+              <p>Administração</p>
+            </div>
+          </div>
+          <div className="user-info">
+            <span className="user-email">{userEmail}</span>
+            <button onClick={onLogout} className="ghost">Sair</button>
+          </div>
+        </div>
+      </nav>
+      <main className="main">
+        {selectedProperty
+          ? <PropertyDetail property={selectedProperty} onBack={() => setSelectedProperty(null)} />
+          : <PropertiesList onSelect={setSelectedProperty} />
+        }
+      </main>
+      <CalcFloating />
+    </div>
+  )
+}
+
+const initialPropForm = {
+  name: '', type: 'casa', street: '', number: '', complement: '',
+  neighborhood: '', city: '', state: '', zip_code: '',
+  iptu_number: '', registration_number: '',
+  total_area: '', bedrooms: '', bathrooms: '', parking_spots: '',
+  status: 'proprio', acquisition_date: '',
+  acquisition_value: '', current_value: '', notes: '',
+}
+
+function PropertiesList({ onSelect }: { onSelect: (p: Property) => void }) {
+  const [properties, setProperties] = useState<Property[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState(initialPropForm)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => { loadProperties() }, [])
+
+  async function loadProperties() {
+    setLoading(true)
+    const { data, error } = await supabase.from('properties').select('*').order('created_at', { ascending: false })
+    if (error) alert('Erro: ' + error.message)
+    else setProperties(data || [])
+    setLoading(false)
+  }
+
+  function up(field: string, value: string) { setForm({ ...form, [field]: value }) }
+
+  async function addProperty(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.name.trim()) return
+    setSaving(true)
+    const payload: Record<string, unknown> = { ...form }
+    ;['total_area','bedrooms','bathrooms','parking_spots','acquisition_value','current_value'].forEach((f) => {
+      payload[f] = payload[f] === '' ? null : Number(payload[f])
+    })
+    if (payload.acquisition_date === '') payload.acquisition_date = null
+    const { error } = await supabase.from('properties').insert(payload)
+    if (error) alert('Erro: ' + error.message)
+    else { setForm(initialPropForm); setShowForm(false); loadProperties() }
+    setSaving(false)
+  }
+
+  async function deleteProperty(id: string, e: React.MouseEvent) {
+    e.stopPropagation()
+    if (!confirm('Remover este imóvel?')) return
+    const { error } = await supabase.from('properties').delete().eq('id', id)
+    if (error) alert('Erro: ' + error.message)
+    else loadProperties()
+  }
+
+  function formatAddress(p: Property) {
+    const parts = [p.street && `${p.street}${p.number ? ', ' + p.number : ''}`, p.neighborhood, p.city && p.state ? `${p.city}/${p.state}` : p.city || p.state].filter(Boolean)
+    return parts.join(' • ') || p.address || ''
+  }
+
+  return (
+    <>
+      <div className="page-header">
+        <div>
+          <h2>Meus Imóveis</h2>
+          <p className="muted">{properties.length} {properties.length === 1 ? 'imóvel cadastrado' : 'imóveis cadastrados'}</p>
+        </div>
+        <button onClick={() => setShowForm(!showForm)} className="primary">
+          {showForm ? 'Cancelar' : '+ Novo Imóvel'}
+        </button>
+      </div>
+
+      {showForm && (
+        <form className="card form-card" onSubmit={addProperty}>
+          <h3 className="section-title">Informações básicas</h3>
+          <div className="grid-3">
+            <div className="field"><label>Nome do imóvel *</label><input type="text" placeholder="Ex: Casa da Praia" value={form.name} onChange={(e) => up('name', e.target.value)} required /></div>
+            <div className="field"><label>Tipo</label>
+              <select value={form.type} onChange={(e) => up('type', e.target.value)}>
+                <option value="casa">Casa</option><option value="apartamento">Apartamento</option>
+                <option value="comercial">Comercial</option><option value="terreno">Terreno</option><option value="rural">Rural</option>
+              </select>
+            </div>
+            <div className="field"><label>Status</label>
+              <select value={form.status} onChange={(e) => up('status', e.target.value)}>
+                <option value="proprio">Próprio</option><option value="alugado">Alugado para terceiros</option>
+                <option value="vago">Vago</option><option value="vendido">Vendido</option>
+              </select>
+            </div>
+          </div>
+          <h3 className="section-title">Endereço</h3>
+          <div className="grid-3">
+            <div className="field span-2"><label>Rua</label><input type="text" value={form.street} onChange={(e) => up('street', e.target.value)} /></div>
+            <div className="field"><label>Número</label><input type="text" value={form.number} onChange={(e) => up('number', e.target.value)} /></div>
+            <div className="field"><label>Complemento</label><input type="text" value={form.complement} onChange={(e) => up('complement', e.target.value)} /></div>
+            <div className="field"><label>Bairro</label><input type="text" value={form.neighborhood} onChange={(e) => up('neighborhood', e.target.value)} /></div>
+            <div className="field"><label>CEP</label><input type="text" value={form.zip_code} onChange={(e) => up('zip_code', e.target.value)} /></div>
+            <div className="field span-2"><label>Cidade</label><input type="text" value={form.city} onChange={(e) => up('city', e.target.value)} /></div>
+            <div className="field"><label>Estado</label><input type="text" maxLength={2} placeholder="UF" value={form.state} onChange={(e) => up('state', e.target.value.toUpperCase())} /></div>
+          </div>
+          <h3 className="section-title">Características</h3>
+          <div className="grid-4">
+            <div className="field"><label>Área total (m²)</label><input type="number" step="0.01" value={form.total_area} onChange={(e) => up('total_area', e.target.value)} /></div>
+            <div className="field"><label>Quartos</label><input type="number" value={form.bedrooms} onChange={(e) => up('bedrooms', e.target.value)} /></div>
+            <div className="field"><label>Banheiros</label><input type="number" value={form.bathrooms} onChange={(e) => up('bathrooms', e.target.value)} /></div>
+            <div className="field"><label>Vagas</label><input type="number" value={form.parking_spots} onChange={(e) => up('parking_spots', e.target.value)} /></div>
+          </div>
+          <h3 className="section-title">Documentação e financeiro</h3>
+          <div className="grid-2">
+            <div className="field"><label>Número do IPTU</label><input type="text" value={form.iptu_number} onChange={(e) => up('iptu_number', e.target.value)} /></div>
+            <div className="field"><label>Matrícula</label><input type="text" value={form.registration_number} onChange={(e) => up('registration_number', e.target.value)} /></div>
+            <div className="field"><label>Data de aquisição</label><input type="date" value={form.acquisition_date} onChange={(e) => up('acquisition_date', e.target.value)} /></div>
+            <div className="field"><label>Valor de aquisição (R$)</label><input type="number" step="0.01" value={form.acquisition_value} onChange={(e) => up('acquisition_value', e.target.value)} /></div>
+            <div className="field span-2"><label>Valor estimado atual (R$)</label><input type="number" step="0.01" value={form.current_value} onChange={(e) => up('current_value', e.target.value)} /></div>
+          </div>
+          <h3 className="section-title">Observações</h3>
+          <div className="field"><textarea rows={3} placeholder="Anotações gerais" value={form.notes} onChange={(e) => up('notes', e.target.value)} /></div>
+          <div className="form-actions">
+            <button type="button" className="ghost" onClick={() => { setShowForm(false); setForm(initialPropForm) }}>Cancelar</button>
+            <button type="submit" className="primary" disabled={saving}>{saving ? 'Salvando...' : 'Cadastrar imóvel'}</button>
+          </div>
+        </form>
+      )}
+
+      <div className="properties-grid">
+        {loading ? <p className="muted">Carregando...</p>
+        : properties.length === 0 ? (
+          <div className="empty-state"><p>Nenhum imóvel cadastrado ainda.</p><p className="muted">Clique em "+ Novo Imóvel" para começar.</p></div>
+        ) : properties.map((p) => (
+          <div key={p.id} className="property-card clickable" onClick={() => onSelect(p)}>
+            <div className="property-card-header">
+              <div>
+                <h3>{p.name}</h3>
+                <div className="badges">
+                  {p.type && <span className="badge">{p.type}</span>}
+                  {p.status && <span className={`badge status-${p.status}`}>{p.status}</span>}
+                </div>
+              </div>
+              <button onClick={(e) => deleteProperty(p.id, e)} className="icon-btn danger" title="Remover">×</button>
+            </div>
+            {formatAddress(p) && <p className="address">{formatAddress(p)}</p>}
+            <div className="property-meta">
+              {p.bedrooms != null && <span>{p.bedrooms} quartos</span>}
+              {p.bathrooms != null && <span>{p.bathrooms} banheiros</span>}
+              {p.total_area != null && <span>{p.total_area} m²</span>}
+            </div>
+          </div>
+        ))}
+      </div>
+    </>
+  )
+}
+
+function PropertyDetail({ property, onBack }: { property: Property; onBack: () => void }) {
+  function formatAddress(p: Property) {
+    const parts = [p.street && `${p.street}${p.number ? ', ' + p.number : ''}`, p.complement, p.neighborhood, p.zip_code, p.city && p.state ? `${p.city}/${p.state}` : p.city || p.state].filter(Boolean)
+    return parts.join(' • ') || p.address || ''
+  }
+  function fmtCurrency(n: number | null) {
+    if (n == null) return '—'
+    return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  }
+
+  return (
+    <>
+      <button onClick={onBack} className="ghost back-btn">← Voltar</button>
+
+      <div className="card property-info">
+        <div className="property-info-header">
+          <div>
+            <h2>{property.name}</h2>
+            <div className="badges">
+              {property.type && <span className="badge">{property.type}</span>}
+              {property.status && <span className={`badge status-${property.status}`}>{property.status}</span>}
+            </div>
+            {formatAddress(property) && <p className="address" style={{ marginTop: 12 }}>{formatAddress(property)}</p>}
+          </div>
+        </div>
+        <div className="property-details-grid">
+          {property.bedrooms != null && <div><span className="detail-label">Quartos</span><span>{property.bedrooms}</span></div>}
+          {property.bathrooms != null && <div><span className="detail-label">Banheiros</span><span>{property.bathrooms}</span></div>}
+          {property.parking_spots != null && <div><span className="detail-label">Vagas</span><span>{property.parking_spots}</span></div>}
+          {property.total_area != null && <div><span className="detail-label">Área</span><span>{property.total_area} m²</span></div>}
+          {property.iptu_number && <div><span className="detail-label">IPTU</span><span>{property.iptu_number}</span></div>}
+          {property.registration_number && <div><span className="detail-label">Matrícula</span><span>{property.registration_number}</span></div>}
+          {property.acquisition_value != null && <div><span className="detail-label">Aquisição</span><span>{fmtCurrency(property.acquisition_value)}</span></div>}
+          {property.current_value != null && <div><span className="detail-label">Valor atual</span><span>{fmtCurrency(property.current_value)}</span></div>}
+        </div>
+        {property.notes && <p className="muted" style={{ marginTop: 16, whiteSpace: 'pre-wrap' }}>{property.notes}</p>}
+      </div>
+
+      <BillsSection propertyId={property.id} />
+      <DocumentsSection propertyId={property.id} />
+    </>
+  )
+}
+
+const initialBillForm = { description: '', category: 'agua', amount: '', due_date: '', status: 'pendente', notes: '' }
+
+function BillsSection({ propertyId }: { propertyId: string }) {
+  const [bills, setBills] = useState<Bill[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [filter, setFilter] = useState<'all' | 'pendente' | 'paga'>('all')
+  const [form, setForm] = useState(initialBillForm)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true)
+      const { data, error } = await supabase.from('bills').select('*').eq('property_id', propertyId).order('due_date', { ascending: true })
+      if (error) alert('Erro: ' + error.message)
+      else setBills(data || [])
+      setLoading(false)
+    }
+    load()
+  }, [propertyId])
+
+  async function reload() {
+    const { data } = await supabase.from('bills').select('*').eq('property_id', propertyId).order('due_date', { ascending: true })
+    setBills(data || [])
+  }
+
+  async function addBill(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.description.trim() || !form.amount || !form.due_date) return
+    setSaving(true)
+    const payload: Record<string, unknown> = {
+      property_id: propertyId, description: form.description, category: form.category,
+      amount: Number(form.amount), due_date: form.due_date, status: form.status, notes: form.notes,
+    }
+    if (form.status === 'paga') payload.paid_at = new Date().toISOString()
+    const { error } = await supabase.from('bills').insert(payload)
+    if (error) alert('Erro: ' + error.message)
+    else { setForm(initialBillForm); setShowForm(false); reload() }
+    setSaving(false)
+  }
+
+  async function togglePaid(bill: Bill) {
+    const newStatus = bill.status === 'paga' ? 'pendente' : 'paga'
+    const update: Record<string, unknown> = { status: newStatus, paid_at: newStatus === 'paga' ? new Date().toISOString() : null }
+    const { error } = await supabase.from('bills').update(update).eq('id', bill.id)
+    if (error) alert('Erro: ' + error.message)
+    else reload()
+  }
+
+  async function deleteBill(id: string) {
+    if (!confirm('Remover esta conta?')) return
+    const { error } = await supabase.from('bills').delete().eq('id', id)
+    if (error) alert('Erro: ' + error.message)
+    else reload()
+  }
+
+  const filteredBills = filter === 'all' ? bills : bills.filter(b => b.status === filter)
+  const pendingBills = bills.filter(b => b.status === 'pendente')
+  const totalPending = pendingBills.reduce((s, b) => s + Number(b.amount), 0)
+
+  function fmtCurrency(n: number) { return n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) }
+  function fmtDate(d: string) { return new Date(d + 'T00:00:00').toLocaleDateString('pt-BR') }
+  function isOverdue(b: Bill) { return b.status === 'pendente' && new Date(b.due_date) < new Date(new Date().toDateString()) }
+
+  return (
+    <section className="card">
+      <div className="section-header">
+        <div>
+          <h3 className="card-title">Contas</h3>
+          {pendingBills.length > 0 && <p className="muted small">{pendingBills.length} pendentes — Total: {fmtCurrency(totalPending)}</p>}
+        </div>
+        <button onClick={() => setShowForm(!showForm)} className="primary">{showForm ? 'Cancelar' : '+ Nova Conta'}</button>
+      </div>
+
+      {showForm && (
+        <form className="inline-form" onSubmit={addBill}>
+          <div className="grid-3">
+            <div className="field span-2"><label>Descrição *</label><input type="text" placeholder="Ex: IPTU 2024 - Parcela 3" value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} required /></div>
+            <div className="field"><label>Categoria</label>
+              <select value={form.category} onChange={(e) => setForm({...form, category: e.target.value})}>
+                <option value="agua">Água</option><option value="luz">Luz</option><option value="gas">Gás</option>
+                <option value="iptu">IPTU</option><option value="condominio">Condomínio</option><option value="internet">Internet</option>
+                <option value="aluguel">Aluguel</option><option value="manutencao">Manutenção</option>
+                <option value="seguro">Seguro</option><option value="outros">Outros</option>
+              </select>
+            </div>
+            <div className="field"><label>Valor (R$) *</label><input type="number" step="0.01" value={form.amount} onChange={(e) => setForm({...form, amount: e.target.value})} required /></div>
+            <div className="field"><label>Vencimento *</label><input type="date" value={form.due_date} onChange={(e) => setForm({...form, due_date: e.target.value})} required /></div>
+            <div className="field"><label>Status</label>
+              <select value={form.status} onChange={(e) => setForm({...form, status: e.target.value})}>
+                <option value="pendente">Pendente</option><option value="paga">Paga</option>
+              </select>
+            </div>
+          </div>
+          <div className="field"><label>Observações</label><input type="text" value={form.notes} onChange={(e) => setForm({...form, notes: e.target.value})} /></div>
+          <div className="form-actions">
+            <button type="button" className="ghost" onClick={() => { setShowForm(false); setForm(initialBillForm) }}>Cancelar</button>
+            <button type="submit" className="primary" disabled={saving}>{saving ? 'Salvando...' : 'Adicionar'}</button>
+          </div>
+        </form>
+      )}
+
+      <div className="filters">
+        <button type="button" className={`chip ${filter === 'all' ? 'active' : ''}`} onClick={() => setFilter('all')}>Todas ({bills.length})</button>
+        <button type="button" className={`chip ${filter === 'pendente' ? 'active' : ''}`} onClick={() => setFilter('pendente')}>Pendentes ({pendingBills.length})</button>
+        <button type="button" className={`chip ${filter === 'paga' ? 'active' : ''}`} onClick={() => setFilter('paga')}>Pagas ({bills.filter(b => b.status === 'paga').length})</button>
+      </div>
+
+      {loading ? <p className="muted">Carregando...</p>
+      : filteredBills.length === 0 ? <p className="empty-inline muted">Nenhuma conta encontrada.</p>
+      : (
+        <div className="bills-list">
+          {filteredBills.map((bill) => (
+            <div key={bill.id} className={`bill-row ${isOverdue(bill) ? 'overdue' : ''}`}>
+              <input type="checkbox" checked={bill.status === 'paga'} onChange={() => togglePaid(bill)} className="bill-check" />
+              <div className="bill-info">
+                <div className="bill-title">
+                  <strong className={bill.status === 'paga' ? 'strikethrough' : ''}>{bill.description}</strong>
+                  {bill.category && <span className="badge small">{bill.category}</span>}
+                </div>
+                <div className="bill-meta">
+                  <span>Vence {fmtDate(bill.due_date)}</span>
+                  {isOverdue(bill) && <span className="text-danger">• Vencida</span>}
+                  {bill.notes && <span className="muted">• {bill.notes}</span>}
+                </div>
+              </div>
+              <div className="bill-amount">{fmtCurrency(Number(bill.amount))}</div>
+              <button onClick={() => deleteBill(bill.id)} className="icon-btn danger">×</button>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+const initialDocForm = { name: '', category: 'escritura', notes: '' }
+
+function DocumentsSection({ propertyId }: { propertyId: string }) {
+  const [docs, setDocs] = useState<DocItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState(initialDocForm)
+  const [file, setFile] = useState<File | null>(null)
+  const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true)
+      const { data, error } = await supabase.from('documents').select('*').eq('property_id', propertyId).order('created_at', { ascending: false })
+      if (error) alert('Erro: ' + error.message)
+      else setDocs(data || [])
+      setLoading(false)
+    }
+    load()
+  }, [propertyId])
+
+  async function reload() {
+    const { data } = await supabase.from('documents').select('*').eq('property_id', propertyId).order('created_at', { ascending: false })
+    setDocs(data || [])
+  }
+
+  async function uploadDoc(e: React.FormEvent) {
+    e.preventDefault()
+    if (!file || !form.name.trim()) return
+    setSaving(true)
+    const filePath = `${propertyId}/${Date.now()}_${file.name}`
+    const { error: uploadError } = await supabase.storage.from('documents').upload(filePath, file)
+    if (uploadError) { alert('Erro ao enviar: ' + uploadError.message); setSaving(false); return }
+    const { error } = await supabase.from('documents').insert({
+      property_id: propertyId, name: form.name, category: form.category,
+      file_url: filePath, file_name: file.name, notes: form.notes,
+    })
+    if (error) alert('Erro: ' + error.message)
+    else { setForm(initialDocForm); setFile(null); setShowForm(false); reload() }
+    setSaving(false)
+  }
+
+  async function deleteDoc(doc: DocItem) {
+    if (!confirm('Remover este documento?')) return
+    if (doc.file_url) await supabase.storage.from('documents').remove([doc.file_url])
+    const { error } = await supabase.from('documents').delete().eq('id', doc.id)
+    if (error) alert('Erro: ' + error.message)
+    else reload()
+  }
+
+  async function openDoc(doc: DocItem) {
+    if (!doc.file_url) return
+    const { data, error } = await supabase.storage.from('documents').createSignedUrl(doc.file_url, 60)
+    if (error) { alert('Erro: ' + error.message); return }
+    if (data?.signedUrl) window.open(data.signedUrl, '_blank')
+  }
+
+  function fmtDate(d: string) { return new Date(d).toLocaleDateString('pt-BR') }
+
+  return (
+    <section className="card">
+      <div className="section-header">
+        <h3 className="card-title">Documentos</h3>
+        <button onClick={() => setShowForm(!showForm)} className="primary">{showForm ? 'Cancelar' : '+ Novo Documento'}</button>
+      </div>
+
+      {showForm && (
+        <form className="inline-form" onSubmit={uploadDoc}>
+          <div className="grid-2">
+            <div className="field"><label>Nome do documento *</label><input type="text" placeholder="Ex: Escritura - Casa Praia 2024" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} required /></div>
+            <div className="field"><label>Categoria</label>
+              <select value={form.category} onChange={(e) => setForm({...form, category: e.target.value})}>
+                <option value="escritura">Escritura</option><option value="iptu">IPTU</option>
+                <option value="contrato">Contrato</option><option value="seguro">Seguro</option>
+                <option value="comprovante">Comprovante</option><option value="conta">Conta paga</option>
+                <option value="planta">Planta</option><option value="outros">Outros</option>
+              </select>
+            </div>
+          </div>
+          <div className="field"><label>Arquivo *</label><input type="file" onChange={(e) => setFile(e.target.files?.[0] || null)} required /></div>
+          <div className="field"><label>Observações</label><input type="text" value={form.notes} onChange={(e) => setForm({...form, notes: e.target.value})} /></div>
+          <div className="form-actions">
+            <button type="button" className="ghost" onClick={() => { setShowForm(false); setForm(initialDocForm); setFile(null) }}>Cancelar</button>
+            <button type="submit" className="primary" disabled={saving}>{saving ? 'Enviando...' : 'Enviar'}</button>
+          </div>
+        </form>
+      )}
+
+      {loading ? <p className="muted">Carregando...</p>
+      : docs.length === 0 ? <p className="empty-inline muted">Nenhum documento enviado ainda.</p>
+      : (
+        <div className="docs-list">
+          {docs.map((doc) => (
+            <div key={doc.id} className="doc-row">
+              <div className="doc-icon">📄</div>
+              <div className="doc-info">
+                <div className="doc-title">
+                  <strong>{doc.name}</strong>
+                  {doc.category && <span className="badge small">{doc.category}</span>}
+                </div>
+                <div className="doc-meta">
+                  {doc.file_name && <span className="muted">{doc.file_name}</span>}
+                  <span className="muted">• {fmtDate(doc.created_at)}</span>
+                  {doc.notes && <span className="muted">• {doc.notes}</span>}
+                </div>
+              </div>
+              <div className="doc-actions">
+                <button onClick={() => openDoc(doc)} className="ghost small">Abrir</button>
+                <button onClick={() => deleteDoc(doc)} className="icon-btn danger">×</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
+function CalcFloating() {
+  const [open, setOpen] = useState(false)
+  return (
+    <>
+      <button className="fab-calc" onClick={() => setOpen(!open)} aria-label="Calculadora">
+        {open ? '×' : '🧮'}
+      </button>
+      {open && <div className="calc-panel"><Calculator /></div>}
+    </>
+  )
+}
+
+function Calculator() {
+  const [display, setDisplay] = useState('0')
+  const [previous, setPrevious] = useState<number | null>(null)
+  const [operator, setOperator] = useState<string | null>(null)
+  const [waiting, setWaiting] = useState(false)
+
+  function inputDigit(d: string) {
+    if (waiting) {
+      setDisplay(d)
+      setWaiting(false)
+    } else {
+      setDisplay(display === '0' ? d : display + d)
+    }
+  }
+
+  function inputDecimal() {
+    if (waiting) {
+      setDisplay('0.')
+      setWaiting(false)
+      return
+    }
+    if (!display.includes('.')) setDisplay(display + '.')
+  }
+
+  function clearAll() {
+    setDisplay('0'); setPrevious(null); setOperator(null); setWaiting(false)
+  }
+
+  function calc(a: number, b: number, op: string): number {
+    if (op === '+') return a + b
+    if (op === '-') return a - b
+    if (op === '*') return a * b
+    if (op === '/') return b === 0 ? 0 : a / b
+    return b
+  }
+
+  function formatResult(n: number): string {
+    if (Number.isInteger(n)) return String(n)
+    return String(parseFloat(n.toFixed(8)))
+  }
+
+  function performOp(nextOp: string) {
+    const v = parseFloat(display)
+    if (previous == null) {
+      setPrevious(v)
+    } else if (operator && !waiting) {
+      const r = calc(previous, v, operator)
+      setDisplay(formatResult(r))
+      setPrevious(r)
+    }
+    setWaiting(true)
+    setOperator(nextOp)
+  }
+
+  function handleEquals() {
+    const v = parseFloat(display)
+    if (previous != null && operator) {
+      const r = calc(previous, v, operator)
+      setDisplay(formatResult(r))
+      setPrevious(null)
+      setOperator(null)
+      setWaiting(true)
+    }
+  }
+
+  function toggleSign() {
+    if (display === '0') return
+    setDisplay(display.startsWith('-') ? display.slice(1) : '-' + display)
+  }
+
+  function percent() {
+    setDisplay(formatResult(parseFloat(display) / 100))
+  }
+
+  function formatDisplay(d: string): string {
+    const isNegative = d.startsWith('-')
+    const value = isNegative ? d.slice(1) : d
+    const [intPart, decPart] = value.split('.')
+    const intNum = parseInt(intPart || '0', 10)
+    if (isNaN(intNum)) return d
+    const formatted = intNum.toLocaleString('pt-BR')
+    const result = decPart != null ? `${formatted},${decPart}` : formatted
+    return isNegative ? `-${result}` : result
+  }
+
+  function isOpActive(op: string) {
+    return operator === op && waiting
+  }
+
+  return (
+    <div className="ios-calc">
+      <div className="ios-calc-display">{formatDisplay(display)}</div>
+      <div className="ios-calc-grid">
+        <button onClick={clearAll} className="ios-btn fn">AC</button>
+        <button onClick={toggleSign} className="ios-btn fn">+/−</button>
+        <button onClick={percent} className="ios-btn fn">%</button>
+        <button onClick={() => performOp('/')} className={`ios-btn op ${isOpActive('/') ? 'active' : ''}`}>÷</button>
+        <button onClick={() => inputDigit('7')} className="ios-btn">7</button>
+        <button onClick={() => inputDigit('8')} className="ios-btn">8</button>
+        <button onClick={() => inputDigit('9')} className="ios-btn">9</button>
+        <button onClick={() => performOp('*')} className={`ios-btn op ${isOpActive('*') ? 'active' : ''}`}>×</button>
+        <button onClick={() => inputDigit('4')} className="ios-btn">4</button>
+        <button onClick={() => inputDigit('5')} className="ios-btn">5</button>
+        <button onClick={() => inputDigit('6')} className="ios-btn">6</button>
+        <button onClick={() => performOp('-')} className={`ios-btn op ${isOpActive('-') ? 'active' : ''}`}>−</button>
+        <button onClick={() => inputDigit('1')} className="ios-btn">1</button>
+        <button onClick={() => inputDigit('2')} className="ios-btn">2</button>
+        <button onClick={() => inputDigit('3')} className="ios-btn">3</button>
+        <button onClick={() => performOp('+')} className={`ios-btn op ${isOpActive('+') ? 'active' : ''}`}>+</button>
+        <button onClick={() => inputDigit('0')} className="ios-btn zero">0</button>
+        <button onClick={inputDecimal} className="ios-btn">,</button>
+        <button onClick={handleEquals} className="ios-btn op">=</button>
+      </div>
+    </div>
+  )
+}
+
+export default App
