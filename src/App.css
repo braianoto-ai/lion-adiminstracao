@@ -1494,6 +1494,85 @@
 .goal-deadline-warn { color: var(--amber-l) }
 
 /* ═══════════════════════════════════════════════════════════
+   VEHICLE HISTORY SECTION
+═══════════════════════════════════════════════════════════ */
+
+.veh-section { margin-bottom: 28px }
+.veh-list { display: flex; flex-direction: column; gap: 8px }
+
+.veh-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  transition: border-color .2s;
+}
+.veh-card:hover { border-color: var(--border2) }
+.veh-expanded { border-color: var(--border2) }
+
+.veh-card-main {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+}
+
+.veh-icon { font-size: 22px; flex-shrink: 0 }
+
+.veh-info { flex: 1; min-width: 0 }
+.veh-name { font-size: 13px; font-weight: 600; color: var(--text3); display: flex; align-items: center; gap: 8px }
+.veh-plate {
+  font-size: 10px; font-weight: 600; letter-spacing: .5px;
+  padding: 2px 7px; border-radius: 4px;
+  background: var(--bg4); color: var(--text); border: 1px solid var(--border2);
+}
+.veh-meta { font-size: 11px; color: var(--text); margin-top: 3px }
+
+.veh-right { display: flex; align-items: center; gap: 10px; flex-shrink: 0 }
+
+.veh-alert {
+  font-size: 11px; font-weight: 600;
+  padding: 3px 8px; border-radius: 99px; white-space: nowrap;
+}
+.veh-alert-red   { background: rgba(239,68,68,.12);  color: #fca5a5;        border: 1px solid rgba(239,68,68,.2) }
+.veh-alert-amber { background: rgba(245,158,11,.12); color: var(--amber-l); border: 1px solid rgba(245,158,11,.2) }
+.veh-alert-ok    { background: var(--bg3);           color: var(--text);    border: 1px solid var(--border) }
+
+.veh-history {
+  border-top: 1px solid var(--border);
+  padding: 14px 16px;
+  background: var(--bg3);
+}
+
+.veh-no-revisions { font-size: 12px; color: var(--text); padding: 8px 0 }
+
+.veh-revisions { display: flex; flex-direction: column; gap: 6px; margin-top: 10px }
+
+.veh-rev-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  transition: border-color .15s;
+}
+.veh-rev-item:hover { border-color: var(--border2) }
+.veh-rev-item:hover .fin-del { opacity: 1 !important }
+
+.veh-rev-left { display: flex; flex-direction: column; gap: 3px; flex: 1; min-width: 0 }
+.veh-rev-type { font-size: 12px; font-weight: 600; color: var(--text2) }
+.veh-rev-date { font-size: 11px; color: var(--text) }
+.veh-rev-desc { font-size: 11px; color: var(--text2) }
+.veh-rev-shop { font-size: 10px; color: var(--text) }
+
+.veh-rev-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0 }
+.veh-rev-cost { font-size: 12px; font-weight: 600; color: var(--amber-l) }
+
+/* ═══════════════════════════════════════════════════════════
    MAINTENANCE SECTION
 ═══════════════════════════════════════════════════════════ */
 
