@@ -1668,6 +1668,41 @@
 .maint-done-btn:hover { background: rgba(16,185,129,.15) !important; color: var(--green-l) !important }
 
 /* ═══════════════════════════════════════════════════════════
+   PATRIMONY CHART SECTION
+═══════════════════════════════════════════════════════════ */
+
+.pat-section { margin-bottom: 28px }
+
+.pat-summary {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+
+.pat-stat { display: flex; flex-direction: column; gap: 2px; text-align: right }
+.pat-stat-label { font-size: 10px; color: var(--text); font-weight: 500; text-transform: uppercase; letter-spacing: .04em }
+.pat-stat-val { font-size: 15px; font-weight: 700 }
+.pat-pos { color: var(--green-l) }
+.pat-neg { color: #f87171 }
+.pat-goals { color: var(--purple-l) }
+
+.pat-chart-wrap {
+  margin-top: 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 8px 4px;
+  overflow: hidden;
+}
+
+.pat-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ═══════════════════════════════════════════════════════════
    RENTALS SECTION
 ═══════════════════════════════════════════════════════════ */
 
