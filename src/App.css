@@ -158,6 +158,25 @@
 }
 .login-input:focus { border-color: var(--purple) }
 
+.login-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.login-input-wrap .login-input { width: 100%; padding-right: 42px }
+
+.login-eye {
+  position: absolute;
+  right: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  transition: color .15s;
+}
+.login-eye svg { width: 18px; height: 18px }
+.login-eye:hover { color: var(--text2) }
+
 .login-error {
   font-size: 13px;
   color: var(--red);
