@@ -465,6 +465,218 @@ function NewItemModal({ type, onClose }: { type: ModalType; onClose: () => void 
   )
 }
 
+// ─── Finance Panel ────────────────────────────────────────────────────────────
+
+type TxType = 'receita' | 'despesa'
+
+interface Transaction {
+  id: string
+  type: TxType
+  category: string
+  description: string
+  amount: number
+  date: string
+}
+
+const TX_CATEGORIES = {
+  receita: ['Salário', 'Aluguel recebido', 'Dividendos', 'Freelance', 'Vendas', 'Outros'],
+  despesa: ['Moradia', 'Alimentação', 'Transporte', 'Saúde', 'Educação', 'Lazer', 'Impostos', 'Outros'],
+}
+
+function FinancePanel({ onClose }: { onClose: () => void }) {
+  const [txs, setTxs] = useState<Transaction[]>(() => {
+    try { return JSON.parse(localStorage.getItem('lion-txs') || '[]') } catch { return [] }
+  })
+  const [view, setView] = useState<'overview' | 'list' | 'add'>('overview')
+  const [filter, setFilter] = useState<'all' | TxType>('all')
+  const [form, setForm] = useState({
+    type: 'receita' as TxType,
+    category: TX_CATEGORIES.receita[0],
+    description: '',
+    amount: '',
+    date: new Date().toISOString().slice(0, 7),
+  })
+
+  useEffect(() => { localStorage.setItem('lion-txs', JSON.stringify(txs)) }, [txs])
+
+  function addTx(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.amount || !form.description.trim()) return
+    const tx: Transaction = {
+      id: Date.now().toString(),
+      type: form.type,
+      category: form.category,
+      description: form.description,
+      amount: parseFloat(form.amount),
+      date: form.date,
+    }
+    setTxs([tx, ...txs])
+    setForm(f => ({ ...f, description: '', amount: '' }))
+    setView('overview')
+  }
+
+  function delTx(id: string) { setTxs(txs.filter(t => t.id !== id)) }
+
+  const months = Array.from({ length: 6 }, (_, i) => {
+    const d = new Date()
+    d.setDate(1)
+    d.setMonth(d.getMonth() - (5 - i))
+    return d.toISOString().slice(0, 7)
+  })
+
+  const monthData = months.map(m => ({
+    month: m,
+    label: new Date(m + '-02').toLocaleDateString('pt-BR', { month: 'short' }),
+    receitas: txs.filter(t => t.date === m && t.type === 'receita').reduce((s, t) => s + t.amount, 0),
+    despesas: txs.filter(t => t.date === m && t.type === 'despesa').reduce((s, t) => s + t.amount, 0),
+  }))
+
+  const totalReceitas = txs.reduce((s, t) => t.type === 'receita' ? s + t.amount : s, 0)
+  const totalDespesas = txs.reduce((s, t) => t.type === 'despesa' ? s + t.amount : s, 0)
+  const saldo = totalReceitas - totalDespesas
+
+  const maxVal = Math.max(...monthData.flatMap(m => [m.receitas, m.despesas]), 1)
+  const fmtCurr = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const filtered = filter === 'all' ? txs : txs.filter(t => t.type === filter)
+
+  const chartH = 100
+  const barW = 14
+  const gap = 3
+  const groupW = barW * 2 + gap + 14
+
+  return (
+    <div className="fin-wrap">
+      <div className="panel-header">
+        <div className="panel-header-left">
+          <div className="panel-icon fin-icon-header">
+            <svg viewBox="0 0 20 20" fill="none">
+              <path d="M10 2v16M14 6H8a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <span>Finanças</span>
+        </div>
+        <div className="fin-tabs">
+          <button className={`fin-tab${view === 'overview' ? ' fin-tab-active' : ''}`} onClick={() => setView('overview')}>Resumo</button>
+          <button className={`fin-tab${view === 'list' ? ' fin-tab-active' : ''}`} onClick={() => setView('list')}>Lançamentos</button>
+          <button className={`fin-tab fin-tab-add${view === 'add' ? ' fin-tab-active' : ''}`} onClick={() => setView('add')}>+ Novo</button>
+        </div>
+        <button className="panel-close" onClick={onClose}>
+          <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+        </button>
+      </div>
+
+      {view === 'overview' && (
+        <div className="fin-body">
+          <div className="fin-summary">
+            <div className="fin-stat fin-stat-green">
+              <span className="fin-stat-label">Receitas</span>
+              <span className="fin-stat-value">{fmtCurr(totalReceitas)}</span>
+            </div>
+            <div className="fin-stat fin-stat-red">
+              <span className="fin-stat-label">Despesas</span>
+              <span className="fin-stat-value">{fmtCurr(totalDespesas)}</span>
+            </div>
+            <div className={`fin-stat ${saldo >= 0 ? 'fin-stat-purple' : 'fin-stat-red'}`}>
+              <span className="fin-stat-label">Saldo</span>
+              <span className="fin-stat-value">{fmtCurr(saldo)}</span>
+            </div>
+          </div>
+
+          <div className="fin-chart-section">
+            <div className="fin-chart-title">Últimos 6 meses</div>
+            <svg width="100%" viewBox={`0 0 300 ${chartH + 28}`} className="fin-chart">
+              {monthData.map((m, i) => {
+                const x = 10 + i * groupW
+                const rH = Math.max((m.receitas / maxVal) * chartH, m.receitas > 0 ? 3 : 2)
+                const dH = Math.max((m.despesas / maxVal) * chartH, m.despesas > 0 ? 3 : 2)
+                return (
+                  <g key={m.month}>
+                    <rect x={x} y={chartH - rH} width={barW} height={rH} rx="3" fill="var(--green)" opacity={m.receitas === 0 ? 0.15 : 0.85} />
+                    <rect x={x + barW + gap} y={chartH - dH} width={barW} height={dH} rx="3" fill="var(--red)" opacity={m.despesas === 0 ? 0.15 : 0.85} />
+                    <text x={x + barW + gap / 2} y={chartH + 20} textAnchor="middle" fontSize="9" fill="var(--text)">{m.label}</text>
+                  </g>
+                )
+              })}
+            </svg>
+            <div className="fin-legend">
+              <span className="fin-leg-dot" style={{ background: 'var(--green)' }} />
+              <span className="fin-leg-label">Receitas</span>
+              <span className="fin-leg-dot" style={{ background: 'var(--red)' }} />
+              <span className="fin-leg-label">Despesas</span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {view === 'list' && (
+        <div className="fin-body">
+          <div className="fin-filters">
+            <button className={`fin-chip${filter === 'all' ? ' fin-chip-active' : ''}`} onClick={() => setFilter('all')}>Todos ({txs.length})</button>
+            <button className={`fin-chip fin-chip-green${filter === 'receita' ? ' fin-chip-active' : ''}`} onClick={() => setFilter('receita')}>Receitas</button>
+            <button className={`fin-chip fin-chip-red${filter === 'despesa' ? ' fin-chip-active' : ''}`} onClick={() => setFilter('despesa')}>Despesas</button>
+          </div>
+          {filtered.length === 0
+            ? <div className="fin-empty">Nenhum lançamento ainda.</div>
+            : <div className="fin-list">
+                {filtered.map(tx => (
+                  <div key={tx.id} className="fin-item">
+                    <div className={`fin-dot ${tx.type === 'receita' ? 'fin-dot-green' : 'fin-dot-red'}`} />
+                    <div className="fin-item-body">
+                      <span className="fin-item-desc">{tx.description}</span>
+                      <span className="fin-item-meta">{tx.category} · {new Date(tx.date + '-02').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}</span>
+                    </div>
+                    <span className={`fin-item-amt ${tx.type === 'receita' ? 'fin-amt-green' : 'fin-amt-red'}`}>
+                      {tx.type === 'receita' ? '+' : '-'}{fmtCurr(tx.amount)}
+                    </span>
+                    <button className="fin-del" onClick={() => delTx(tx.id)}>
+                      <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+          }
+        </div>
+      )}
+
+      {view === 'add' && (
+        <div className="fin-body">
+          <form className="fin-form" onSubmit={addTx}>
+            <div className="fin-type-toggle">
+              <button type="button" className={`fin-type-btn${form.type === 'receita' ? ' fin-type-green' : ''}`}
+                onClick={() => setForm(f => ({ ...f, type: 'receita', category: TX_CATEGORIES.receita[0] }))}>↑ Receita</button>
+              <button type="button" className={`fin-type-btn${form.type === 'despesa' ? ' fin-type-red' : ''}`}
+                onClick={() => setForm(f => ({ ...f, type: 'despesa', category: TX_CATEGORIES.despesa[0] }))}>↓ Despesa</button>
+            </div>
+            <div className="fin-field">
+              <label>Descrição</label>
+              <input type="text" placeholder="Ex: Salário julho" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} required />
+            </div>
+            <div className="fin-row">
+              <div className="fin-field">
+                <label>Valor (R$)</label>
+                <input type="number" step="0.01" min="0.01" placeholder="0,00" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} required />
+              </div>
+              <div className="fin-field">
+                <label>Mês</label>
+                <input type="month" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} required />
+              </div>
+            </div>
+            <div className="fin-field">
+              <label>Categoria</label>
+              <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+                {TX_CATEGORIES[form.type].map(c => <option key={c}>{c}</option>)}
+              </select>
+            </div>
+            <button type="submit" className={`fin-submit ${form.type === 'receita' ? 'fin-submit-green' : 'fin-submit-red'}`}>
+              Adicionar {form.type === 'receita' ? 'Receita' : 'Despesa'}
+            </button>
+          </form>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Activity data ────────────────────────────────────────────────────────────
 
 const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
@@ -507,6 +719,7 @@ const ACTIVITY = [
 export default function App() {
   const [showCalc, setShowCalc] = useState(false)
   const [showNp, setShowNp] = useState(false)
+  const [showFin, setShowFin] = useState(false)
   const [modal, setModal] = useState<ModalType>(null)
   const [user, setUser] = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(false)
@@ -535,8 +748,9 @@ export default function App() {
     .map((s: string) => s[0].toUpperCase())
     .join('')
 
-  const toggleCalc = () => { setShowCalc(v => !v); setShowNp(false) }
-  const toggleNp = () => { setShowNp(v => !v); setShowCalc(false) }
+  const toggleCalc = () => { setShowCalc(v => !v); setShowNp(false); setShowFin(false) }
+  const toggleNp   = () => { setShowNp(v => !v);   setShowCalc(false); setShowFin(false) }
+  const toggleFin  = () => { setShowFin(v => !v);  setShowCalc(false); setShowNp(false) }
 
   if (!authReady) return null
   if (supabase && !user) return <LoginPage />
@@ -690,6 +904,11 @@ export default function App() {
 
       {/* ── Floating Buttons ── */}
       <div className="floats">
+        <button className={`float-btn float-fin${showFin ? ' float-active' : ''}`} onClick={toggleFin} title="Finanças">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" strokeLinecap="round"/>
+          </svg>
+        </button>
         <button className={`float-btn float-np${showNp ? ' float-active' : ''}`} onClick={toggleNp} title="Bloco de Notas">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -713,6 +932,9 @@ export default function App() {
       </div>
 
       {/* ── Panels ── */}
+      <div className={`float-panel panel-fin${showFin ? ' panel-open' : ''}`}>
+        <FinancePanel onClose={() => setShowFin(false)} />
+      </div>
       <div className={`float-panel panel-np${showNp ? ' panel-open' : ''}`}>
         <Notepad onClose={() => setShowNp(false)} />
       </div>
