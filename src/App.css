@@ -1381,6 +1381,85 @@
 .goal-deadline-warn { color: var(--amber-l) }
 
 /* ═══════════════════════════════════════════════════════════
+   MAINTENANCE SECTION
+═══════════════════════════════════════════════════════════ */
+
+.maint-section { margin-bottom: 28px }
+
+.maint-soon-badge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 7px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 600;
+  background: rgba(245,158,11,.15);
+  color: var(--amber-l);
+  border: 1px solid rgba(245,158,11,.2);
+}
+
+.maint-list { display: flex; flex-direction: column; gap: 6px }
+
+.maint-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: border-color .2s;
+}
+.maint-item:hover { border-color: var(--border2) }
+.maint-item:hover .goal-actions { opacity: 1 }
+
+.maint-atrasado { border-left: 3px solid var(--red) }
+.maint-pendente { border-left: 3px solid var(--border2) }
+.maint-feito    { border-left: 3px solid var(--green); opacity: .7 }
+
+.maint-icon-col {
+  width: 28px; height: 28px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.maint-icon-col svg { width: 14px; height: 14px }
+.maint-icon-atrasado { background: rgba(239,68,68,.15);  color: #fca5a5 }
+.maint-icon-pendente { background: rgba(245,158,11,.12); color: var(--amber-l) }
+.maint-icon-feito    { background: rgba(16,185,129,.12); color: var(--green-l) }
+
+.maint-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px }
+
+.maint-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap }
+.maint-asset { font-size: 13px; font-weight: 600; color: var(--text3) }
+.maint-type-badge {
+  font-size: 10px; font-weight: 500;
+  padding: 2px 7px; border-radius: 4px;
+  background: var(--bg4); color: var(--text);
+  border: 1px solid var(--border);
+}
+.maint-desc { font-size: 12px; color: var(--text2) }
+.maint-meta { font-size: 11px; color: var(--text); display: flex; gap: 6px; flex-wrap: wrap }
+.maint-notes-inline { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px }
+
+.maint-right {
+  display: flex; align-items: center; gap: 8px; flex-shrink: 0
+}
+
+.maint-days {
+  font-size: 11px; font-weight: 600;
+  padding: 2px 8px; border-radius: 99px;
+  white-space: nowrap;
+}
+.maint-days-late  { background: rgba(239,68,68,.12);  color: #fca5a5;        border: 1px solid rgba(239,68,68,.2) }
+.maint-days-today { background: rgba(245,158,11,.12); color: var(--amber-l); border: 1px solid rgba(245,158,11,.2) }
+.maint-days-soon  { background: rgba(245,158,11,.08); color: var(--amber-l); border: 1px solid rgba(245,158,11,.15) }
+.maint-days-ok    { background: var(--bg3); color: var(--text); border: 1px solid var(--border) }
+
+.maint-done-btn:hover { background: rgba(16,185,129,.15) !important; color: var(--green-l) !important }
+
+/* ═══════════════════════════════════════════════════════════
    RENTALS SECTION
 ═══════════════════════════════════════════════════════════ */
 
