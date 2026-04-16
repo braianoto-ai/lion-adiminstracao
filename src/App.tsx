@@ -351,7 +351,15 @@ function defaultFolders(): Folder[] {
 
 // ─── New Item Modal ───────────────────────────────────────────────────────────
 
-const MODAL_CONFIG = {
+interface FieldDef {
+  key: string
+  label: string
+  type: string
+  placeholder?: string
+  options?: string[]
+}
+
+const MODAL_CONFIG: Record<string, { title: string; icon: React.ReactNode; color: string; fields: FieldDef[] }> = {
   imovel: {
     title: 'Novo Imóvel',
     icon: (
@@ -433,7 +441,7 @@ function NewItemModal({ type, onClose }: { type: ModalType; onClose: () => void 
                 {f.type === 'select' ? (
                   <select className="field-select" value={form[f.key] || ''} onChange={e => setForm({ ...form, [f.key]: e.target.value })}>
                     <option value="">Selecione...</option>
-                    {f.options?.map(o => <option key={o}>{o}</option>)}
+                    {f.options?.map((o: string) => <option key={o}>{o}</option>)}
                   </select>
                 ) : (
                   <input className="field-input" type={f.type} placeholder={f.placeholder} value={form[f.key] || ''} onChange={e => setForm({ ...form, [f.key]: e.target.value })} />
