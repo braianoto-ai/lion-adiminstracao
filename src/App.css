@@ -1572,6 +1572,22 @@
 .veh-rev-right { display: flex; align-items: center; gap: 6px; flex-shrink: 0 }
 .veh-rev-cost { font-size: 12px; font-weight: 600; color: var(--amber-l) }
 
+.veh-doc-alerts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px }
+
+.veh-docs-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  margin-bottom: 10px;
+}
+.veh-doc-item { display: flex; flex-direction: column; gap: 2px }
+.veh-doc-label { font-size: 10px; font-weight: 600; color: var(--text); text-transform: uppercase; letter-spacing: .04em }
+.veh-doc-val { font-size: 12px; color: var(--text2); font-weight: 500 }
+
 /* ═══════════════════════════════════════════════════════════
    MAINTENANCE SECTION
 ═══════════════════════════════════════════════════════════ */

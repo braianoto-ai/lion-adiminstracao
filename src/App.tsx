@@ -1632,6 +1632,8 @@ interface Vehicle {
   nextRevisionKm: number
   nextRevisionDate: string
   notes: string
+  ipvaExpiry: string
+  insuranceExpiry: string
 }
 
 interface Revision {
@@ -1646,7 +1648,7 @@ interface Revision {
 }
 
 const REVISION_TYPES = ['Revisão geral', 'Troca de óleo', 'Pneus', 'Freios', 'Correia dentada', 'Filtros', 'Suspensão', 'Elétrica', 'Outros']
-const VEH_FORM_INIT = { name: '', plate: '', year: '', currentKm: '', nextRevisionKm: '', nextRevisionDate: '', notes: '' }
+const VEH_FORM_INIT = { name: '', plate: '', year: '', currentKm: '', nextRevisionKm: '', nextRevisionDate: '', notes: '', ipvaExpiry: '', insuranceExpiry: '' }
 const REV_FORM_INIT = { vehicleId: '', date: new Date().toISOString().slice(0, 10), km: '', type: REVISION_TYPES[0], description: '', cost: '', shop: '' }
 
 function VehicleHistorySection() {
@@ -1678,6 +1680,7 @@ function VehicleHistorySection() {
       currentKm: parseFloat(vehForm.currentKm) || 0,
       nextRevisionKm: parseFloat(vehForm.nextRevisionKm) || 0,
       nextRevisionDate: vehForm.nextRevisionDate, notes: vehForm.notes,
+      ipvaExpiry: vehForm.ipvaExpiry, insuranceExpiry: vehForm.insuranceExpiry,
     }
     setVehicles(prev => editVehId ? prev.map(x => x.id === editVehId ? v : x) : [...prev, v])
     setVehForm(VEH_FORM_INIT); setShowVehForm(false); setEditVehId(null)
@@ -1700,7 +1703,7 @@ function VehicleHistorySection() {
   }
 
   function startEditVeh(v: Vehicle) {
-    setVehForm({ name: v.name, plate: v.plate, year: v.year, currentKm: String(v.currentKm), nextRevisionKm: String(v.nextRevisionKm), nextRevisionDate: v.nextRevisionDate, notes: v.notes })
+    setVehForm({ name: v.name, plate: v.plate, year: v.year, currentKm: String(v.currentKm), nextRevisionKm: String(v.nextRevisionKm), nextRevisionDate: v.nextRevisionDate, notes: v.notes, ipvaExpiry: v.ipvaExpiry || '', insuranceExpiry: v.insuranceExpiry || '' })
     setEditVehId(v.id); setShowVehForm(true); setShowRevForm(false)
   }
 
@@ -1722,13 +1725,30 @@ function VehicleHistorySection() {
     return null
   }
 
+  function getDocAlerts(v: Vehicle): { text: string; cls: string }[] {
+    const now = Date.now()
+    const alerts: { text: string; cls: string }[] = []
+    if (v.ipvaExpiry) {
+      const days = Math.ceil((new Date(v.ipvaExpiry + 'T12:00:00').getTime() - now) / 86400000)
+      if (days < 0) alerts.push({ text: 'IPVA vencido', cls: 'veh-alert-red' })
+      else if (days <= 30) alerts.push({ text: `IPVA vence em ${days}d`, cls: 'veh-alert-amber' })
+    }
+    if (v.insuranceExpiry) {
+      const days = Math.ceil((new Date(v.insuranceExpiry + 'T12:00:00').getTime() - now) / 86400000)
+      if (days < 0) alerts.push({ text: 'Seguro vencido', cls: 'veh-alert-red' })
+      else if (days <= 30) alerts.push({ text: `Seguro vence em ${days}d`, cls: 'veh-alert-amber' })
+    }
+    return alerts
+  }
+
   const fmtDate = (d: string) => d ? new Date(d + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: 'numeric' }) : '—'
   const fmtKm = (n: number) => n.toLocaleString('pt-BR') + ' km'
   const fmtCurr = (v: string) => v ? parseFloat(v).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' }) : ''
 
   const alertCount = vehicles.filter(v => {
     const a = getAlert(v)
-    return a && (a.cls === 'veh-alert-red' || a.cls === 'veh-alert-amber')
+    const da = getDocAlerts(v)
+    return (a && (a.cls === 'veh-alert-red' || a.cls === 'veh-alert-amber')) || da.length > 0
   }).length
 
   return (
@@ -1777,9 +1797,17 @@ function VehicleHistorySection() {
               <label>Próxima revisão (km)</label>
               <input type="number" min="0" placeholder="Ex: 50000" value={vehForm.nextRevisionKm} onChange={e => fv('nextRevisionKm', e.target.value)} />
             </div>
-            <div className="fin-field goal-span2">
+            <div className="fin-field">
               <label>Próxima revisão (data)</label>
               <input type="date" value={vehForm.nextRevisionDate} onChange={e => fv('nextRevisionDate', e.target.value)} />
+            </div>
+            <div className="fin-field">
+              <label>Vencimento IPVA</label>
+              <input type="date" value={vehForm.ipvaExpiry} onChange={e => fv('ipvaExpiry', e.target.value)} />
+            </div>
+            <div className="fin-field">
+              <label>Vencimento Seguro</label>
+              <input type="date" value={vehForm.insuranceExpiry} onChange={e => fv('insuranceExpiry', e.target.value)} />
             </div>
           </div>
           <div className="goal-form-actions">
@@ -1843,6 +1871,7 @@ function VehicleHistorySection() {
         <div className="veh-list">
           {vehicles.map(v => {
             const alert = getAlert(v)
+            const docAlerts = getDocAlerts(v)
             const vehRevisions = revisions.filter(r => r.vehicleId === v.id).sort((a, b) => b.date.localeCompare(a.date))
             const isExpanded = expandedVehId === v.id
             const totalCost = vehRevisions.reduce((s, r) => s + (parseFloat(r.cost) || 0), 0)
@@ -1853,6 +1882,11 @@ function VehicleHistorySection() {
                   <div className="veh-info">
                     <div className="veh-name">{v.name}{v.plate && <span className="veh-plate">{v.plate}</span>}</div>
                     <div className="veh-meta">{v.year && `${v.year} · `}{fmtKm(v.currentKm)} · {vehRevisions.length} revisão{vehRevisions.length !== 1 ? 'ões' : ''}</div>
+                    {docAlerts.length > 0 && (
+                      <div className="veh-doc-alerts">
+                        {docAlerts.map((da, i) => <span key={i} className={`veh-alert ${da.cls}`}>{da.text}</span>)}
+                      </div>
+                    )}
                   </div>
                   <div className="veh-right">
                     {alert && <span className={`veh-alert ${alert.cls}`}>{alert.text}</span>}
@@ -1872,6 +1906,22 @@ function VehicleHistorySection() {
 
                 {isExpanded && (
                   <div className="veh-history">
+                    {(v.ipvaExpiry || v.insuranceExpiry) && (
+                      <div className="veh-docs-row">
+                        {v.ipvaExpiry && (
+                          <div className="veh-doc-item">
+                            <span className="veh-doc-label">IPVA</span>
+                            <span className="veh-doc-val">{fmtDate(v.ipvaExpiry)}</span>
+                          </div>
+                        )}
+                        {v.insuranceExpiry && (
+                          <div className="veh-doc-item">
+                            <span className="veh-doc-label">Seguro</span>
+                            <span className="veh-doc-val">{fmtDate(v.insuranceExpiry)}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
                     <div className="rental-history-header">
                       <span>{vehRevisions.length} revisões registradas</span>
                       {totalCost > 0 && <span className="rental-history-sub">Total gasto: {fmtCurr(String(totalCost))}</span>}
