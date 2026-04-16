@@ -677,6 +677,177 @@ function FinancePanel({ onClose }: { onClose: () => void }) {
   )
 }
 
+// ─── Goals Section ────────────────────────────────────────────────────────────
+
+interface Goal {
+  id: string
+  name: string
+  category: string
+  target: number
+  current: number
+  deadline: string
+}
+
+const GOAL_CATEGORIES: Record<string, { label: string; color: string }> = {
+  imovel:    { label: 'Imóvel',     color: 'blue'   },
+  veiculo:   { label: 'Veículo',    color: 'amber'  },
+  reserva:   { label: 'Reserva',    color: 'green'  },
+  viagem:    { label: 'Viagem',     color: 'purple' },
+  educacao:  { label: 'Educação',   color: 'blue'   },
+  outros:    { label: 'Outros',     color: 'purple' },
+}
+
+const GOAL_FORM_INIT = { name: '', category: 'reserva', target: '', current: '', deadline: '' }
+
+function GoalsSection() {
+  const [goals, setGoals] = useState<Goal[]>(() => {
+    try { return JSON.parse(localStorage.getItem('lion-goals') || '[]') } catch { return [] }
+  })
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState(GOAL_FORM_INIT)
+  const [editId, setEditId] = useState<string | null>(null)
+
+  useEffect(() => { localStorage.setItem('lion-goals', JSON.stringify(goals)) }, [goals])
+
+  function saveGoal(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.name.trim() || !form.target) return
+    const g: Goal = {
+      id: editId || Date.now().toString(),
+      name: form.name,
+      category: form.category,
+      target: parseFloat(form.target),
+      current: parseFloat(form.current || '0'),
+      deadline: form.deadline,
+    }
+    setGoals(prev => editId ? prev.map(x => x.id === editId ? g : x) : [...prev, g])
+    setForm(GOAL_FORM_INIT)
+    setShowForm(false)
+    setEditId(null)
+  }
+
+  function startEdit(g: Goal) {
+    setForm({ name: g.name, category: g.category, target: String(g.target), current: String(g.current), deadline: g.deadline })
+    setEditId(g.id)
+    setShowForm(true)
+  }
+
+  function delGoal(id: string) { setGoals(prev => prev.filter(g => g.id !== id)) }
+
+  const fmtCurr = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+  function progressColor(pct: number) {
+    if (pct >= 100) return 'goal-bar-done'
+    if (pct >= 66)  return 'goal-bar-green'
+    if (pct >= 33)  return 'goal-bar-amber'
+    return 'goal-bar-red'
+  }
+
+  return (
+    <section className="goals-section">
+      <div className="goals-header">
+        <div>
+          <h2 className="section-title">Metas de Patrimônio</h2>
+          <span className="goals-sub">{goals.length} meta{goals.length !== 1 ? 's' : ''} ativas</span>
+        </div>
+        <button className="goals-add-btn" onClick={() => { setShowForm(v => !v); setEditId(null); setForm(GOAL_FORM_INIT) }}>
+          {showForm && !editId ? '✕ Cancelar' : '+ Nova Meta'}
+        </button>
+      </div>
+
+      {showForm && (
+        <form className="goal-form" onSubmit={saveGoal}>
+          <div className="goal-form-grid">
+            <div className="fin-field goal-span2">
+              <label>Nome da meta</label>
+              <input type="text" placeholder="Ex: Entrada apartamento" value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} required />
+            </div>
+            <div className="fin-field">
+              <label>Categoria</label>
+              <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+                {Object.entries(GOAL_CATEGORIES).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
+              </select>
+            </div>
+            <div className="fin-field">
+              <label>Prazo (opcional)</label>
+              <input type="month" value={form.deadline} onChange={e => setForm(f => ({ ...f, deadline: e.target.value }))} />
+            </div>
+            <div className="fin-field">
+              <label>Valor alvo (R$)</label>
+              <input type="number" step="0.01" min="1" placeholder="0,00" value={form.target} onChange={e => setForm(f => ({ ...f, target: e.target.value }))} required />
+            </div>
+            <div className="fin-field">
+              <label>Valor atual (R$)</label>
+              <input type="number" step="0.01" min="0" placeholder="0,00" value={form.current} onChange={e => setForm(f => ({ ...f, current: e.target.value }))} />
+            </div>
+          </div>
+          <div className="goal-form-actions">
+            <button type="button" className="btn-ghost" onClick={() => { setShowForm(false); setEditId(null); setForm(GOAL_FORM_INIT) }}>Cancelar</button>
+            <button type="submit" className="btn-accent">{editId ? 'Salvar alterações' : 'Criar meta'}</button>
+          </div>
+        </form>
+      )}
+
+      {goals.length === 0 && !showForm ? (
+        <div className="goals-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+          <p>Nenhuma meta cadastrada ainda.</p>
+          <span>Defina objetivos financeiros e acompanhe seu progresso.</span>
+        </div>
+      ) : (
+        <div className="goals-grid">
+          {goals.map(g => {
+            const pct = Math.min((g.current / g.target) * 100, 100)
+            const cat = GOAL_CATEGORIES[g.category] || GOAL_CATEGORIES.outros
+            const daysLeft = g.deadline
+              ? Math.ceil((new Date(g.deadline + '-28').getTime() - Date.now()) / 86400000)
+              : null
+            return (
+              <div key={g.id} className={`goal-card goal-card-${cat.color}`}>
+                <div className="goal-card-top">
+                  <div>
+                    <span className={`goal-badge goal-badge-${cat.color}`}>{cat.label}</span>
+                    <h3 className="goal-name">{g.name}</h3>
+                  </div>
+                  <div className="goal-actions">
+                    <button className="goal-action-btn" onClick={() => startEdit(g)} title="Editar">
+                      <svg viewBox="0 0 16 16" fill="none"><path d="M11 2l3 3-8 8H3v-3l8-8z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
+                    </button>
+                    <button className="goal-action-btn goal-del-btn" onClick={() => delGoal(g.id)} title="Remover">
+                      <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="goal-values">
+                  <span className="goal-current">{fmtCurr(g.current)}</span>
+                  <span className="goal-sep">/</span>
+                  <span className="goal-target">{fmtCurr(g.target)}</span>
+                </div>
+
+                <div className="goal-bar-track">
+                  <div className={`goal-bar-fill ${progressColor(pct)}`} style={{ width: `${pct}%` }} />
+                </div>
+
+                <div className="goal-footer">
+                  <span className={`goal-pct ${pct >= 100 ? 'goal-pct-done' : ''}`}>
+                    {pct >= 100 ? '✓ Concluída!' : `${pct.toFixed(1)}%`}
+                  </span>
+                  {daysLeft !== null && (
+                    <span className={`goal-deadline ${daysLeft < 30 ? 'goal-deadline-warn' : ''}`}>
+                      {daysLeft > 0 ? `${daysLeft}d restantes` : 'Prazo vencido'}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </section>
+  )
+}
+
 // ─── Activity data ────────────────────────────────────────────────────────────
 
 const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
@@ -826,6 +997,8 @@ export default function App() {
             </div>
           ))}
         </section>
+
+        <GoalsSection />
 
         <div className="content-grid">
           {/* ── Quick Actions ── */}

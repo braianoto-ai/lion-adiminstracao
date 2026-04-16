@@ -1055,6 +1055,188 @@
 .btn-green { background: var(--green) }
 
 /* ═══════════════════════════════════════════════════════════
+   GOALS SECTION
+═══════════════════════════════════════════════════════════ */
+
+.goals-section {
+  margin-bottom: 28px;
+}
+
+.goals-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  gap: 12px;
+}
+
+.goals-sub {
+  font-size: 11px;
+  color: var(--text);
+  margin-top: 2px;
+  display: block;
+}
+
+.goals-add-btn {
+  padding: 8px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(124,58,237,.15);
+  color: var(--purple-l);
+  border: 1px solid rgba(124,58,237,.25);
+  transition: background .15s, border-color .15s;
+}
+.goals-add-btn:hover { background: rgba(124,58,237,.25); border-color: rgba(124,58,237,.4) }
+
+/* Form */
+.goal-form {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin-bottom: 20px;
+}
+
+.goal-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.goal-span2 { grid-column: span 2 }
+
+.goal-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border);
+}
+
+/* Empty state */
+.goals-empty {
+  text-align: center;
+  padding: 40px 20px;
+  background: var(--bg2);
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: var(--text);
+}
+.goals-empty svg { width: 36px; height: 36px; opacity: .3; margin-bottom: 4px }
+.goals-empty p { font-size: 13px; color: var(--text2) }
+.goals-empty span { font-size: 12px }
+
+/* Grid */
+.goals-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+/* Goal card */
+.goal-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color .2s, transform .2s;
+}
+.goal-card:hover { transform: translateY(-2px) }
+.goal-card-blue   { border-top: 2px solid var(--blue) }
+.goal-card-amber  { border-top: 2px solid var(--amber) }
+.goal-card-green  { border-top: 2px solid var(--green) }
+.goal-card-purple { border-top: 2px solid var(--purple) }
+
+.goal-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.goal-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-bottom: 5px;
+}
+.goal-badge-blue   { background: rgba(59,130,246,.12);  color: var(--blue-l) }
+.goal-badge-amber  { background: rgba(245,158,11,.12);  color: var(--amber-l) }
+.goal-badge-green  { background: rgba(16,185,129,.12);  color: var(--green-l) }
+.goal-badge-purple { background: rgba(124,58,237,.12);  color: var(--purple-l) }
+
+.goal-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text3);
+  line-height: 1.3;
+}
+
+.goal-actions { display: flex; gap: 4px; flex-shrink: 0 }
+.goal-action-btn {
+  width: 24px; height: 24px;
+  border-radius: 5px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text); opacity: 0;
+  transition: opacity .15s, background .15s, color .15s;
+}
+.goal-action-btn svg { width: 12px; height: 12px }
+.goal-card:hover .goal-action-btn { opacity: 1 }
+.goal-action-btn:hover { background: var(--bg4); color: var(--text2) }
+.goal-del-btn:hover { background: rgba(239,68,68,.15) !important; color: var(--red) !important }
+
+/* Values */
+.goal-values {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+}
+.goal-current { font-size: 15px; font-weight: 700; color: var(--text3) }
+.goal-sep     { font-size: 12px; color: var(--text) }
+.goal-target  { font-size: 12px; color: var(--text) }
+
+/* Progress bar */
+.goal-bar-track {
+  height: 6px;
+  background: var(--bg4);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.goal-bar-fill {
+  height: 100%;
+  border-radius: 99px;
+  transition: width .4s cubic-bezier(.4,0,.2,1);
+}
+.goal-bar-red   { background: var(--red) }
+.goal-bar-amber { background: var(--amber) }
+.goal-bar-green { background: var(--green) }
+.goal-bar-done  { background: linear-gradient(90deg, var(--green), var(--purple-l)) }
+
+/* Footer */
+.goal-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.goal-pct      { font-size: 11px; font-weight: 600; color: var(--text2) }
+.goal-pct-done { color: var(--green-l) }
+.goal-deadline      { font-size: 10px; color: var(--text) }
+.goal-deadline-warn { color: var(--amber-l) }
+
+/* ═══════════════════════════════════════════════════════════
    FINANCE PANEL
 ═══════════════════════════════════════════════════════════ */
 
