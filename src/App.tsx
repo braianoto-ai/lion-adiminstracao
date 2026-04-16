@@ -484,6 +484,7 @@ export default function App() {
   const [authReady, setAuthReady] = useState(false)
 
   useEffect(() => {
+    if (!supabase) { setAuthReady(true); return }
     supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user ?? null)
       setAuthReady(true)
@@ -495,7 +496,7 @@ export default function App() {
   }, [])
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
+    await supabase?.auth.signOut()
   }
 
   const displayName = user?.user_metadata?.full_name ?? user?.email ?? ''
@@ -510,7 +511,7 @@ export default function App() {
   const toggleNp = () => { setShowNp(v => !v); setShowCalc(false) }
 
   if (!authReady) return null
-  if (!user) return <LoginPage />
+  if (supabase && !user) return <LoginPage />
 
   return (
     <div className="app">
