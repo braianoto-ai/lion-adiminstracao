@@ -1,5 +1,8 @@
 import { useState, useEffect } from 'react'
 import './App.css'
+import { supabase } from './lib/supabase'
+import LoginPage from './LoginPage'
+import type { User } from '@supabase/supabase-js'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -477,9 +480,37 @@ export default function App() {
   const [showCalc, setShowCalc] = useState(false)
   const [showNp, setShowNp] = useState(false)
   const [modal, setModal] = useState<ModalType>(null)
+  const [user, setUser] = useState<User | null>(null)
+  const [authReady, setAuthReady] = useState(false)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user ?? null)
+      setAuthReady(true)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut()
+  }
+
+  const displayName = user?.user_metadata?.full_name ?? user?.email ?? ''
+  const initials = displayName
+    .split(/\s|@/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((s: string) => s[0].toUpperCase())
+    .join('')
 
   const toggleCalc = () => { setShowCalc(v => !v); setShowNp(false) }
   const toggleNp = () => { setShowNp(v => !v); setShowCalc(false) }
+
+  if (!authReady) return null
+  if (!user) return <LoginPage />
 
   return (
     <div className="app">
@@ -507,7 +538,17 @@ export default function App() {
           <div className="header-date">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
           </div>
-          <div className="header-avatar">BA</div>
+          <div className="header-user">
+            <div className="header-avatar">{initials || '?'}</div>
+            <span className="header-username">{displayName}</span>
+            <button className="logout-btn" onClick={handleLogout} title="Sair">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M13 15l3-5-3-5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M16 10H7" strokeLinecap="round"/>
+                <path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" strokeLinecap="round"/>
+              </svg>
+            </button>
+          </div>
         </div>
       </header>
 
