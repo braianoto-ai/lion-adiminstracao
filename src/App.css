@@ -451,6 +451,19 @@
   box-shadow: 0 0 0 4px rgba(59,130,246,.2), var(--shadow);
 }
 
+.float-docs {
+  background: linear-gradient(135deg, #0f1629, #1e3a5f);
+  color: var(--blue-l);
+  border: 1px solid rgba(59,130,246,.25);
+}
+.float-docs:hover { box-shadow: 0 0 0 4px rgba(59,130,246,.15), var(--shadow) }
+.float-docs.float-active {
+  background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+  color: #fff;
+  border-color: rgba(59,130,246,.5);
+  box-shadow: 0 0 0 4px rgba(59,130,246,.2), var(--shadow);
+}
+
 .float-sim {
   background: linear-gradient(135deg, #1c1917, #44403c);
   color: #fcd34d;
@@ -533,6 +546,7 @@
 .panel-np   { bottom: 96px }
 .panel-fin  { bottom: 96px }
 .panel-sim  { bottom: 96px }
+.panel-docs { bottom: 96px }
 
 /* ═══════════════════════════════════════════════════════════
    PANEL SHARED HEADER
@@ -1067,6 +1081,105 @@
 .btn-blue  { background: var(--blue) }
 .btn-amber { background: var(--amber) }
 .btn-green { background: var(--green) }
+
+/* ═══════════════════════════════════════════════════════════
+   DOCUMENTS PANEL
+═══════════════════════════════════════════════════════════ */
+
+.docs-icon-header { background: rgba(59,130,246,.15); color: var(--blue-l) }
+
+.docs-wrap {
+  width: 380px;
+  background: var(--bg2);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border2);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 520px;
+}
+
+.docs-cat-filter {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+  padding-bottom: 2px;
+}
+
+.docs-cat-chip { font-size: 10px !important; padding: 3px 8px !important }
+
+.docs-list { display: flex; flex-direction: column; gap: 4px }
+
+.doc-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  transition: background .15s, border-color .15s;
+}
+.doc-item:hover { background: var(--bg3); border-color: var(--border) }
+
+.doc-icon-emoji { font-size: 18px; flex-shrink: 0; width: 28px; text-align: center }
+
+.doc-item-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px }
+.doc-item-name { font-size: 12px; font-weight: 600; color: var(--text3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.doc-item-meta { font-size: 10px; color: var(--text); display: flex; align-items: center; gap: 5px; flex-wrap: wrap }
+.doc-cat-badge {
+  padding: 1px 6px; border-radius: 4px;
+  background: rgba(59,130,246,.1); color: var(--blue-l);
+  border: 1px solid rgba(59,130,246,.15); font-size: 9px; font-weight: 600;
+}
+.doc-item-notes { font-size: 10px; color: var(--text); font-style: italic }
+
+.doc-item-actions { display: flex; gap: 4px; flex-shrink: 0; opacity: 0; transition: opacity .15s }
+.doc-item:hover .doc-item-actions { opacity: 1 }
+
+.doc-open-btn {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  color: var(--text); transition: background .15s, color .15s;
+}
+.doc-open-btn svg { width: 13px; height: 13px }
+.doc-open-btn:hover { background: rgba(59,130,246,.15); color: var(--blue-l) }
+
+.docs-file-input {
+  padding: 8px !important;
+  cursor: pointer;
+}
+.docs-file-input::file-selector-button {
+  padding: 4px 10px;
+  border-radius: 5px;
+  background: var(--bg4);
+  color: var(--text2);
+  border: 1px solid var(--border2);
+  font-size: 11px;
+  cursor: pointer;
+  margin-right: 8px;
+}
+
+.docs-no-supabase {
+  padding: 10px 12px;
+  background: rgba(245,158,11,.08);
+  border: 1px solid rgba(245,158,11,.2);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: var(--amber-l);
+  line-height: 1.6;
+}
+.docs-no-supabase code { background: var(--bg4); padding: 1px 4px; border-radius: 3px; font-size: 10px }
+
+.docs-error {
+  padding: 8px 10px;
+  background: rgba(239,68,68,.08);
+  border: 1px solid rgba(239,68,68,.2);
+  border-radius: var(--radius-sm);
+  font-size: 11px;
+  color: #fca5a5;
+}
 
 /* ═══════════════════════════════════════════════════════════
    FINANCING SIMULATOR
