@@ -467,11 +467,39 @@ function NewItemModal({ type, onClose }: { type: ModalType; onClose: () => void 
 
 // ─── Activity data ────────────────────────────────────────────────────────────
 
+const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
+  blue: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+  ),
+  amber: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <rect x="1" y="9" width="22" height="11" rx="2"/>
+      <path d="M6 9V7a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
+      <circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/>
+    </svg>
+  ),
+  green: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+      <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+      <line x1="12" y1="22.08" x2="12" y2="12"/>
+    </svg>
+  ),
+  purple: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+      <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+    </svg>
+  ),
+}
+
 const ACTIVITY = [
-  { emoji: '🏠', title: 'Ap. Jardins adicionado', sub: 'Imóvel · R$ 850.000', time: '2h atrás', color: 'blue' },
-  { emoji: '🚗', title: 'BMW X5 atualizado', sub: 'Veículo · R$ 290.000', time: '5h atrás', color: 'amber' },
-  { emoji: '📦', title: 'Novo lote de produtos', sub: '45 itens · R$ 12.500', time: '1d atrás', color: 'green' },
-  { emoji: '🏠', title: 'Casa Alphaville avaliada', sub: 'Imóvel · R$ 1.100.000', time: '2d atrás', color: 'blue' },
+  { icon: 'blue',   title: 'Ap. Jardins adicionado',  sub: 'Imóvel · R$ 850.000',   time: '2h atrás', color: 'blue' },
+  { icon: 'amber',  title: 'BMW X5 atualizado',        sub: 'Veículo · R$ 290.000',  time: '5h atrás', color: 'amber' },
+  { icon: 'green',  title: 'Novo lote de produtos',    sub: '45 itens · R$ 12.500',  time: '1d atrás', color: 'green' },
+  { icon: 'blue',   title: 'Casa Alphaville avaliada', sub: 'Imóvel · R$ 1.100.000', time: '2d atrás', color: 'blue' },
 ]
 
 // ─── App ──────────────────────────────────────────────────────────────────────
@@ -647,7 +675,7 @@ export default function App() {
             <div className="activity">
               {ACTIVITY.map((a, i) => (
                 <div key={i} className={`act-item act-${a.color}`}>
-                  <div className="act-emoji">{a.emoji}</div>
+                  <div className={`act-icon act-icon-${a.color}`}>{ACTIVITY_ICONS[a.icon]}</div>
                   <div className="act-body">
                     <span className="act-title">{a.title}</span>
                     <span className="act-sub">{a.sub}</span>

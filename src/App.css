@@ -386,7 +386,20 @@
 .act-amber:hover { border-color: rgba(245,158,11,.2) }
 .act-green:hover { border-color: rgba(16,185,129,.2) }
 
-.act-emoji { font-size: 20px; flex-shrink: 0 }
+.act-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.act-icon svg { width: 18px; height: 18px }
+.act-icon-blue   { background: rgba(59,130,246,.12);  color: var(--blue) }
+.act-icon-amber  { background: rgba(245,158,11,.12);  color: var(--amber) }
+.act-icon-green  { background: rgba(16,185,129,.12);  color: var(--green) }
+.act-icon-purple { background: rgba(124,58,237,.12);  color: var(--purple) }
 
 .act-body { flex: 1; display: flex; flex-direction: column; gap: 2px }
 .act-title { font-size: 13px; font-weight: 500; color: var(--text2) }
