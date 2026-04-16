@@ -2139,6 +2139,134 @@ function VehicleHistorySection() {
   )
 }
 
+// ─── Alerts Panel ────────────────────────────────────────────────────────────
+
+interface AppAlert {
+  id: string
+  severity: 'danger' | 'warning'
+  category: string
+  title: string
+  detail: string
+}
+
+function buildAlerts(): AppAlert[] {
+  const alerts: AppAlert[] = []
+  const now = Date.now()
+
+  const vehicles: Vehicle[] = (() => { try { return JSON.parse(localStorage.getItem('lion-vehicles') || '[]') } catch { return [] } })()
+  for (const v of vehicles) {
+    const kmLeft = v.nextRevisionKm > 0 ? v.nextRevisionKm - v.currentKm : null
+    const daysRev = v.nextRevisionDate ? Math.ceil((new Date(v.nextRevisionDate + 'T12:00:00').getTime() - now) / 86400000) : null
+    if (kmLeft !== null && kmLeft <= 0) alerts.push({ id: `veh-km-${v.id}`, severity: 'danger', category: 'Veículo', title: `${v.name} — revisão atrasada`, detail: `Passou ${Math.abs(kmLeft).toLocaleString('pt-BR')} km do limite` })
+    else if (kmLeft !== null && kmLeft <= 1000) alerts.push({ id: `veh-km-${v.id}`, severity: 'warning', category: 'Veículo', title: `${v.name} — revisão próxima`, detail: `Faltam ${kmLeft.toLocaleString('pt-BR')} km` })
+    if (daysRev !== null && daysRev < 0) alerts.push({ id: `veh-dt-${v.id}`, severity: 'danger', category: 'Veículo', title: `${v.name} — revisão atrasada`, detail: `Venceu há ${Math.abs(daysRev)} dia${Math.abs(daysRev) !== 1 ? 's' : ''}` })
+    else if (daysRev !== null && daysRev <= 14) alerts.push({ id: `veh-dt-${v.id}`, severity: 'warning', category: 'Veículo', title: `${v.name} — revisão em breve`, detail: `Daqui a ${daysRev} dia${daysRev !== 1 ? 's' : ''}` })
+    if (v.ipvaExpiry) {
+      const d = Math.ceil((new Date(v.ipvaExpiry + 'T12:00:00').getTime() - now) / 86400000)
+      if (d < 0) alerts.push({ id: `veh-ipva-${v.id}`, severity: 'danger', category: 'Veículo', title: `${v.name} — IPVA vencido`, detail: `Venceu há ${Math.abs(d)} dia${Math.abs(d) !== 1 ? 's' : ''}` })
+      else if (d <= 30) alerts.push({ id: `veh-ipva-${v.id}`, severity: 'warning', category: 'Veículo', title: `${v.name} — IPVA vence em ${d}d`, detail: new Date(v.ipvaExpiry + 'T12:00:00').toLocaleDateString('pt-BR') })
+    }
+    if (v.insuranceExpiry) {
+      const d = Math.ceil((new Date(v.insuranceExpiry + 'T12:00:00').getTime() - now) / 86400000)
+      if (d < 0) alerts.push({ id: `veh-ins-${v.id}`, severity: 'danger', category: 'Veículo', title: `${v.name} — Seguro vencido`, detail: `Venceu há ${Math.abs(d)} dia${Math.abs(d) !== 1 ? 's' : ''}` })
+      else if (d <= 30) alerts.push({ id: `veh-ins-${v.id}`, severity: 'warning', category: 'Veículo', title: `${v.name} — Seguro vence em ${d}d`, detail: new Date(v.insuranceExpiry + 'T12:00:00').toLocaleDateString('pt-BR') })
+    }
+  }
+
+  const maints: Maintenance[] = (() => { try { return JSON.parse(localStorage.getItem('lion-maintenance') || '[]') } catch { return [] } })()
+  for (const m of maints.filter(x => x.status !== 'feito')) {
+    if (!m.scheduledDate) continue
+    const d = Math.ceil((new Date(m.scheduledDate + 'T12:00:00').getTime() - now) / 86400000)
+    if (d < 0) alerts.push({ id: `maint-${m.id}`, severity: 'danger', category: 'Manutenção', title: `${m.asset} — ${m.type} atrasado`, detail: `Venceu há ${Math.abs(d)} dia${Math.abs(d) !== 1 ? 's' : ''}` })
+    else if (d <= 7) alerts.push({ id: `maint-${m.id}`, severity: 'warning', category: 'Manutenção', title: `${m.asset} — ${m.type} em breve`, detail: `Daqui a ${d} dia${d !== 1 ? 's' : ''}` })
+  }
+
+  const rentals: Rental[] = (() => { try { return JSON.parse(localStorage.getItem('lion-rentals') || '[]') } catch { return [] } })()
+  const curMonth = new Date().toISOString().slice(0, 7)
+  for (const r of rentals) {
+    const status = r.payments?.[curMonth]
+    if (status === 'atrasado') alerts.push({ id: `rent-${r.id}`, severity: 'danger', category: 'Aluguel', title: `${r.property} — aluguel atrasado`, detail: `${r.tenant} · ${r.value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}` })
+    else if (!status || status === 'pendente') {
+      const today = new Date().getDate()
+      if (today >= r.dueDay) alerts.push({ id: `rent-${r.id}`, severity: 'warning', category: 'Aluguel', title: `${r.property} — aluguel pendente`, detail: `Vencimento dia ${r.dueDay}` })
+    }
+  }
+
+  const goals: Goal[] = (() => { try { return JSON.parse(localStorage.getItem('lion-goals') || '[]') } catch { return [] } })()
+  for (const g of goals) {
+    if (!g.deadline) continue
+    const d = Math.ceil((new Date(g.deadline + 'T12:00:00').getTime() - now) / 86400000)
+    if (d < 0 && g.current < g.target) alerts.push({ id: `goal-${g.id}`, severity: 'danger', category: 'Meta', title: `${g.name} — prazo vencido`, detail: `${((g.current / g.target) * 100).toFixed(0)}% atingido` })
+    else if (d <= 30 && g.current < g.target) alerts.push({ id: `goal-${g.id}`, severity: 'warning', category: 'Meta', title: `${g.name} — prazo em ${d}d`, detail: `${((g.current / g.target) * 100).toFixed(0)}% atingido` })
+  }
+
+  alerts.sort((a, b) => (a.severity === 'danger' ? 0 : 1) - (b.severity === 'danger' ? 0 : 1))
+  return alerts
+}
+
+function AlertsPanel({ onClose }: { onClose: () => void }) {
+  const [alerts, setAlerts] = useState<AppAlert[]>(() => buildAlerts())
+
+  useEffect(() => {
+    const refresh = () => setAlerts(buildAlerts())
+    window.addEventListener('storage', refresh)
+    const id = setInterval(refresh, 60000)
+    return () => { window.removeEventListener('storage', refresh); clearInterval(id) }
+  }, [])
+
+  const categories = [...new Set(alerts.map(a => a.category))]
+
+  return (
+    <div className="alerts-wrap">
+      <div className="panel-header">
+        <div className="panel-header-left">
+          <div className="panel-icon alerts-icon-header">
+            <svg viewBox="0 0 20 20" fill="none">
+              <path d="M10 2a6 6 0 0 0-6 6v3l-1.5 2.5h15L16 11V8a6 6 0 0 0-6-6z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/>
+              <path d="M8.5 16.5a1.5 1.5 0 0 0 3 0" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div className="panel-title">Alertas</div>
+            <div className="panel-sub">{alerts.length} pendente{alerts.length !== 1 ? 's' : ''}</div>
+          </div>
+        </div>
+        <button className="panel-close" onClick={onClose}>
+          <svg viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+        </button>
+      </div>
+
+      <div className="alerts-body">
+        {alerts.length === 0 ? (
+          <div className="alerts-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2">
+              <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            <p>Tudo em dia!</p>
+            <span>Nenhum alerta no momento.</span>
+          </div>
+        ) : (
+          categories.map(cat => (
+            <div key={cat} className="alerts-group">
+              <div className="alerts-group-label">{cat}</div>
+              {alerts.filter(a => a.category === cat).map(a => (
+                <div key={a.id} className={`alert-item alert-${a.severity}`}>
+                  <div className={`alert-dot alert-dot-${a.severity}`}/>
+                  <div className="alert-content">
+                    <div className="alert-title">{a.title}</div>
+                    <div className="alert-detail">{a.detail}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Activity data ────────────────────────────────────────────────────────────
 
 const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
@@ -2184,6 +2312,8 @@ export default function App() {
   const [showFin, setShowFin] = useState(false)
   const [showSim, setShowSim] = useState(false)
   const [showDocs, setShowDocs] = useState(false)
+  const [showAlerts, setShowAlerts] = useState(false)
+  const [alertCount, setAlertCount] = useState(() => buildAlerts().length)
   const [modal, setModal] = useState<ModalType>(null)
   const [user, setUser] = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(false)
@@ -2212,12 +2342,20 @@ export default function App() {
     .map((s: string) => s[0].toUpperCase())
     .join('')
 
-  const closeAll = () => { setShowCalc(false); setShowNp(false); setShowFin(false); setShowSim(false); setShowDocs(false) }
-  const toggleCalc = () => { const v = !showCalc; closeAll(); setShowCalc(v) }
-  const toggleNp   = () => { const v = !showNp;   closeAll(); setShowNp(v) }
-  const toggleFin  = () => { const v = !showFin;  closeAll(); setShowFin(v) }
-  const toggleSim  = () => { const v = !showSim;  closeAll(); setShowSim(v) }
-  const toggleDocs = () => { const v = !showDocs; closeAll(); setShowDocs(v) }
+  const closeAll = () => { setShowCalc(false); setShowNp(false); setShowFin(false); setShowSim(false); setShowDocs(false); setShowAlerts(false) }
+  const toggleCalc   = () => { const v = !showCalc;   closeAll(); setShowCalc(v) }
+  const toggleNp     = () => { const v = !showNp;     closeAll(); setShowNp(v) }
+  const toggleFin    = () => { const v = !showFin;    closeAll(); setShowFin(v) }
+  const toggleSim    = () => { const v = !showSim;    closeAll(); setShowSim(v) }
+  const toggleDocs   = () => { const v = !showDocs;   closeAll(); setShowDocs(v) }
+  const toggleAlerts = () => { const v = !showAlerts; closeAll(); setShowAlerts(v); if (!v) setAlertCount(buildAlerts().length) }
+
+  useEffect(() => {
+    const refresh = () => setAlertCount(buildAlerts().length)
+    window.addEventListener('storage', refresh)
+    const id = setInterval(refresh, 60000)
+    return () => { window.removeEventListener('storage', refresh); clearInterval(id) }
+  }, [])
 
   if (!authReady) return null
   if (supabase && !user) return <LoginPage />
@@ -2248,6 +2386,13 @@ export default function App() {
           <div className="header-date">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
           </div>
+          <button className={`bell-btn${showAlerts ? ' bell-active' : ''}`} onClick={toggleAlerts} title="Alertas">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M10 2a6 6 0 0 0-6 6v3l-1.5 2.5h15L16 11V8a6 6 0 0 0-6-6z" strokeLinejoin="round"/>
+              <path d="M8.5 16.5a1.5 1.5 0 0 0 3 0" strokeLinecap="round"/>
+            </svg>
+            {alertCount > 0 && <span className="bell-badge">{alertCount > 9 ? '9+' : alertCount}</span>}
+          </button>
           <div className="header-user">
             <div className="header-avatar">{initials || '?'}</div>
             <span className="header-username">{displayName}</span>
@@ -2418,6 +2563,9 @@ export default function App() {
       </div>
 
       {/* ── Panels ── */}
+      <div className={`float-panel panel-alerts${showAlerts ? ' panel-open' : ''}`}>
+        <AlertsPanel onClose={() => setShowAlerts(false)} />
+      </div>
       <div className={`float-panel panel-docs${showDocs ? ' panel-open' : ''}`}>
         <DocumentsPanel onClose={() => setShowDocs(false)} />
       </div>
