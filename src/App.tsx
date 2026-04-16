@@ -848,6 +848,164 @@ function GoalsSection() {
   )
 }
 
+// ─── Financing Simulator ─────────────────────────────────────────────────────
+
+function FinancingSimulator({ onClose }: { onClose: () => void }) {
+  const [form, setForm] = useState({ price: '', entry: '20', rate: '0.8', months: '360' })
+  const [system, setSystem] = useState<'price' | 'sac'>('price')
+
+  const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
+
+  const price    = parseFloat(form.price)   || 0
+  const entryPct = parseFloat(form.entry)   || 0
+  const rate     = parseFloat(form.rate)    / 100
+  const n        = parseInt(form.months)    || 0
+  const financed = price * (1 - entryPct / 100)
+
+  let firstInstall = 0, lastInstall = 0, totalPaid = 0
+
+  if (financed > 0 && rate > 0 && n > 0) {
+    if (system === 'price') {
+      const pmt = financed * (rate * Math.pow(1 + rate, n)) / (Math.pow(1 + rate, n) - 1)
+      firstInstall = lastInstall = pmt
+      totalPaid = pmt * n
+    } else {
+      const amort = financed / n
+      firstInstall = amort + financed * rate
+      lastInstall  = amort + amort * rate
+      totalPaid    = n * amort + (financed * rate * (n + 1)) / 2
+    }
+  }
+
+  const totalInterest = totalPaid - financed
+  const fmtCurr = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+  function buildSchedule() {
+    if (financed <= 0 || rate <= 0 || n <= 0) return []
+    const rows: { month: number; installment: number; interest: number; amort: number; balance: number }[] = []
+    let balance = financed
+    const amortSAC = financed / n
+    for (let i = 1; i <= n; i++) {
+      const interest = balance * rate
+      const amort = system === 'sac' ? amortSAC : (financed * (rate * Math.pow(1+rate,n)) / (Math.pow(1+rate,n)-1)) - interest
+      const installment = interest + amort
+      balance -= amort
+      rows.push({ month: i, installment, interest, amort, balance: Math.max(balance, 0) })
+    }
+    return rows
+  }
+
+  const schedule = buildSchedule()
+  const preview = schedule.length > 6
+    ? [...schedule.slice(0, 3), null, ...schedule.slice(-2)]
+    : schedule
+
+  return (
+    <div className="sim-wrap">
+      <div className="panel-header">
+        <div className="panel-header-left">
+          <div className="panel-icon sim-icon-header">
+            <svg viewBox="0 0 20 20" fill="none">
+              <path d="M3 9l9-7 9 7v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke="currentColor" strokeWidth="1.4"/>
+              <path d="M8 18v-6h4v6" stroke="currentColor" strokeWidth="1.4"/>
+            </svg>
+          </div>
+          <span>Simulador de Financiamento</span>
+        </div>
+        <button className="panel-close" onClick={onClose}>
+          <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+        </button>
+      </div>
+
+      <div className="sim-body">
+        {/* System toggle */}
+        <div className="sim-toggle">
+          <button className={`sim-toggle-btn${system === 'price' ? ' sim-toggle-active' : ''}`} onClick={() => setSystem('price')}>PRICE</button>
+          <button className={`sim-toggle-btn${system === 'sac' ? ' sim-toggle-active' : ''}`} onClick={() => setSystem('sac')}>SAC</button>
+        </div>
+
+        {/* Inputs */}
+        <div className="sim-inputs">
+          <div className="fin-field">
+            <label>Valor do imóvel (R$)</label>
+            <input type="number" placeholder="Ex: 500000" value={form.price} onChange={e => f('price', e.target.value)} />
+          </div>
+          <div className="sim-row">
+            <div className="fin-field">
+              <label>Entrada (%)</label>
+              <input type="number" min="0" max="100" step="1" value={form.entry} onChange={e => f('entry', e.target.value)} />
+            </div>
+            <div className="fin-field">
+              <label>Juros mensal (%)</label>
+              <input type="number" min="0.01" step="0.01" value={form.rate} onChange={e => f('rate', e.target.value)} />
+            </div>
+            <div className="fin-field">
+              <label>Prazo (meses)</label>
+              <input type="number" min="1" max="420" value={form.months} onChange={e => f('months', e.target.value)} />
+            </div>
+          </div>
+        </div>
+
+        {financed > 0 && rate > 0 && n > 0 ? (
+          <>
+            {/* Results */}
+            <div className="sim-results">
+              <div className="sim-result-card sim-card-blue">
+                <span className="sim-result-label">{system === 'price' ? 'Parcela fixa' : '1ª parcela'}</span>
+                <span className="sim-result-value">{fmtCurr(firstInstall)}</span>
+              </div>
+              {system === 'sac' && (
+                <div className="sim-result-card sim-card-green">
+                  <span className="sim-result-label">Última parcela</span>
+                  <span className="sim-result-value">{fmtCurr(lastInstall)}</span>
+                </div>
+              )}
+              <div className="sim-result-card sim-card-amber">
+                <span className="sim-result-label">Total de juros</span>
+                <span className="sim-result-value">{fmtCurr(totalInterest)}</span>
+              </div>
+              <div className="sim-result-card sim-card-purple">
+                <span className="sim-result-label">Custo total</span>
+                <span className="sim-result-value">{fmtCurr(totalPaid + price * entryPct / 100)}</span>
+              </div>
+            </div>
+
+            <div className="sim-financed">
+              Valor financiado: <strong>{fmtCurr(financed)}</strong>
+              {' '}· Entrada: <strong>{fmtCurr(price * entryPct / 100)}</strong>
+              {' '}· {n} meses ({(n/12).toFixed(0)} anos)
+            </div>
+
+            {/* Schedule preview */}
+            <div className="sim-table-wrap">
+              <table className="sim-table">
+                <thead>
+                  <tr><th>Mês</th><th>Parcela</th><th>Juros</th><th>Amort.</th><th>Saldo</th></tr>
+                </thead>
+                <tbody>
+                  {preview.map((row, i) =>
+                    row === null
+                      ? <tr key="ellipsis" className="sim-ellipsis"><td colSpan={5}>⋯</td></tr>
+                      : <tr key={row.month} className={row.month === n ? 'sim-last-row' : ''}>
+                          <td>{row.month}</td>
+                          <td>{fmtCurr(row.installment)}</td>
+                          <td className="sim-td-interest">{fmtCurr(row.interest)}</td>
+                          <td>{fmtCurr(row.amort)}</td>
+                          <td>{fmtCurr(row.balance)}</td>
+                        </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </>
+        ) : (
+          <div className="sim-empty">Preencha os campos para simular.</div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Activity data ────────────────────────────────────────────────────────────
 
 const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
@@ -891,6 +1049,7 @@ export default function App() {
   const [showCalc, setShowCalc] = useState(false)
   const [showNp, setShowNp] = useState(false)
   const [showFin, setShowFin] = useState(false)
+  const [showSim, setShowSim] = useState(false)
   const [modal, setModal] = useState<ModalType>(null)
   const [user, setUser] = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(false)
@@ -919,9 +1078,10 @@ export default function App() {
     .map((s: string) => s[0].toUpperCase())
     .join('')
 
-  const toggleCalc = () => { setShowCalc(v => !v); setShowNp(false); setShowFin(false) }
-  const toggleNp   = () => { setShowNp(v => !v);   setShowCalc(false); setShowFin(false) }
-  const toggleFin  = () => { setShowFin(v => !v);  setShowCalc(false); setShowNp(false) }
+  const toggleCalc = () => { setShowCalc(v => !v); setShowNp(false); setShowFin(false); setShowSim(false) }
+  const toggleNp   = () => { setShowNp(v => !v);   setShowCalc(false); setShowFin(false); setShowSim(false) }
+  const toggleFin  = () => { setShowFin(v => !v);  setShowCalc(false); setShowNp(false); setShowSim(false) }
+  const toggleSim  = () => { setShowSim(v => !v);  setShowCalc(false); setShowNp(false); setShowFin(false) }
 
   if (!authReady) return null
   if (supabase && !user) return <LoginPage />
@@ -1077,6 +1237,12 @@ export default function App() {
 
       {/* ── Floating Buttons ── */}
       <div className="floats">
+        <button className={`float-btn float-sim${showSim ? ' float-active' : ''}`} onClick={toggleSim} title="Simulador">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M3 9l9-7 9 7v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <path d="M9 22V12h6v10"/>
+          </svg>
+        </button>
         <button className={`float-btn float-fin${showFin ? ' float-active' : ''}`} onClick={toggleFin} title="Finanças">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" strokeLinecap="round"/>
@@ -1105,6 +1271,9 @@ export default function App() {
       </div>
 
       {/* ── Panels ── */}
+      <div className={`float-panel panel-sim${showSim ? ' panel-open' : ''}`}>
+        <FinancingSimulator onClose={() => setShowSim(false)} />
+      </div>
       <div className={`float-panel panel-fin${showFin ? ' panel-open' : ''}`}>
         <FinancePanel onClose={() => setShowFin(false)} />
       </div>

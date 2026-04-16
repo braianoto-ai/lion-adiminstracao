@@ -451,6 +451,19 @@
   box-shadow: 0 0 0 4px rgba(59,130,246,.2), var(--shadow);
 }
 
+.float-sim {
+  background: linear-gradient(135deg, #1c1917, #44403c);
+  color: #fcd34d;
+  border: 1px solid rgba(245,158,11,.25);
+}
+.float-sim:hover { box-shadow: 0 0 0 4px rgba(245,158,11,.15), var(--shadow) }
+.float-sim.float-active {
+  background: linear-gradient(135deg, #78350f, #f59e0b);
+  color: #fff;
+  border-color: rgba(245,158,11,.5);
+  box-shadow: 0 0 0 4px rgba(245,158,11,.2), var(--shadow);
+}
+
 .float-fin {
   background: linear-gradient(135deg, #052e16, #14532d);
   color: var(--green-l);
@@ -519,6 +532,7 @@
 .panel-calc { bottom: 96px }
 .panel-np   { bottom: 96px }
 .panel-fin  { bottom: 96px }
+.panel-sim  { bottom: 96px }
 
 /* ═══════════════════════════════════════════════════════════
    PANEL SHARED HEADER
@@ -1053,6 +1067,136 @@
 .btn-blue  { background: var(--blue) }
 .btn-amber { background: var(--amber) }
 .btn-green { background: var(--green) }
+
+/* ═══════════════════════════════════════════════════════════
+   FINANCING SIMULATOR
+═══════════════════════════════════════════════════════════ */
+
+.sim-icon-header { background: rgba(245,158,11,.15); color: var(--amber-l) }
+
+.sim-wrap {
+  width: 420px;
+  background: var(--bg2);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border2);
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  max-height: 580px;
+}
+
+.sim-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.sim-toggle {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  padding: 3px;
+}
+.sim-toggle-btn {
+  padding: 7px;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  letter-spacing: .5px;
+  transition: background .15s, color .15s;
+}
+.sim-toggle-btn:hover { color: var(--text2) }
+.sim-toggle-active { background: var(--bg4) !important; color: var(--amber-l) !important }
+
+.sim-inputs { display: flex; flex-direction: column; gap: 10px }
+.sim-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px }
+
+.sim-results {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.sim-result-card {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sim-result-label { font-size: 10px; color: var(--text); text-transform: uppercase; letter-spacing: .4px }
+.sim-result-value { font-size: 13px; font-weight: 700; color: var(--text3) }
+
+.sim-card-blue   { border-left: 2px solid var(--blue);   }
+.sim-card-green  { border-left: 2px solid var(--green);  }
+.sim-card-amber  { border-left: 2px solid var(--amber);  }
+.sim-card-purple { border-left: 2px solid var(--purple); }
+.sim-card-blue   .sim-result-value { color: var(--blue-l) }
+.sim-card-green  .sim-result-value { color: var(--green-l) }
+.sim-card-amber  .sim-result-value { color: var(--amber-l) }
+.sim-card-purple .sim-result-value { color: var(--purple-l) }
+
+.sim-financed {
+  font-size: 11px;
+  color: var(--text);
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  line-height: 1.6;
+}
+.sim-financed strong { color: var(--text2) }
+
+.sim-table-wrap {
+  overflow-x: auto;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+
+.sim-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+}
+.sim-table th {
+  padding: 7px 8px;
+  text-align: right;
+  color: var(--text);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .3px;
+  background: var(--bg3);
+  border-bottom: 1px solid var(--border);
+}
+.sim-table th:first-child { text-align: left }
+.sim-table td {
+  padding: 6px 8px;
+  text-align: right;
+  color: var(--text2);
+  border-bottom: 1px solid var(--border);
+}
+.sim-table td:first-child { text-align: left; color: var(--text); font-weight: 500 }
+.sim-table tr:last-child td { border-bottom: none }
+.sim-table tr:hover td { background: var(--bg3) }
+.sim-td-interest { color: #fca5a5 !important }
+.sim-last-row td { color: var(--green-l) !important }
+.sim-ellipsis td { text-align: center !important; color: var(--text) !important; letter-spacing: 4px; padding: 2px }
+
+.sim-empty {
+  text-align: center;
+  padding: 32px;
+  color: var(--text);
+  font-size: 13px;
+}
 
 /* ═══════════════════════════════════════════════════════════
    GOALS SECTION
