@@ -3202,7 +3202,7 @@ export default function App() {
           const isDragTarget = dragOver === i
           const wrapProps = {
             key: id,
-            className: `drag-section${isDragTarget ? ' drag-over' : ''}`,
+            className: `drag-section drag-section--${id}${isDragTarget ? ' drag-over' : ''}`,
             draggable: true,
             onDragStart: () => onDragStart(i),
             onDragEnter: () => onDragEnter(i),
