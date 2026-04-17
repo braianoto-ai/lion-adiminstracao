@@ -2964,8 +2964,9 @@ export default function App() {
   const [fxRates, setFxRates] = useState<FxRate[]>([])
   useEffect(() => {
     const CACHE_KEY = 'lion-fx-cache'
+    const last8am = (() => { const d = new Date(); d.setHours(8,0,0,0); if (new Date() < d) d.setDate(d.getDate()-1); return d.getTime() })()
     const cached = localStorage.getItem(CACHE_KEY)
-    if (cached) { try { const p = JSON.parse(cached); if (Date.now() - p.ts < 300000) { setFxRates(p.rates); return } } catch { /* ignore */ } }
+    if (cached) { try { const p = JSON.parse(cached); if (p.ts >= last8am) { setFxRates(p.rates); return } } catch { /* ignore */ } }
     fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL,BTC-BRL,CNY-BRL')
       .then(r => r.json())
       .then(d => {
