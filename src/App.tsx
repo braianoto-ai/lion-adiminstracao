@@ -2568,40 +2568,63 @@ function ThemeFooter({ themeId, setThemeId, fontSize, setFontSize }: {
 
 // ─── Activity data ────────────────────────────────────────────────────────────
 
-const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
-  blue: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-      <polyline points="9 22 9 12 15 12 15 22"/>
-    </svg>
-  ),
-  amber: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <rect x="1" y="9" width="22" height="11" rx="2"/>
-      <path d="M6 9V7a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
-      <circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/>
-    </svg>
-  ),
-  green: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-      <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-      <line x1="12" y1="22.08" x2="12" y2="12"/>
-    </svg>
-  ),
-  purple: (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-      <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-    </svg>
-  ),
+const ICON_TX_IN = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+const ICON_TX_OUT = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+const ICON_GOAL = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></svg>
+const ICON_RENTAL = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+const ICON_VEHICLE = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="9" width="22" height="11" rx="2"/><path d="M6 9V7a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg>
+const ICON_MAINT = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+
+function relTime(ts: number): string {
+  const diff = Date.now() - ts
+  const mins = Math.floor(diff / 60000)
+  if (mins < 2) return 'agora'
+  if (mins < 60) return `${mins}min atrás`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h atrás`
+  const days = Math.floor(hrs / 24)
+  if (days < 30) return `${days}d atrás`
+  return `${Math.floor(days / 30)}mês atrás`
 }
 
-const ACTIVITY = [
-  { icon: 'blue',   title: 'Ap. Jardins adicionado',  sub: 'Imóvel · R$ 850.000',   time: '2h atrás', color: 'blue' },
-  { icon: 'amber',  title: 'BMW X5 atualizado',        sub: 'Veículo · R$ 290.000',  time: '5h atrás', color: 'amber' },
-  { icon: 'green',  title: 'Novo lote de produtos',    sub: '45 itens · R$ 12.500',  time: '1d atrás', color: 'green' },
-  { icon: 'blue',   title: 'Casa Alphaville avaliada', sub: 'Imóvel · R$ 1.100.000', time: '2d atrás', color: 'blue' },
-]
+interface ActivityItem { id: string; icon: React.ReactNode; title: string; sub: string; time: string; color: string; ts: number }
+
+function buildActivity(): ActivityItem[] {
+  const items: ActivityItem[] = []
+
+  const txs: Transaction[] = (() => { try { return JSON.parse(localStorage.getItem('lion-txs') || '[]') } catch { return [] } })()
+  txs.forEach(t => {
+    const ts = parseInt(t.id) || 0
+    const sign = t.type === 'receita' ? '+' : '-'
+    items.push({ id: `tx-${t.id}`, icon: t.type === 'receita' ? ICON_TX_IN : ICON_TX_OUT, title: t.description || t.category, sub: `${t.type === 'receita' ? 'Receita' : 'Despesa'} · ${sign} R$ ${t.amount.toLocaleString('pt-BR')} · ${t.category}`, time: relTime(ts), color: t.type === 'receita' ? 'green' : 'red', ts })
+  })
+
+  const goals: Goal[] = (() => { try { return JSON.parse(localStorage.getItem('lion-goals') || '[]') } catch { return [] } })()
+  goals.forEach(g => {
+    const ts = parseInt(g.id) || 0
+    items.push({ id: `g-${g.id}`, icon: ICON_GOAL, title: g.name, sub: `Meta · R$ ${(g.current||0).toLocaleString('pt-BR')} / R$ ${(g.target||0).toLocaleString('pt-BR')}`, time: relTime(ts), color: 'blue', ts })
+  })
+
+  const rentals: Rental[] = (() => { try { return JSON.parse(localStorage.getItem('lion-rentals') || '[]') } catch { return [] } })()
+  rentals.forEach(r => {
+    const ts = parseInt(r.id) || 0
+    items.push({ id: `r-${r.id}`, icon: ICON_RENTAL, title: r.property, sub: `Aluguel · ${r.tenant} · R$ ${(r.value||0).toLocaleString('pt-BR')}/mês`, time: relTime(ts), color: 'amber', ts })
+  })
+
+  const vehicles: Vehicle[] = (() => { try { return JSON.parse(localStorage.getItem('lion-vehicles') || '[]') } catch { return [] } })()
+  vehicles.forEach(v => {
+    const ts = parseInt(v.id) || 0
+    items.push({ id: `v-${v.id}`, icon: ICON_VEHICLE, title: v.name, sub: `Veículo · ${v.plate} · ${v.year}`, time: relTime(ts), color: 'amber', ts })
+  })
+
+  const maint: Maintenance[] = (() => { try { return JSON.parse(localStorage.getItem('lion-maintenance') || '[]') } catch { return [] } })()
+  maint.forEach(m => {
+    const ts = parseInt(m.id) || 0
+    items.push({ id: `m-${m.id}`, icon: ICON_MAINT, title: m.asset, sub: `Manutenção · ${m.description}`, time: relTime(ts), color: 'purple', ts })
+  })
+
+  return items.sort((a, b) => b.ts - a.ts).slice(0, 8)
+}
 
 // ─── Search ───────────────────────────────────────────────────────────────────
 
@@ -2662,6 +2685,7 @@ export default function App() {
   const [viewMode, setViewMode] = useState(false)
   const [viewOwner, setViewOwner] = useState('')
   const [dashData, setDashData] = useState(() => computeDashData())
+  const [activity, setActivity] = useState(() => buildActivity())
   const [themeId, setThemeId] = useState(() => localStorage.getItem('lion-theme') || 'dark')
   const [fontSize, setFontSize] = useState(() => localStorage.getItem('lion-font') || 'normal')
   const [modal, setModal] = useState<ModalType>(null)
@@ -2685,7 +2709,7 @@ export default function App() {
   }, [fontSize])
 
   useEffect(() => {
-    const refresh = () => setDashData(computeDashData())
+    const refresh = () => { setDashData(computeDashData()); setActivity(buildActivity()) }
     window.addEventListener('storage', refresh)
     return () => window.removeEventListener('storage', refresh)
   }, [])
@@ -2983,12 +3007,16 @@ export default function App() {
           <section className="section">
             <div className="section-header">
               <h2 className="section-title">Atividade Recente</h2>
-              <button className="see-all">Ver todas</button>
             </div>
             <div className="activity">
-              {ACTIVITY.map((a, i) => (
-                <div key={i} className={`act-item act-${a.color}`}>
-                  <div className={`act-icon act-icon-${a.color}`}>{ACTIVITY_ICONS[a.icon]}</div>
+              {activity.length === 0 ? (
+                <div className="act-empty">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01" strokeLinecap="round"/></svg>
+                  <span>Nenhuma atividade ainda. Adicione transações, metas ou imóveis.</span>
+                </div>
+              ) : activity.map(a => (
+                <div key={a.id} className={`act-item act-${a.color}`}>
+                  <div className={`act-icon act-icon-${a.color}`}>{a.icon}</div>
                   <div className="act-body">
                     <span className="act-title">{a.title}</span>
                     <span className="act-sub">{a.sub}</span>

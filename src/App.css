@@ -621,9 +621,10 @@
 
 .act-item:hover { border-color: var(--border2) }
 
-.act-blue:hover  { border-color: rgba(59,130,246,.2) }
-.act-amber:hover { border-color: rgba(245,158,11,.2) }
-.act-green:hover { border-color: rgba(16,185,129,.2) }
+.act-blue:hover   { border-color: rgba(59,130,246,.2) }
+.act-amber:hover  { border-color: rgba(245,158,11,.2) }
+.act-green:hover  { border-color: rgba(16,185,129,.2) }
+.act-red:hover    { border-color: rgba(239,68,68,.2) }
 
 .act-icon {
   width: 36px;
@@ -638,7 +639,20 @@
 .act-icon-blue   { background: rgba(59,130,246,.12);  color: var(--blue) }
 .act-icon-amber  { background: rgba(245,158,11,.12);  color: var(--amber) }
 .act-icon-green  { background: rgba(16,185,129,.12);  color: var(--green) }
-.act-icon-purple { background: rgba(192,57,43,.12);  color: var(--purple) }
+.act-icon-purple { background: rgba(192,57,43,.12);   color: var(--purple) }
+.act-icon-red    { background: rgba(239,68,68,.12);   color: var(--red) }
+
+.act-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px 16px;
+  color: var(--text);
+  font-size: calc(13px * var(--fs, 1));
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+.act-empty svg { width: 20px; height: 20px; flex-shrink: 0; opacity: .6 }
 
 .act-body { flex: 1; display: flex; flex-direction: column; gap: 2px }
 .act-title { font-size: calc(13px * var(--fs, 1)); font-weight: 500; color: var(--text2) }
