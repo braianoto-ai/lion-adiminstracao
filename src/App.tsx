@@ -2607,53 +2607,7 @@ const FONT_SIZES = [
   { id: 'large',       label: 'A',  size: '16px', title: 'Grande' },
 ]
 
-function ThemeFooter({ themeId, setThemeId, fontSize, setFontSize }: {
-  themeId: string; setThemeId: (t: string) => void
-  fontSize: string; setFontSize: (f: string) => void
-}) {
-  const [open, setOpen] = useState(false)
-  const current = THEMES.find(t => t.id === themeId) || THEMES[0]
 
-  return (
-    <div className="theme-footer">
-      {open && (
-        <div className="theme-popup">
-          <div className="theme-popup-section">
-            <div className="theme-popup-label">Tema</div>
-            <div className="theme-swatches">
-              {THEMES.map(t => (
-                <button key={t.id} className={`theme-swatch${themeId === t.id ? ' swatch-active' : ''}`}
-                  onClick={() => setThemeId(t.id)} title={t.label}>
-                  <span className="swatch-dot" style={{ background: t.swatch, border: t.id === 'light' ? '1px solid #ccc' : 'none' }}/>
-                  <span className="swatch-label">{t.label}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="theme-popup-divider"/>
-          <div className="theme-popup-section">
-            <div className="theme-popup-label">Tamanho da fonte</div>
-            <div className="font-size-btns">
-              {FONT_SIZES.map((f, i) => (
-                <button key={f.id} className={`font-size-btn${fontSize === f.id ? ' font-size-active' : ''}`}
-                  style={{ fontSize: f.size }} onClick={() => setFontSize(f.id)} title={f.title}>
-                  {['A−', 'A', 'A+', 'A++'][i]}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-      <button className="theme-footer-btn" onClick={() => setOpen(v => !v)}>
-        <span className="theme-footer-swatch" style={{ background: current.swatch, border: themeId === 'light' ? '1px solid #aaa' : 'none' }}/>
-        <span>{current.label}</span>
-        <svg viewBox="0 0 16 16" fill="none" className={open ? 'tf-chevron-up' : ''}>
-          <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
-        </svg>
-      </button>
-    </div>
-  )
-}
 
 // ─── Activity data ────────────────────────────────────────────────────────────
 
@@ -3905,6 +3859,29 @@ export default function App() {
           ))}
         </nav>
         <div className="sidebar-footer">
+          {/* Theme swatches */}
+          <div className="sidebar-theme-section">
+            <span className="sidebar-theme-label">Tema</span>
+            <div className="sidebar-theme-swatches">
+              {THEMES.map(t => (
+                <button key={t.id} className={`sidebar-swatch${themeId === t.id ? ' sidebar-swatch-active' : ''}`}
+                  style={{ background: t.swatch, border: t.id === 'light' ? '1px solid #aaa' : 'none' }}
+                  onClick={() => setThemeId(t.id)} title={t.label} />
+              ))}
+            </div>
+          </div>
+          {/* Font size */}
+          <div className="sidebar-theme-section">
+            <span className="sidebar-theme-label">Fonte</span>
+            <div className="sidebar-font-btns">
+              {FONT_SIZES.map((f, i) => (
+                <button key={f.id} className={`sidebar-font-btn${fontSize === f.id ? ' sidebar-font-active' : ''}`}
+                  style={{ fontSize: f.size }} onClick={() => setFontSize(f.id)} title={f.title}>
+                  {['A−', 'A', 'A+', 'A++'][i]}
+                </button>
+              ))}
+            </div>
+          </div>
           <button className="sidebar-nav-item" onClick={handleLogout}>
             <span className="sidebar-nav-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M13 15l3-5-3-5" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 10H7" strokeLinecap="round"/><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" strokeLinecap="round"/></svg></span>
             <span className="sidebar-nav-label">Sair</span>
@@ -4336,7 +4313,6 @@ export default function App() {
       {/* ── Modals ── */}
       {modal && <NewItemModal type={modal} onClose={() => setModal(null)} />}
 
-      <ThemeFooter themeId={themeId} setThemeId={setThemeId} fontSize={fontSize} setFontSize={setFontSize} />
     </div>
   )
 }

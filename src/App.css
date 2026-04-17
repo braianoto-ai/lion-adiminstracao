@@ -990,7 +990,18 @@
 }
 
 /* Footer */
-.sidebar-footer { padding: 8px 8px 16px; border-top: 1px solid var(--border) }
+.sidebar-footer { padding: 10px 8px 16px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px }
+
+.sidebar-theme-section { padding: 4px 8px; display: flex; align-items: center; gap: 8px }
+.sidebar-theme-label { font-size: 10px; text-transform: uppercase; letter-spacing: .06em; color: var(--text); flex-shrink: 0; width: 36px }
+.sidebar-theme-swatches { display: flex; gap: 6px; align-items: center }
+.sidebar-swatch { width: 18px; height: 18px; border-radius: 50%; cursor: pointer; transition: transform .15s, box-shadow .15s; flex-shrink: 0; outline: none }
+.sidebar-swatch:hover { transform: scale(1.2) }
+.sidebar-swatch-active { box-shadow: 0 0 0 2px var(--bg2), 0 0 0 4px var(--text3) }
+.sidebar-font-btns { display: flex; gap: 4px }
+.sidebar-font-btn { padding: 2px 7px; border-radius: var(--radius-sm); color: var(--text); background: var(--bg3); border: 1px solid var(--border); transition: background .15s, color .15s; line-height: 1.5 }
+.sidebar-font-btn:hover { background: var(--bg4); color: var(--text2) }
+.sidebar-font-active { background: var(--bg4); color: var(--text3); border-color: var(--border2) }
 
 /* ── Desktop: sidebar always visible ── */
 @media (min-width: 801px) {
@@ -3859,12 +3870,7 @@ html[data-theme="light"] .share-file-btn { background: var(--bg3); border-color:
    THEME FOOTER
 ═══════════════════════════════════════════════════════════ */
 
-.theme-footer {
-  position: fixed;
-  bottom: 20px;
-  left: 20px;
-  z-index: 200;
-}
+.theme-footer { display: none }
 
 .theme-footer-btn {
   display: flex;
