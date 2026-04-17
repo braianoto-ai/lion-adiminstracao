@@ -2442,7 +2442,15 @@ export default function App() {
   const [showShare, setShowShare] = useState(false)
   const [viewMode, setViewMode] = useState(false)
   const [viewOwner, setViewOwner] = useState('')
+  const [theme, setTheme] = useState<'dark' | 'light'>(() =>
+    (localStorage.getItem('lion-theme') as 'dark' | 'light') || 'dark'
+  )
   const [modal, setModal] = useState<ModalType>(null)
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('light', theme === 'light')
+    localStorage.setItem('lion-theme', theme)
+  }, [theme])
   const [user, setUser] = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(false)
 
@@ -2515,6 +2523,18 @@ export default function App() {
           <div className="header-date">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
           </div>
+          <button className="theme-toggle-btn" onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}>
+            {theme === 'dark' ? (
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <circle cx="10" cy="10" r="4"/>
+                <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.93 4.93l1.41 1.41M13.66 13.66l1.41 1.41M4.93 15.07l1.41-1.41M13.66 6.34l1.41-1.41" strokeLinecap="round"/>
+              </svg>
+            ) : (
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M17.293 13.293A8 8 0 0 1 6.707 2.707a8.001 8.001 0 1 0 10.586 10.586z"/>
+              </svg>
+            )}
+          </button>
           <button className={`share-header-btn${showShare ? ' share-header-active' : ''}`} onClick={toggleShare} title="Compartilhar">
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="15" cy="4" r="2"/><circle cx="15" cy="16" r="2"/><circle cx="5" cy="10" r="2"/>

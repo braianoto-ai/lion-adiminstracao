@@ -38,6 +38,26 @@
   -webkit-font-smoothing: antialiased;
 }
 
+html.light {
+  --bg:        #f8fafc;
+  --bg2:       #f1f5f9;
+  --bg3:       #e2e8f0;
+  --bg4:       #cbd5e1;
+  --border:    rgba(0,0,0,.08);
+  --border2:   rgba(0,0,0,.14);
+
+  --text:      #64748b;
+  --text2:     #334155;
+  --text3:     #0f172a;
+
+  --shadow-sm: 0 2px 8px rgba(0,0,0,.08);
+  --shadow:    0 4px 24px rgba(0,0,0,.10);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,.14);
+
+  color: var(--text2);
+  background: var(--bg);
+}
+
 body { min-height: 100vh }
 
 #root { min-height: 100vh }

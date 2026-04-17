@@ -91,6 +91,21 @@
 .logout-btn svg { width: 18px; height: 18px }
 .logout-btn:hover { background: rgba(239,68,68,.12); color: var(--red) }
 
+.theme-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  transition: background .15s, color .15s, border-color .15s;
+}
+.theme-toggle-btn svg { width: 18px; height: 18px }
+.theme-toggle-btn:hover { background: var(--bg4); color: var(--text3) }
+
 .share-header-btn {
   display: flex;
   align-items: center;
@@ -2326,6 +2341,56 @@
   .float-panel { right: 16px }
   .calc-wrap, .np-wrap { width: calc(100vw - 32px) }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   LIGHT MODE OVERRIDES
+═══════════════════════════════════════════════════════════ */
+
+html.light .app { background: var(--bg) }
+
+html.light .header { background: rgba(248,250,252,.92); border-color: var(--border) }
+
+html.light .card { box-shadow: 0 2px 12px rgba(0,0,0,.06) }
+
+html.light .float-panel { background: #fff; border-color: var(--border2); box-shadow: 0 8px 40px rgba(0,0,0,.14) }
+
+html.light .float-btn { box-shadow: 0 4px 16px rgba(0,0,0,.12) }
+
+html.light .goal-card,
+html.light .rental-item,
+html.light .maint-item,
+html.light .veh-card,
+html.light .alert-item,
+html.light .veh-rev-item,
+html.light .veh-docs-row,
+html.light .pat-chart-wrap { background: #fff; border-color: var(--border2) }
+
+html.light .goal-bar { background: rgba(0,0,0,.08) }
+html.light .goal-bar-fill { filter: brightness(.9) }
+
+html.light .pat-chart-wrap { background: #fff }
+html.light .pat-svg text { fill: rgba(51,65,85,.6) !important }
+html.light .pat-svg line { stroke: rgba(0,0,0,.08) !important }
+
+html.light .cb-num  { background: #e2e8f0; color: #0f172a }
+html.light .cb-fn   { background: #cbd5e1; color: #0f172a }
+html.light .cb-op   { background: #7c3aed; color: #fff }
+html.light .cb-eq   { background: #7c3aed; color: #fff }
+html.light .calc-display { background: #1e293b; color: #f8fafc }
+
+html.light .np-wrap,
+html.light .np-wrap .folder-item,
+html.light .np-wrap .note-item { background: #fff }
+
+html.light input,
+html.light textarea,
+html.light select { background: #fff !important; color: var(--text3) !important; border-color: var(--border2) !important }
+
+html.light .fin-field input,
+html.light .fin-field select,
+html.light .fin-field textarea { background: var(--bg2) !important }
+
+html.light .share-file-btn { background: var(--bg3); border-color: var(--border2) }
 
 /* ═══════════════════════════════════════════════════════════
    SHARE PANEL
