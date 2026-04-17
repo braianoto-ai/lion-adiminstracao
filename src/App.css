@@ -1692,6 +1692,12 @@
 /* Edit mode */
 .np-edit { gap: 10px }
 
+.np-edit-footer {
+  flex-shrink: 0;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+
 .np-title-input {
   width: 100%;
   font-size: calc(15px * var(--fs, 1));
@@ -1705,13 +1711,13 @@
 .np-title-input:focus { border-color: var(--blue) }
 
 .np-content-input {
-  flex: 1;
   width: 100%;
-  min-height: 300px;
+  min-height: 220px;
+  flex: 1;
   font-size: calc(13px * var(--fs, 1));
   color: var(--text2);
   line-height: 1.7;
-  resize: none;
+  resize: vertical;
   background: transparent;
 }
 

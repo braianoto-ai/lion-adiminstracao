@@ -183,12 +183,21 @@ function Notepad({ onClose }: { onClose: () => void }) {
     setNoteId(n.id); setDraft({ title: n.title, content: n.content }); setView('edit')
   }
 
-  const saveNote = () => {
+  const persistDraft = () => {
     if (!folderId || !noteId || !draft) return
-    setFolders(folders.map(f => f.id === folderId
+    setFolders(prev => prev.map(f => f.id === folderId
       ? { ...f, notes: f.notes.map(n => n.id === noteId ? { ...n, ...draft, updatedAt: new Date().toISOString() } : n) }
       : f))
+  }
+
+  const saveNote = () => {
+    persistDraft()
     setView('notes')
+  }
+
+  const goBack = () => {
+    if (view === 'edit') { persistDraft(); setView('notes') }
+    else { setView('folders') }
   }
 
   const delNote = (nid: string, e: React.MouseEvent) => {
@@ -208,7 +217,7 @@ function Notepad({ onClose }: { onClose: () => void }) {
       <div className="panel-header">
         <div className="panel-header-left">
           {view !== 'folders' && (
-            <button className="back-btn" onClick={() => view === 'edit' ? setView('notes') : setView('folders')}>
+            <button className="back-btn" onClick={goBack}>
               <svg viewBox="0 0 16 16" fill="none"><path d="M10 4L6 8l4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
             </button>
           )}
@@ -330,24 +339,28 @@ function Notepad({ onClose }: { onClose: () => void }) {
       )}
 
       {view === 'edit' && draft && (
-        <div className="np-body np-edit">
-          <input
-            className="np-title-input"
-            value={draft.title}
-            onChange={e => setDraft({ ...draft, title: e.target.value })}
-            placeholder="Título da nota..."
-          />
-          <textarea
-            className="np-content-input"
-            value={draft.content}
-            onChange={e => setDraft({ ...draft, content: e.target.value })}
-            placeholder="Escreva sua nota aqui..."
-          />
-          <button className="btn-accent full" onClick={saveNote}>
-            <svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-            Salvar Nota
-          </button>
-        </div>
+        <>
+          <div className="np-body np-edit">
+            <input
+              className="np-title-input"
+              value={draft.title}
+              onChange={e => setDraft({ ...draft, title: e.target.value })}
+              placeholder="Título da nota..."
+            />
+            <textarea
+              className="np-content-input"
+              value={draft.content}
+              onChange={e => setDraft({ ...draft, content: e.target.value })}
+              placeholder="Escreva sua nota aqui..."
+            />
+          </div>
+          <div className="np-edit-footer">
+            <button className="btn-accent full" onClick={saveNote}>
+              <svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              Salvar Nota
+            </button>
+          </div>
+        </>
       )}
     </div>
   )
