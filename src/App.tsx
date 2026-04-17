@@ -2267,6 +2267,131 @@ function AlertsPanel({ onClose }: { onClose: () => void }) {
   )
 }
 
+// ─── Share Panel ─────────────────────────────────────────────────────────────
+
+const SHARE_KEYS = ['lion-txs', 'lion-goals', 'lion-rentals', 'lion-maintenance', 'lion-docs-meta', 'lion-vehicles', 'lion-revisions']
+
+function SharePanel({ onClose, onImport }: { onClose: () => void; onImport: (owner: string) => void }) {
+  const [tab, setTab] = useState<'export' | 'import'>('export')
+  const [ownerName, setOwnerName] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [importError, setImportError] = useState('')
+  const [importSuccess, setImportSuccess] = useState(false)
+
+  function exportData() {
+    const snapshot: Record<string, unknown> = { _owner: ownerName || 'Usuário', _exportedAt: new Date().toISOString() }
+    for (const k of SHARE_KEYS) {
+      try { snapshot[k] = JSON.parse(localStorage.getItem(k) || 'null') } catch { snapshot[k] = null }
+    }
+    const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `lion-dashboard-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImporting(true); setImportError(''); setImportSuccess(false)
+    const reader = new FileReader()
+    reader.onload = () => {
+      try {
+        const data = JSON.parse(reader.result as string)
+        for (const k of SHARE_KEYS) {
+          if (data[k] !== undefined && data[k] !== null) {
+            localStorage.setItem(k, JSON.stringify(data[k]))
+          }
+        }
+        onImport(data._owner || 'Outro usuário')
+        setImportSuccess(true)
+      } catch {
+        setImportError('Arquivo inválido ou corrompido.')
+      } finally {
+        setImporting(false)
+      }
+    }
+    reader.readAsText(file)
+  }
+
+  return (
+    <div className="share-wrap">
+      <div className="panel-header">
+        <div className="panel-header-left">
+          <div className="panel-icon share-icon-header">
+            <svg viewBox="0 0 20 20" fill="none">
+              <circle cx="15" cy="4" r="2" stroke="currentColor" strokeWidth="1.4"/>
+              <circle cx="15" cy="16" r="2" stroke="currentColor" strokeWidth="1.4"/>
+              <circle cx="5" cy="10" r="2" stroke="currentColor" strokeWidth="1.4"/>
+              <path d="M13 5l-6 4M13 15l-6-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+            </svg>
+          </div>
+          <div>
+            <div className="panel-title">Compartilhar</div>
+            <div className="panel-sub">Exportar ou importar dados</div>
+          </div>
+        </div>
+        <button className="panel-close" onClick={onClose}>
+          <svg viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+        </button>
+      </div>
+
+      <div className="share-tabs">
+        <button className={`share-tab${tab === 'export' ? ' share-tab-active' : ''}`} onClick={() => setTab('export')}>Exportar</button>
+        <button className={`share-tab${tab === 'import' ? ' share-tab-active' : ''}`} onClick={() => setTab('import')}>Importar</button>
+      </div>
+
+      <div className="share-body">
+        {tab === 'export' && (
+          <div className="share-section">
+            <p className="share-desc">Baixe um arquivo JSON com todos os seus dados do dashboard para compartilhar com outra pessoa ou fazer backup.</p>
+            <div className="fin-field" style={{ marginBottom: 16 }}>
+              <label>Seu nome (opcional)</label>
+              <input type="text" placeholder="Ex: João Silva" value={ownerName} onChange={e => setOwnerName(e.target.value)} />
+            </div>
+            <div className="share-includes">
+              <div className="share-includes-label">Inclui:</div>
+              {['Transações financeiras', 'Metas', 'Aluguéis', 'Manutenções', 'Documentos', 'Veículos', 'Revisões'].map(s => (
+                <div key={s} className="share-include-item">
+                  <svg viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.2"/><path d="M4 6l1.5 1.5L8 4.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  {s}
+                </div>
+              ))}
+            </div>
+            <button className="btn-accent" style={{ width: '100%', marginTop: 16 }} onClick={exportData}>
+              Baixar arquivo JSON
+            </button>
+          </div>
+        )}
+
+        {tab === 'import' && (
+          <div className="share-section">
+            <p className="share-desc">Carregue um arquivo exportado por outra pessoa para visualizar os dados dela. Seus dados locais serão substituídos.</p>
+            <div className="share-warning">
+              ⚠️ Isso substituirá seus dados atuais. Exporte primeiro se quiser fazer backup.
+            </div>
+            {importSuccess ? (
+              <div className="share-success">
+                ✓ Dados importados com sucesso! Feche este painel para visualizar.
+              </div>
+            ) : (
+              <>
+                {importError && <div className="share-error">{importError}</div>}
+                <label className="share-file-btn">
+                  {importing ? 'Carregando…' : 'Selecionar arquivo JSON'}
+                  <input type="file" accept=".json" style={{ display: 'none' }} onChange={handleFile} disabled={importing} />
+                </label>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
 // ─── Activity data ────────────────────────────────────────────────────────────
 
 const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
@@ -2314,6 +2439,9 @@ export default function App() {
   const [showDocs, setShowDocs] = useState(false)
   const [showAlerts, setShowAlerts] = useState(false)
   const [alertCount, setAlertCount] = useState(() => buildAlerts().length)
+  const [showShare, setShowShare] = useState(false)
+  const [viewMode, setViewMode] = useState(false)
+  const [viewOwner, setViewOwner] = useState('')
   const [modal, setModal] = useState<ModalType>(null)
   const [user, setUser] = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(false)
@@ -2342,13 +2470,14 @@ export default function App() {
     .map((s: string) => s[0].toUpperCase())
     .join('')
 
-  const closeAll = () => { setShowCalc(false); setShowNp(false); setShowFin(false); setShowSim(false); setShowDocs(false); setShowAlerts(false) }
+  const closeAll = () => { setShowCalc(false); setShowNp(false); setShowFin(false); setShowSim(false); setShowDocs(false); setShowAlerts(false); setShowShare(false) }
   const toggleCalc   = () => { const v = !showCalc;   closeAll(); setShowCalc(v) }
   const toggleNp     = () => { const v = !showNp;     closeAll(); setShowNp(v) }
   const toggleFin    = () => { const v = !showFin;    closeAll(); setShowFin(v) }
   const toggleSim    = () => { const v = !showSim;    closeAll(); setShowSim(v) }
   const toggleDocs   = () => { const v = !showDocs;   closeAll(); setShowDocs(v) }
   const toggleAlerts = () => { const v = !showAlerts; closeAll(); setShowAlerts(v); if (!v) setAlertCount(buildAlerts().length) }
+  const toggleShare  = () => { const v = !showShare;  closeAll(); setShowShare(v) }
 
   useEffect(() => {
     const refresh = () => setAlertCount(buildAlerts().length)
@@ -2361,7 +2490,7 @@ export default function App() {
   if (supabase && !user) return <LoginPage />
 
   return (
-    <div className="app">
+    <div className={`app${viewMode ? ' view-mode' : ''}`}>
       {/* ── Header ── */}
       <header className="header">
         <div className="header-brand">
@@ -2386,6 +2515,12 @@ export default function App() {
           <div className="header-date">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
           </div>
+          <button className={`share-header-btn${showShare ? ' share-header-active' : ''}`} onClick={toggleShare} title="Compartilhar">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="15" cy="4" r="2"/><circle cx="15" cy="16" r="2"/><circle cx="5" cy="10" r="2"/>
+              <path d="M13 5l-6 4M13 15l-6-4" strokeLinecap="round"/>
+            </svg>
+          </button>
           <button className="pdf-btn" onClick={() => window.print()} title="Exportar PDF">
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M5 3h7l3 3v11H5V3z" strokeLinejoin="round"/>
@@ -2414,6 +2549,17 @@ export default function App() {
           </div>
         </div>
       </header>
+
+      {viewMode && (
+        <div className="view-mode-banner">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/>
+            <circle cx="8" cy="8" r="2"/>
+          </svg>
+          Modo visualização — dados de <strong>{viewOwner}</strong>
+          <button onClick={() => { setViewMode(false); setViewOwner('') }}>Sair</button>
+        </div>
+      )}
 
       <main className="main">
         {/* ── Print header (hidden on screen) ── */}
@@ -2577,6 +2723,9 @@ export default function App() {
       </div>
 
       {/* ── Panels ── */}
+      <div className={`float-panel panel-share${showShare ? ' panel-open' : ''}`}>
+        <SharePanel onClose={() => setShowShare(false)} onImport={(owner) => { setViewMode(true); setViewOwner(owner); setShowShare(false) }} />
+      </div>
       <div className={`float-panel panel-alerts${showAlerts ? ' panel-open' : ''}`}>
         <AlertsPanel onClose={() => setShowAlerts(false)} />
       </div>
