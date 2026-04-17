@@ -1135,7 +1135,15 @@
 .panel-fin    { bottom: 96px }
 .panel-sim    { bottom: 96px }
 .panel-docs   { bottom: 96px }
-.panel-alerts { bottom: 96px }
+.panel-alerts {
+  bottom: auto;
+  top: 56px;
+  right: 16px;
+  transform: translateY(-8px) scale(.97);
+}
+.panel-alerts.panel-open {
+  transform: translateY(0) scale(1);
+}
 .panel-share  { bottom: 96px }
 
 /* ═══════════════════════════════════════════════════════════
