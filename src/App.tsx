@@ -23,6 +23,14 @@ interface Folder {
 }
 
 type ModalType = 'imovel' | 'carro' | 'produto' | null
+type SidebarPage = 'dashboard' | 'family'
+
+interface FamilyMember {
+  id: string
+  name: string
+  role: string
+  color: string
+}
 
 // ─── Calculator ───────────────────────────────────────────────────────────────
 
@@ -2797,6 +2805,145 @@ function buildSearchIndex(q: string): SearchResult[] {
   return results
 }
 
+// ─── Family Page ─────────────────────────────────────────────────────────────
+
+const MEMBER_COLORS = ['#c0392b','#3b82f6','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#84cc16']
+const MEMBER_ROLES  = ['Responsável','Cônjuge','Filho(a)','Dependente','Sócio(a)','Outro']
+const MEMBER_FORM_INIT = { name: '', role: MEMBER_ROLES[0], color: MEMBER_COLORS[0] }
+
+function FamilyPage() {
+  const [members, setMembers] = useState<FamilyMember[]>(() => {
+    try { return JSON.parse(localStorage.getItem('lion-family') || '[]') } catch { return [] }
+  })
+  const [showForm, setShowForm] = useState(false)
+  const [editId, setEditId] = useState<string | null>(null)
+  const [form, setForm] = useState(MEMBER_FORM_INIT)
+  const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
+
+  useEffect(() => { localStorage.setItem('lion-family', JSON.stringify(members)) }, [members])
+
+  const initials = (name: string) => name.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2)
+
+  function saveMember(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.name.trim()) return
+    const m: FamilyMember = { id: editId || Date.now().toString(), name: form.name.trim(), role: form.role, color: form.color }
+    setMembers(prev => editId ? prev.map(x => x.id === editId ? m : x) : [...prev, m])
+    setForm(MEMBER_FORM_INIT); setShowForm(false); setEditId(null)
+  }
+
+  function startEdit(m: FamilyMember) {
+    setForm({ name: m.name, role: m.role, color: m.color })
+    setEditId(m.id); setShowForm(true)
+  }
+
+  function delMember(id: string) { setMembers(prev => prev.filter(m => m.id !== id)) }
+
+  // spending per member from transactions
+  const txs: Transaction[] = (() => { try { return JSON.parse(localStorage.getItem('lion-txs') || '[]') } catch { return [] } })()
+  const spending = (id: string) => txs.filter(t => (t as Transaction & { memberId?: string }).memberId === id && t.type === 'despesa').reduce((s, t) => s + t.amount, 0)
+  const income   = (id: string) => txs.filter(t => (t as Transaction & { memberId?: string }).memberId === id && t.type === 'receita').reduce((s, t) => s + t.amount, 0)
+  const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+
+  return (
+    <div className="family-page">
+      <div className="family-page-header">
+        <div>
+          <h1 className="family-page-title">Família</h1>
+          <p className="family-page-sub">Gerencie os membros e acompanhe gastos por pessoa</p>
+        </div>
+        <button className="goals-add-btn" onClick={() => { setShowForm(v => !v); setEditId(null); setForm(MEMBER_FORM_INIT) }}>
+          {showForm && !editId ? '✕ Cancelar' : '+ Membro'}
+        </button>
+      </div>
+
+      {showForm && (
+        <form className="family-form" onSubmit={saveMember}>
+          <div className="family-form-grid">
+            <div className="fin-field">
+              <label>Nome *</label>
+              <input type="text" placeholder="Ex: Maria Silva" value={form.name} onChange={e => f('name', e.target.value)} required />
+            </div>
+            <div className="fin-field">
+              <label>Papel</label>
+              <select value={form.role} onChange={e => f('role', e.target.value)}>
+                {MEMBER_ROLES.map(r => <option key={r}>{r}</option>)}
+              </select>
+            </div>
+            <div className="fin-field family-color-field">
+              <label>Cor do avatar</label>
+              <div className="family-colors">
+                {MEMBER_COLORS.map(c => (
+                  <button key={c} type="button" className={`family-color-dot${form.color === c ? ' selected' : ''}`}
+                    style={{ background: c }} onClick={() => f('color', c)} />
+                ))}
+              </div>
+            </div>
+          </div>
+          <div className="goal-form-actions">
+            <button type="button" className="btn-ghost" onClick={() => { setShowForm(false); setEditId(null) }}>Cancelar</button>
+            <button type="submit" className="btn-accent">{editId ? 'Salvar alterações' : 'Adicionar membro'}</button>
+          </div>
+        </form>
+      )}
+
+      {members.length === 0 && !showForm ? (
+        <div className="family-empty">
+          <svg viewBox="0 0 48 48" fill="none" stroke="currentColor" strokeWidth="1.2" width="48" height="48" style={{ opacity: .25 }}>
+            <path d="M24 22a8 8 0 1 0 0-16 8 8 0 0 0 0 16z"/>
+            <path d="M8 42a16 16 0 0 1 32 0"/>
+            <path d="M36 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM44 36a8 8 0 0 0-8-8"/>
+            <path d="M12 18a6 6 0 1 0 0-12 6 6 0 0 0 0 12zM4 36a8 8 0 0 1 8-8"/>
+          </svg>
+          <p>Nenhum membro cadastrado ainda.</p>
+          <button className="btn-accent" style={{ marginTop: 8 }} onClick={() => setShowForm(true)}>+ Adicionar primeiro membro</button>
+        </div>
+      ) : (
+        <div className="family-grid">
+          {members.map(m => {
+            const sp = spending(m.id)
+            const inc = income(m.id)
+            return (
+              <div key={m.id} className="family-card">
+                <div className="family-card-top">
+                  <div className="family-avatar" style={{ background: m.color }}>{initials(m.name)}</div>
+                  <div className="family-card-info">
+                    <div className="family-card-name">{m.name}</div>
+                    <div className="family-card-role">{m.role}</div>
+                  </div>
+                  <div className="goal-actions">
+                    <button className="goal-action-btn" onClick={() => startEdit(m)} title="Editar">
+                      <svg viewBox="0 0 16 16" fill="none"><path d="M11 2l3 3-8 8H3v-3l8-8z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
+                    </button>
+                    <button className="goal-action-btn goal-del-btn" onClick={() => delMember(m.id)} title="Remover">
+                      <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    </button>
+                  </div>
+                </div>
+                <div className="family-card-stats">
+                  <div className="family-stat">
+                    <span className="family-stat-label">Receitas</span>
+                    <span className="family-stat-val" style={{ color: 'var(--green)' }}>{fmt(inc)}</span>
+                  </div>
+                  <div className="family-stat">
+                    <span className="family-stat-label">Gastos</span>
+                    <span className="family-stat-val" style={{ color: 'var(--red)' }}>{fmt(sp)}</span>
+                  </div>
+                  <div className="family-stat">
+                    <span className="family-stat-label">Saldo</span>
+                    <span className="family-stat-val" style={{ color: inc - sp >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmt(inc - sp)}</span>
+                  </div>
+                </div>
+                <p className="family-card-hint">Associe transações a este membro no painel financeiro</p>
+              </div>
+            )
+          })}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -2840,6 +2987,7 @@ export default function App() {
   const [fontSize, setFontSize] = useState(() => localStorage.getItem('lion-font') || 'normal')
   const [modal, setModal] = useState<ModalType>(null)
   const [showSidebar, setShowSidebar] = useState(false)
+  const [sidebarPage, setSidebarPage] = useState<SidebarPage>('dashboard')
   const [searchQ, setSearchQ] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const searchResults = searchOpen && searchQ.trim().length >= 2 ? buildSearchIndex(searchQ) : []
@@ -3135,9 +3283,9 @@ export default function App() {
         </div>
         <nav className="sidebar-nav">
           {[
-            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="2" width="7" height="7" rx="1"/><rect x="2" y="11" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></svg>, label: 'Dashboard', action: () => setShowSidebar(false), active: true },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="2" width="7" height="7" rx="1"/><rect x="2" y="11" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></svg>, label: 'Dashboard', action: () => { setSidebarPage('dashboard'); setShowSidebar(false) }, active: sidebarPage === 'dashboard' },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 2a7 7 0 1 0 0 14A7 7 0 0 0 9 2z"/><path d="M15 15l3 3" strokeLinecap="round"/></svg>, label: 'Buscar', action: () => { setShowSidebar(false) } },
-            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M4 18a6 6 0 0 1 12 0"/></svg>, label: 'Família', badge: 'Em breve', action: () => {} },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M4 18a6 6 0 0 1 12 0"/></svg>, label: 'Família', active: sidebarPage === 'family', action: () => { setSidebarPage('family'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="4" width="16" height="14" rx="2"/><path d="M6 2v4M14 2v4M2 9h16" strokeLinecap="round"/></svg>, label: 'Calendário', badge: 'Em breve', action: () => {} },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 10h12M10 4l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/></svg>, label: 'Próximas Viagens', badge: 'Em breve', action: () => {} },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 2l2.4 4.8 5.3.8-3.85 3.75.91 5.3L10 14.25 5.2 16.63l.91-5.3L2.26 7.58l5.3-.78z"/></svg>, label: 'Metas', badge: 'Em breve', action: () => {} },
@@ -3170,7 +3318,17 @@ export default function App() {
         </div>
       )}
 
-      <main className="main">
+      {sidebarPage !== 'dashboard' && (
+        <div className="page-content">
+          <button className="page-back-btn" onClick={() => setSidebarPage('dashboard')}>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M10 4L6 8l4 4"/></svg>
+            Voltar ao Dashboard
+          </button>
+          {sidebarPage === 'family' && <FamilyPage />}
+        </div>
+      )}
+
+      <main className={`main${sidebarPage !== 'dashboard' ? ' main-hidden' : ''}`}>
         {/* ── Print header (hidden on screen) ── */}
         <div className="print-only print-report-header">
           <div className="print-report-brand">Lion Admin — Relatório Financeiro</div>

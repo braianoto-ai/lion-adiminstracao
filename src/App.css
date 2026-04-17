@@ -2041,6 +2041,85 @@
   border-top: 1px solid var(--border);
 }
 
+/* ── Page layout (family, calendar, etc.) ── */
+.main-hidden { display: none !important }
+
+.page-content {
+  flex: 1;
+  padding: 20px 28px;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.page-back-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 13px; color: var(--text2);
+  padding: 6px 10px; border-radius: var(--radius);
+  margin-bottom: 20px;
+  transition: background .15s, color .15s;
+}
+.page-back-btn:hover { background: var(--bg3); color: var(--text3) }
+.page-back-btn svg { width: 16px; height: 16px }
+
+/* ── Family Page ── */
+.family-page { display: flex; flex-direction: column; gap: 20px }
+.family-page-header { display: flex; align-items: flex-start; justify-content: space-between }
+.family-page-title { font-size: 22px; font-weight: 700; color: var(--text3) }
+.family-page-sub { font-size: 13px; color: var(--text); margin-top: 3px }
+
+.family-form {
+  background: var(--bg2); border: 1px solid var(--border2);
+  border-radius: var(--radius-lg); padding: 18px;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.family-form-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px }
+.family-color-field .family-colors { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px }
+.family-color-dot {
+  width: 24px; height: 24px; border-radius: 50%; cursor: pointer;
+  border: 2px solid transparent; transition: transform .15s, border-color .15s;
+}
+.family-color-dot.selected { border-color: #fff; transform: scale(1.15) }
+
+.family-empty {
+  text-align: center; padding: 48px 20px;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  color: var(--text);
+}
+.family-empty p { font-size: 14px }
+
+.family-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.family-card {
+  background: var(--bg2); border: 1px solid var(--border);
+  border-radius: var(--radius-lg); padding: 16px;
+  display: flex; flex-direction: column; gap: 12px;
+  transition: border-color .15s;
+}
+.family-card:hover { border-color: var(--border2) }
+
+.family-card-top { display: flex; align-items: center; gap: 12px }
+.family-avatar {
+  width: 44px; height: 44px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; font-weight: 700; color: #fff;
+  flex-shrink: 0; text-transform: uppercase;
+}
+.family-card-info { flex: 1; min-width: 0 }
+.family-card-name { font-size: 14px; font-weight: 600; color: var(--text3) }
+.family-card-role { font-size: 12px; color: var(--text) }
+
+.family-card-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px }
+.family-stat { display: flex; flex-direction: column; gap: 2px; background: var(--bg3); border-radius: var(--radius-sm); padding: 8px }
+.family-stat-label { font-size: 10px; color: var(--text); text-transform: uppercase; letter-spacing: .5px }
+.family-stat-val { font-size: 13px; font-weight: 600 }
+
+.family-card-hint { font-size: 11px; color: var(--text); font-style: italic }
+
 /* ── Notes Section ── */
 .note-folder-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0 }
 
