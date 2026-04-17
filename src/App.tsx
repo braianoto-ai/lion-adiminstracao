@@ -4231,30 +4231,6 @@ export default function App() {
       {/* keep legacy section components referenced to avoid unused-locals TS error */}
       {false && <><PatrimonySection /><NotesSection onOpenNotepad={toggleNp} /></>}
 
-      {viewMode && (
-        <div className="view-mode-banner">
-          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/>
-            <circle cx="8" cy="8" r="2"/>
-          </svg>
-          Modo visualização — dados de <strong>{viewOwner}</strong>
-          <button onClick={() => { setViewMode(false); setViewOwner('') }}>Sair</button>
-        </div>
-      )}
-
-      {sidebarPage !== 'dashboard' && (
-        <div className="page-content">
-          <button className="page-back-btn" onClick={() => setSidebarPage('dashboard')}>
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M10 4L6 8l4 4"/></svg>
-            Voltar ao Dashboard
-          </button>
-          {sidebarPage === 'family'   && <FamilyPage />}
-          {sidebarPage === 'calendar' && <CalendarPage />}
-          {sidebarPage === 'trips'    && <TripsPage />}
-          {sidebarPage === 'goals'    && <GoalsPage />}
-        </div>
-      )}
-
       </div>{/* /main-col */}
 
       {/* ── Floating Buttons ── */}
