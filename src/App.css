@@ -1366,13 +1366,23 @@
 }
 
 .panel-alerts {
-  bottom: auto;
-  top: 56px;
-  right: 16px;
-  transform: translateY(-8px) scale(.97);
+  top: 0;
+  bottom: 0;
+  right: 0;
+  left: auto;
+  width: 320px;
+  height: 100dvh;
+  border-radius: 0;
+  border-right: none;
+  border-left: 1px solid var(--border2);
+  background: var(--bg2);
+  box-shadow: -8px 0 40px rgba(0,0,0,.5);
+  transform: translateX(100%);
+  transition: opacity .25s cubic-bezier(.4,0,.2,1), transform .28s cubic-bezier(.4,0,.2,1);
+  z-index: 300;
 }
 .panel-alerts.panel-open {
-  transform: translateY(0) scale(1);
+  transform: translateX(0);
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -2019,7 +2029,7 @@
    ALERTS PANEL
 ═══════════════════════════════════════════════════════════ */
 
-.alerts-wrap { display: flex; flex-direction: column; height: 100% }
+.alerts-wrap { display: flex; flex-direction: column; height: 100dvh }
 .alerts-icon-header { background: rgba(239,68,68,.12); color: #f87171 }
 
 .alerts-body {
@@ -3470,17 +3480,15 @@ button, a, [role="button"] { touch-action: manipulation }
   .float-panel.panel-open {
     transform: translateY(0) scale(1) !important;
   }
-  /* Alerts panel: top sheet instead */
+  /* Alerts panel: full-width right drawer on mobile */
   .panel-alerts {
-    top: 52px !important;
-    bottom: auto !important;
-    left: 8px !important;
-    right: 8px !important;
-    width: auto !important;
-    border-radius: var(--radius-lg) !important;
-    transform: translateY(-8px) scale(.97) !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    border-left: none !important;
+    border-radius: 0 !important;
+    transform: translateX(100%) !important;
   }
-  .panel-alerts.panel-open { transform: translateY(0) scale(1) !important }
+  .panel-alerts.panel-open { transform: translateX(0) !important }
   .calc-wrap, .np-wrap, .docs-wrap, .sim-wrap, .fin-wrap {
     width: 100% !important;
     max-width: 100% !important;
