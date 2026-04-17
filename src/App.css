@@ -4,15 +4,41 @@
 
 .app {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   background: var(--bg);
 }
 
+/* Right column: topbar + content */
+.main-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
 /* ═══════════════════════════════════════════════════════════
-   HEADER
+   TOPBAR (replaces header)
 ═══════════════════════════════════════════════════════════ */
 
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 20px;
+  background: rgba(0,0,0,.5);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  flex-shrink: 0;
+}
+
+/* keep .header as alias for print/compat */
 .header {
   display: flex;
   align-items: center;
@@ -26,6 +52,20 @@
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   box-shadow: 0 1px 0 rgba(255,255,255,.04), 0 4px 24px rgba(0,0,0,.25);
+}
+
+/* topbar brand (mobile-only — desktop brand is in sidebar) */
+.topbar-brand { display: none; align-items: center; gap: 10px; margin-right: 4px }
+.topbar-brand-mark { width: 30px; height: 30px; flex-shrink: 0 }
+.topbar-brand-mark svg { width: 100%; height: 100% }
+.topbar-brand-name { font-size: 15px; font-weight: 700; color: var(--text3) }
+
+/* topbar search */
+.topbar-search-wrap {
+  position: relative;
+  flex: 1;
+  max-width: 380px;
+  margin: 0 8px;
 }
 
 .header-brand { display: flex; align-items: center; gap: 12px }
@@ -649,6 +689,147 @@
 .drag-handle:active { cursor: grabbing }
 .drag-handle svg { width: 16px; height: 16px; pointer-events: none }
 
+/* ─── New bento dashboard ─────────────────────────────── */
+.dash-content {
+  flex: 1;
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.bento-row { display: grid; gap: 12px; align-items: start }
+.bento-r1  { grid-template-columns: 2fr 1fr 1fr 1fr }
+.bento-r2  { grid-template-columns: 1fr 1fr 1fr }
+.bento-r3  { grid-template-columns: 1fr 1fr 2fr }
+
+/* base bento card */
+.bc {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 18px;
+  transition: border-color .15s;
+}
+.bc:hover { border-color: var(--border2) }
+
+/* hero */
+.bc-hero {
+  background: linear-gradient(145deg, var(--bg2) 0%, var(--bg3) 100%);
+  border-color: rgba(192,57,43,.2);
+  position: relative;
+  overflow: hidden;
+}
+.bc-hero::after {
+  content: '';
+  position: absolute;
+  top: -80px; right: -80px;
+  width: 220px; height: 220px;
+  background: radial-gradient(circle, rgba(192,57,43,.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+.hero-eyebrow {
+  font-size: 10px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase;
+  color: var(--text); margin-bottom: 6px;
+}
+.hero-amount {
+  font-size: 34px; font-weight: 800;
+  color: var(--text3); letter-spacing: -1.5px;
+  line-height: 1; margin-bottom: 8px;
+}
+.hero-pill {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 700;
+  padding: 3px 10px; border-radius: 99px;
+}
+.hero-pill-pos { background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.2); color: var(--green-l) }
+.hero-pill-neg { background: rgba(239,68,68,.12);  border: 1px solid rgba(239,68,68,.2);  color: #f87171 }
+.hero-pill-neu { background: rgba(255,255,255,.06); border: 1px solid var(--border); color: var(--text2) }
+.hero-divider { height: 1px; background: var(--border); margin: 14px 0 }
+.hero-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+.hero-stat-lbl { font-size: 10px; color: var(--text); font-weight: 600; text-transform: uppercase; letter-spacing: .06em }
+.hero-stat-val { font-size: 16px; font-weight: 700; color: var(--text3); margin-top: 2px }
+.hero-stat-sub { font-size: 10px; color: var(--text); margin-top: 1px }
+.hero-spark { margin-top: 16px }
+.hero-spark-lbl { font-size: 10px; color: var(--text); font-weight: 600; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 6px }
+.spark-svg { width: 100%; height: 44px; display: block }
+
+/* metric cards */
+.bc-metric {}
+.metric-ico { width: 36px; height: 36px; border-radius: 9px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; flex-shrink: 0 }
+.metric-ico svg { width: 18px; height: 18px }
+.mi-green  { background: rgba(16,185,129,.12); color: var(--green-l) }
+.mi-red    { background: rgba(239,68,68,.12);  color: #f87171 }
+.mi-amber  { background: rgba(245,158,11,.12); color: var(--amber-l) }
+.mi-blue   { background: rgba(59,130,246,.12); color: var(--blue-l) }
+.mi-purple { background: rgba(139,92,246,.12); color: var(--purple-l, #a78bfa) }
+.metric-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text) }
+.metric-val { font-size: 22px; font-weight: 800; color: var(--text3); letter-spacing: -.5px; margin-top: 4px; line-height: 1.1 }
+.metric-chg { font-size: 11px; font-weight: 600; margin-top: 6px; display: flex; align-items: center; gap: 3px }
+.mc-pos { color: var(--green-l) }
+.mc-neg { color: #f87171 }
+.mc-neu { color: var(--text) }
+
+/* section title inside bc */
+.bc-title {
+  font-size: 12px; font-weight: 700; color: var(--text3);
+  margin-bottom: 12px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.bc-title-btn {
+  font-size: 10px; color: var(--text);
+  background: var(--bg3); border: 1px solid var(--border);
+  padding: 3px 9px; border-radius: 6px; cursor: pointer;
+  transition: background .12s, color .12s;
+}
+.bc-title-btn:hover { background: var(--bg4); color: var(--text2) }
+
+/* activity feed */
+.feed-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 7px 0; border-bottom: 1px solid var(--border);
+}
+.feed-row:last-child { border-bottom: none }
+.feed-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 1px }
+.feed-info { flex: 1; min-width: 0 }
+.feed-name { font-size: 12px; color: var(--text2); font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.feed-time { font-size: 10px; color: var(--text) }
+.feed-amt  { font-size: 12px; font-weight: 700; flex-shrink: 0 }
+.feed-empty { text-align: center; padding: 24px 0; color: var(--text); font-size: 12px }
+
+/* goals summary */
+.gs-row { margin-bottom: 11px }
+.gs-row:last-child { margin-bottom: 0 }
+.gs-top { display: flex; justify-content: space-between; margin-bottom: 5px }
+.gs-name { font-size: 12px; color: var(--text2); font-weight: 500 }
+.gs-pct  { font-size: 11px; color: var(--text); font-weight: 600 }
+.gs-bar  { height: 5px; background: var(--bg4); border-radius: 99px; overflow: hidden }
+.gs-fill { height: 100%; border-radius: 99px }
+
+/* quick actions grid */
+.qa-bento-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px }
+.qa-bento-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 10px;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: 9px; cursor: pointer;
+  transition: border-color .12s, background .12s;
+  text-align: left; width: 100%;
+}
+.qa-bento-item:hover { border-color: var(--border2); background: var(--bg4) }
+.qa-bento-ico {
+  width: 28px; height: 28px; border-radius: 7px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.qa-bento-ico svg { width: 14px; height: 14px }
+.qa-bento-lbl { font-size: 12px; font-weight: 600; color: var(--text2) }
+.qa-bento-sub { font-size: 10px; color: var(--text) }
+
+/* ─── Old main (kept for print + compat) ──────────────── */
 .main {
   flex: 1;
   padding: 20px 28px;
@@ -810,6 +991,31 @@
 
 /* Footer */
 .sidebar-footer { padding: 8px 8px 16px; border-top: 1px solid var(--border) }
+
+/* ── Desktop: sidebar always visible ── */
+@media (min-width: 801px) {
+  .sidebar {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    width: 220px;
+    transform: none !important;
+    z-index: 10;
+    box-shadow: none;
+    flex-shrink: 0;
+  }
+  .sidebar-overlay    { display: none !important }
+  .hamburger-btn      { display: none !important }
+  .sidebar-close-btn  { display: none !important }
+  .topbar-brand       { display: none !important }
+}
+
+/* ── Mobile: sidebar flyout, show hamburger + brand ── */
+@media (max-width: 800px) {
+  .app { flex-direction: column }
+  .sidebar { width: 260px }
+  .topbar-brand { display: flex !important }
+}
 
 /* ═══════════════════════════════════════════════════════════
    SUMMARY CARDS
@@ -3187,10 +3393,19 @@ button, a, [role="button"] { touch-action: manipulation }
   .maint-list   { grid-template-columns: repeat(2, 1fr) }
   .veh-list     { grid-template-columns: repeat(2, 1fr) }
   .goals-page-summary { grid-template-columns: repeat(2, 1fr) }
+  /* bento */
+  .bento-r1 { grid-template-columns: 1fr 1fr 1fr }
+  .bento-r1 .bc-hero { grid-column: 1 / -1 }
+  .bento-r3 { grid-template-columns: 1fr 1fr }
+  .bento-r3 > :last-child { grid-column: 1 / -1 }
 }
 
 /* ── 800px — tablet portrait ── */
 @media (max-width: 800px) {
+  .bento-r1, .bento-r2, .bento-r3 { grid-template-columns: 1fr 1fr }
+  .bento-r1 .bc-hero { grid-column: 1 / -1 }
+  .bento-r3 > :last-child { grid-column: 1 / -1 }
+  .dash-content { padding: 12px 14px }
   .main { padding: 14px; grid-template-columns: 1fr; gap: 10px }
   .drag-section--grid, .drag-section--alerts, .drag-section--activity { grid-column: 1 }
   .header { padding: 10px 14px }
@@ -3219,6 +3434,12 @@ button, a, [role="button"] { touch-action: manipulation }
 
 /* ── 600px — large mobile ── */
 @media (max-width: 600px) {
+  .bento-r1, .bento-r2, .bento-r3 { grid-template-columns: 1fr }
+  .bento-r1 .bc-hero { grid-column: 1 }
+  .bento-r3 > :last-child { grid-column: 1 }
+  .dash-content { padding: 10px 12px; gap: 10px }
+  .hero-amount { font-size: 26px }
+  .metric-val { font-size: 18px }
   .header { padding: 9px 12px }
   .brand-sub { display: none }
   .brand-name { font-size: calc(14px * var(--fs, 1)) }
@@ -3331,6 +3552,10 @@ button, a, [role="button"] { touch-action: manipulation }
 html[data-theme="light"] .app { background: var(--bg) }
 
 html[data-theme="light"] .header { background: rgba(248,250,252,.92); border-color: var(--border) }
+html[data-theme="light"] .topbar  { background: rgba(248,250,252,.92); border-color: var(--border) }
+html[data-theme="light"] .bc { background: #fff; border-color: var(--border2) }
+html[data-theme="light"] .bc-hero { background: linear-gradient(145deg,#fff,#f0f2f5) }
+html[data-theme="light"] .qa-bento-item { background: var(--bg3) }
 
 html[data-theme="light"] .card { box-shadow: 0 2px 12px rgba(0,0,0,.06) }
 

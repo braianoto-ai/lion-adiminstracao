@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import { supabase } from './lib/supabase'
 import LoginPage from './LoginPage'
@@ -3803,39 +3803,7 @@ export default function App() {
   const [kbHint, setKbHint] = useState<string | null>(null)
   const [showKbLegend, setShowKbLegend] = useState(false)
 
-  const SECTION_DEFS: { id: string; label: string }[] = [
-    { id: 'assets',      label: 'Ativos' },
-    { id: 'notes',       label: 'Notas' },
-    { id: 'patrimony',   label: 'Patrimônio' },
-    { id: 'rentals',     label: 'Aluguéis' },
-    { id: 'maintenance', label: 'Manutenções' },
-    { id: 'vehicles',    label: 'Veículos' },
-    { id: 'grid',        label: 'Atividade' },
-  ]
-  const validIds = SECTION_DEFS.map(s => s.id)
-  const [sectionOrder, setSectionOrder] = useState<string[]>(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem('lion-section-order') || 'null')
-      if (Array.isArray(saved) && saved.length === SECTION_DEFS.length && saved.every((id: string) => validIds.includes(id))) return saved
-    } catch { /* ignore */ }
-    return SECTION_DEFS.map(s => s.id)
-  })
-  const dragIdx = useRef<number | null>(null)
-  const [dragOver, setDragOver] = useState<number | null>(null)
 
-  const onDragStart = (i: number) => { dragIdx.current = i }
-  const onDragEnter = (i: number) => setDragOver(i)
-  const onDragEnd = () => {
-    if (dragIdx.current === null || dragOver === null || dragIdx.current === dragOver) {
-      dragIdx.current = null; setDragOver(null); return
-    }
-    const next = [...sectionOrder]
-    const [moved] = next.splice(dragIdx.current, 1)
-    next.splice(dragOver, 0, moved)
-    setSectionOrder(next)
-    localStorage.setItem('lion-section-order', JSON.stringify(next))
-    dragIdx.current = null; setDragOver(null)
-  }
   useEffect(() => {
     let hintTimer: ReturnType<typeof setTimeout>
     const onKey = (e: KeyboardEvent) => {
@@ -3869,32 +3837,66 @@ export default function App() {
       {kbHint && <div className="kb-toast">{kbHint}</div>}
       {showOnboarding && <OnboardingWizard onDone={finishOnboarding} />}
 
-      {/* ── Header ── */}
-      <header className="header">
+      {/* ── Sidebar ── */}
+      {showSidebar && <div className="sidebar-overlay" onClick={() => setShowSidebar(false)} />}
+      <aside className={`sidebar${showSidebar ? ' sidebar-open' : ''}`}>
+        <div className="sidebar-user">
+          <div className="sidebar-avatar">{initials || '?'}</div>
+          <div className="sidebar-user-info">
+            <div className="sidebar-user-name">{displayName.split('@')[0]}</div>
+            <div className="sidebar-user-email">{user?.email || ''}</div>
+          </div>
+          <button className="sidebar-close-btn" onClick={() => setShowSidebar(false)} title="Fechar">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </button>
+        </div>
+        <nav className="sidebar-nav">
+          {([
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="2" width="7" height="7" rx="1"/><rect x="2" y="11" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></svg>, label: 'Dashboard', action: () => { setSidebarPage('dashboard'); setShowSidebar(false) }, active: sidebarPage === 'dashboard' },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M4 18a6 6 0 0 1 12 0"/></svg>, label: 'Família', active: sidebarPage === 'family', action: () => { setSidebarPage('family'); setShowSidebar(false) } },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="4" width="16" height="14" rx="2"/><path d="M6 2v4M14 2v4M2 9h16" strokeLinecap="round"/></svg>, label: 'Calendário', active: sidebarPage === 'calendar', action: () => { setSidebarPage('calendar'); setShowSidebar(false) } },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 15l4-8 4 4 3-5 3 9H3z" strokeLinecap="round" strokeLinejoin="round"/><circle cx="14" cy="5" r="1.5"/></svg>, label: 'Próximas Viagens', active: sidebarPage === 'trips', action: () => { setSidebarPage('trips'); setShowSidebar(false) } },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="8"/><circle cx="10" cy="10" r="4.5"/><circle cx="10" cy="10" r="1.5" fill="currentColor" stroke="none"/></svg>, label: 'Metas', active: sidebarPage === 'goals', action: () => { setSidebarPage('goals'); setShowSidebar(false) } },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/><path d="M8 8h4M8 12h4" strokeLinecap="round"/></svg>, label: 'Documentos', action: () => { setShowSidebar(false); toggleDocs() } },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" strokeLinecap="round"/></svg>, label: 'Simulador', action: () => { setShowSidebar(false); toggleSim() } },
+          ] as { icon: React.ReactNode; label: string; active?: boolean; badge?: string; action: () => void }[]).map(item => (
+            <button key={item.label} className={`sidebar-nav-item${item.active ? ' sidebar-nav-active' : ''}`} onClick={item.action}>
+              <span className="sidebar-nav-icon">{item.icon}</span>
+              <span className="sidebar-nav-label">{item.label}</span>
+              {item.badge && <span className="sidebar-nav-badge">{item.badge}</span>}
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-footer">
+          <button className="sidebar-nav-item" onClick={handleLogout}>
+            <span className="sidebar-nav-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M13 15l3-5-3-5" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 10H7" strokeLinecap="round"/><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" strokeLinecap="round"/></svg></span>
+            <span className="sidebar-nav-label">Sair</span>
+          </button>
+        </div>
+      </aside>
+
+      {/* ── Main column ── */}
+      <div className="main-col">
+
+      {/* ── Topbar ── */}
+      <header className="topbar">
         <button className="hamburger-btn" onClick={() => setShowSidebar(v => !v)} title="Menu">
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
             <path d="M3 5h14M3 10h14M3 15h14"/>
           </svg>
         </button>
-        <div className="header-brand">
-          <div className="brand-mark">
+        {/* Brand — visible on mobile only, sidebar has it on desktop */}
+        <div className="topbar-brand">
+          <div className="topbar-brand-mark">
             <svg viewBox="0 0 32 32" fill="none">
-              <rect width="32" height="32" rx="10" fill="url(#bg)"/>
+              <rect width="32" height="32" rx="10" fill="url(#tbg)"/>
               <path d="M8 22L13 10l5 8 4-5 4 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <defs>
-                <linearGradient id="bg" x1="0" y1="0" x2="32" y2="32">
-                  <stop stopColor="#c0392b"/>
-                  <stop offset="1" stopColor="#96281b"/>
-                </linearGradient>
-              </defs>
+              <defs><linearGradient id="tbg" x1="0" y1="0" x2="32" y2="32"><stop stopColor="#c0392b"/><stop offset="1" stopColor="#96281b"/></linearGradient></defs>
             </svg>
           </div>
-          <div>
-            <div className="brand-name">Lion Admin</div>
-            <div className="brand-sub">Gestão Financeira</div>
-          </div>
+          <div className="topbar-brand-name">Lion Admin</div>
         </div>
-        <div className="header-search-wrap">
+        <div className="header-search-wrap topbar-search-wrap">
           <div className={`header-search${searchOpen ? ' search-active' : ''}`}>
             <svg className="search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="9" cy="9" r="6"/><path d="M15 15l3 3" strokeLinecap="round"/>
@@ -3996,44 +3998,238 @@ export default function App() {
         </div>
       </header>
 
-      {/* ── Sidebar ── */}
-      {showSidebar && <div className="sidebar-overlay" onClick={() => setShowSidebar(false)} />}
-      <aside className={`sidebar${showSidebar ? ' sidebar-open' : ''}`}>
-        <div className="sidebar-user">
-          <div className="sidebar-avatar">{initials || '?'}</div>
-          <div className="sidebar-user-info">
-            <div className="sidebar-user-name">{displayName.split('@')[0]}</div>
-            <div className="sidebar-user-email">{user?.email || ''}</div>
-          </div>
-          <button className="sidebar-close-btn" onClick={() => setShowSidebar(false)} title="Fechar">
-            <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-          </button>
+      {/* ── View mode banner ── */}
+      {viewMode && (
+        <div className="view-mode-banner">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <path d="M1 8s2.5-5 7-5 7 5 7 5-2.5 5-7 5-7-5-7-5z"/>
+            <circle cx="8" cy="8" r="2"/>
+          </svg>
+          Modo visualização — dados de <strong>{viewOwner}</strong>
+          <button onClick={() => { setViewMode(false); setViewOwner('') }}>Sair</button>
         </div>
-        <nav className="sidebar-nav">
-          {([
-            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="2" width="7" height="7" rx="1"/><rect x="2" y="11" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></svg>, label: 'Dashboard', action: () => { setSidebarPage('dashboard'); setShowSidebar(false) }, active: sidebarPage === 'dashboard' },
-            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 2a7 7 0 1 0 0 14A7 7 0 0 0 9 2z"/><path d="M15 15l3 3" strokeLinecap="round"/></svg>, label: 'Buscar', action: () => { setShowSidebar(false) } },
-            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M4 18a6 6 0 0 1 12 0"/></svg>, label: 'Família', active: sidebarPage === 'family', action: () => { setSidebarPage('family'); setShowSidebar(false) } },
-            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="4" width="16" height="14" rx="2"/><path d="M6 2v4M14 2v4M2 9h16" strokeLinecap="round"/></svg>, label: 'Calendário', active: sidebarPage === 'calendar', action: () => { setSidebarPage('calendar'); setShowSidebar(false) } },
-            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 15l4-8 4 4 3-5 3 9H3z" strokeLinecap="round" strokeLinejoin="round"/><circle cx="14" cy="5" r="1.5"/></svg>, label: 'Próximas Viagens', active: sidebarPage === 'trips', action: () => { setSidebarPage('trips'); setShowSidebar(false) } },
-            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="8"/><circle cx="10" cy="10" r="4.5"/><circle cx="10" cy="10" r="1.5" fill="currentColor" stroke="none"/></svg>, label: 'Metas', active: sidebarPage === 'goals', action: () => { setSidebarPage('goals'); setShowSidebar(false) } },
-            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/><path d="M8 8h4M8 12h4" strokeLinecap="round"/></svg>, label: 'Documentos', action: () => { setShowSidebar(false); toggleDocs() } },
-            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" strokeLinecap="round"/></svg>, label: 'Simulador', action: () => { setShowSidebar(false); toggleSim() } },
-          ] as { icon: React.ReactNode; label: string; active?: boolean; badge?: string; action: () => void }[]).map(item => (
-            <button key={item.label} className={`sidebar-nav-item${item.active ? ' sidebar-nav-active' : ''}`} onClick={item.action}>
-              <span className="sidebar-nav-icon">{item.icon}</span>
-              <span className="sidebar-nav-label">{item.label}</span>
-              {item.badge && <span className="sidebar-nav-badge">{item.badge}</span>}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-footer">
-          <button className="sidebar-nav-item" onClick={handleLogout}>
-            <span className="sidebar-nav-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M13 15l3-5-3-5" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 10H7" strokeLinecap="round"/><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" strokeLinecap="round"/></svg></span>
-            <span className="sidebar-nav-label">Sair</span>
+      )}
+
+      {/* ── Sub-pages (Família, Calendário, etc.) ── */}
+      {sidebarPage !== 'dashboard' && (
+        <div className="page-content">
+          <button className="page-back-btn" onClick={() => setSidebarPage('dashboard')}>
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M10 4L6 8l4 4"/></svg>
+            Voltar ao Dashboard
           </button>
+          {sidebarPage === 'family'   && <FamilyPage />}
+          {sidebarPage === 'calendar' && <CalendarPage />}
+          {sidebarPage === 'trips'    && <TripsPage />}
+          {sidebarPage === 'goals'    && <GoalsPage />}
         </div>
-      </aside>
+      )}
+
+      {/* ── Dashboard bento ── */}
+      {(() => {
+        if (sidebarPage !== 'dashboard') return null
+        const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+
+        // Sparkline: last 6 months cumulative saldo
+        const txsRaw: Transaction[] = (() => { try { return JSON.parse(localStorage.getItem('lion-txs') || '[]') } catch { return [] } })()
+        const sparkMonths: number[] = []
+        let running = 0
+        for (let i = 5; i >= 0; i--) {
+          const d = new Date(); d.setMonth(d.getMonth() - i)
+          const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`
+          running += txsRaw.filter(t => t.date === key).reduce((s,t) => s+(t.type==='receita'?t.amount:-t.amount),0)
+          sparkMonths.push(running)
+        }
+        const sparkPath = sparkMonths.length >= 2 ? (() => {
+          const mn = Math.min(...sparkMonths), mx = Math.max(...sparkMonths), rng = mx - mn || 1
+          const pts = sparkMonths.map((v,i) => `${(i/(sparkMonths.length-1))*260},${42-((v-mn)/rng*38)}`)
+          return { line: `M${pts.join(' L')}`, area: `M${pts.join(' L')} L260,44 L0,44Z` }
+        })() : null
+
+        // Monthly income/expenses
+        const now2 = new Date()
+        const curKey = `${now2.getFullYear()}-${String(now2.getMonth()+1).padStart(2,'0')}`
+        const monthInc = txsRaw.filter(t=>t.date===curKey&&t.type==='receita').reduce((s,t)=>s+t.amount,0)
+        const monthExp = txsRaw.filter(t=>t.date===curKey&&t.type==='despesa').reduce((s,t)=>s+t.amount,0)
+
+        // Goals top 3
+        const goalsRaw: Goal[] = (() => { try { return JSON.parse(localStorage.getItem('lion-goals') || '[]') } catch { return [] } })()
+        const topGoals = [...goalsRaw].sort((a,b) => (b.current/Math.max(b.target,1))-(a.current/Math.max(a.target,1))).slice(0,4)
+
+        const momPct = dashData.lastMonthNet !== 0 ? Math.round((dashData.thisMonthNet-dashData.lastMonthNet)/Math.abs(dashData.lastMonthNet)*100) : 0
+
+        return (
+          <main className="dash-content">
+            {/* ── Row 1: Hero + 3 metrics ── */}
+            <div className="bento-row bento-r1">
+
+              {/* Hero card */}
+              <div className="bc bc-hero">
+                <div className="hero-eyebrow">Saldo Financeiro</div>
+                <div className="hero-amount">{fmt(dashData.balance)}</div>
+                <span className={`hero-pill ${momPct >= 0 ? 'hero-pill-pos' : 'hero-pill-neg'}`}>
+                  {momPct >= 0 ? '↑' : '↓'} {Math.abs(momPct)}% vs mês anterior
+                </span>
+                <div className="hero-divider" />
+                <div className="hero-stats">
+                  <div>
+                    <div className="hero-stat-lbl">Receita este mês</div>
+                    <div className="hero-stat-val">{fmt(monthInc)}</div>
+                  </div>
+                  <div>
+                    <div className="hero-stat-lbl">Gastos este mês</div>
+                    <div className="hero-stat-val">{fmt(monthExp)}</div>
+                  </div>
+                  <div>
+                    <div className="hero-stat-lbl">Em metas</div>
+                    <div className="hero-stat-val">{fmt(dashData.totalGoals)}</div>
+                    <div className="hero-stat-sub">{dashData.goalsProgress}% do objetivo</div>
+                  </div>
+                  <div>
+                    <div className="hero-stat-lbl">Aluguéis/mês</div>
+                    <div className="hero-stat-val">{fmt(dashData.monthlyRent)}</div>
+                    <div className="hero-stat-sub">{dashData.rentCount} imóvel(is)</div>
+                  </div>
+                </div>
+                {sparkPath && (
+                  <div className="hero-spark">
+                    <div className="hero-spark-lbl">Evolução — últimos 6 meses</div>
+                    <svg className="spark-svg" viewBox="0 0 260 44" preserveAspectRatio="none">
+                      <defs>
+                        <linearGradient id="sg2" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stopColor="#c0392b" stopOpacity=".3"/>
+                          <stop offset="100%" stopColor="#c0392b" stopOpacity="0"/>
+                        </linearGradient>
+                      </defs>
+                      <path d={sparkPath.area} fill="url(#sg2)"/>
+                      <path d={sparkPath.line} stroke="#e74c3c" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                      <circle cx="260" cy={42-((sparkMonths[5]-Math.min(...sparkMonths))/(Math.max(...sparkMonths)-Math.min(...sparkMonths)||1)*38)} r="3" fill="#e74c3c"/>
+                    </svg>
+                  </div>
+                )}
+              </div>
+
+              {/* Metric: Receita */}
+              <div className="bc bc-metric">
+                <div className="metric-ico mi-green">
+                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 2v16M14 5H8a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6H6" strokeLinecap="round"/></svg>
+                </div>
+                <div className="metric-lbl">Receita mensal</div>
+                <div className="metric-val">{fmt(monthInc)}</div>
+                <div className={`metric-chg ${monthInc > 0 ? 'mc-pos' : 'mc-neu'}`}>
+                  {monthInc > 0 ? '↑' : '—'} {curKey.split('-').reverse().join('/')}
+                </div>
+              </div>
+
+              {/* Metric: Gastos */}
+              <div className="bc bc-metric">
+                <div className="metric-ico mi-red">
+                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 7h14M3 7l2-3h10l2 3M3 7v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </div>
+                <div className="metric-lbl">Gastos mensais</div>
+                <div className="metric-val">{fmt(monthExp)}</div>
+                <div className={`metric-chg ${monthExp > monthInc ? 'mc-neg' : 'mc-neu'}`}>
+                  {monthExp > monthInc ? '↑ Acima da receita' : monthExp > 0 ? `${Math.round((monthExp/Math.max(monthInc,1))*100)}% da receita` : 'Sem gastos'}
+                </div>
+              </div>
+
+              {/* Metric: Alertas */}
+              <div className="bc bc-metric" style={{ cursor:'pointer' }} onClick={toggleAlerts}>
+                <div className={`metric-ico ${dashData.dangerCount > 0 ? 'mi-red' : dashData.warnCount > 0 ? 'mi-amber' : 'mi-green'}`}>
+                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8.57 3.43L1.5 15.5a1.5 1.5 0 0 0 1.29 2.25h14.42A1.5 1.5 0 0 0 18.5 15.5L11.43 3.43a1.65 1.65 0 0 0-2.86 0z" strokeLinejoin="round"/><path d="M10 8v4M10 14h.01" strokeLinecap="round"/></svg>
+                </div>
+                <div className="metric-lbl">Alertas ativos</div>
+                <div className="metric-val">{dashData.totalAlerts}</div>
+                <div className={`metric-chg ${dashData.dangerCount > 0 ? 'mc-neg' : dashData.warnCount > 0 ? 'mc-neu' : 'mc-pos'}`}>
+                  {dashData.totalAlerts === 0 ? '✓ Tudo em ordem' : `${dashData.dangerCount} crítico(s)`}
+                </div>
+              </div>
+
+            </div>
+
+            {/* ── Row 2: Activity + Goals + Quick Actions ── */}
+            <div className="bento-row bento-r2">
+
+              {/* Activity feed */}
+              <div className="bc">
+                <div className="bc-title">
+                  Atividade Recente
+                  <button className="bc-title-btn" onClick={toggleFin}>+ Transação</button>
+                </div>
+                {activity.length === 0 ? (
+                  <div className="feed-empty">Nenhuma atividade. Adicione transações, metas ou imóveis.</div>
+                ) : activity.slice(0,6).map(a => (
+                  <div key={a.id} className="feed-row">
+                    <div className="feed-dot" style={{ background: a.color === 'green' ? 'var(--green)' : a.color === 'red' ? 'var(--red)' : a.color === 'amber' ? 'var(--amber)' : 'var(--blue)' }}/>
+                    <div className="feed-info">
+                      <div className="feed-name">{a.title}</div>
+                      <div className="feed-time">{a.time}</div>
+                    </div>
+                    <div className="feed-amt" style={{ color: a.color === 'green' ? 'var(--green-l)' : a.color === 'red' ? '#f87171' : a.color === 'amber' ? 'var(--amber-l)' : 'var(--blue-l)' }}>{a.sub}</div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Goals summary */}
+              <div className="bc">
+                <div className="bc-title">
+                  Metas
+                  <button className="bc-title-btn" onClick={() => { setSidebarPage('goals'); setShowSidebar(false) }}>Ver todas</button>
+                </div>
+                {topGoals.length === 0 ? (
+                  <div className="feed-empty">Nenhuma meta cadastrada.</div>
+                ) : topGoals.map(g => {
+                  const p = g.target > 0 ? Math.min((g.current/g.target)*100,100) : 0
+                  const barC = p >= 100 ? 'linear-gradient(90deg,var(--green),var(--green-l))' : p >= 70 ? 'var(--green)' : p >= 40 ? 'var(--blue)' : 'var(--purple-l, #a78bfa)'
+                  return (
+                    <div key={g.id} className="gs-row">
+                      <div className="gs-top">
+                        <span className="gs-name">{g.name}</span>
+                        <span className="gs-pct" style={{ color: p >= 100 ? 'var(--green-l)' : 'var(--text)' }}>{Math.round(p)}%</span>
+                      </div>
+                      <div className="gs-bar"><div className="gs-fill" style={{ width:`${p}%`, background: barC }}/></div>
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Quick actions */}
+              <div className="bc">
+                <div className="bc-title">Ações Rápidas</div>
+                <div className="qa-bento-grid">
+                  {[
+                    { label:'Transação', sub:'Receita ou gasto', color:'rgba(192,57,43,.12)', tc:'var(--red-l)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M8 2v12M4 6l4-4 4 4M4 10l4 4 4-4" strokeLinecap="round"/></svg>, action: toggleFin },
+                    { label:'Novo Imóvel', sub:'Casas, aptos', color:'rgba(59,130,246,.12)', tc:'var(--blue-l)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M2 7l6-5 6 5v7H2V7z" strokeLinejoin="round"/><path d="M6 14V9h4v5" strokeLinecap="round"/></svg>, action:()=>setModal('imovel') },
+                    { label:'Novo Carro', sub:'Veículos', color:'rgba(245,158,11,.12)', tc:'var(--amber-l)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1" y="6" width="14" height="7" rx="1.5"/><path d="M4 6V5a3 3 0 0 1 3-3h2a3 3 0 0 1 3 3v1"/><circle cx="4.5" cy="13" r="1.5"/><circle cx="11.5" cy="13" r="1.5"/></svg>, action:()=>setModal('carro') },
+                    { label:'Nova Meta', sub:'Objetivos', color:'rgba(139,92,246,.12)', tc:'var(--purple-l,#a78bfa)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="3"/><circle cx="8" cy="8" r="1" fill="currentColor" stroke="none"/></svg>, action:()=>{ setSidebarPage('goals'); setShowSidebar(false) } },
+                    { label:'Nova Viagem', sub:'Planejamento', color:'rgba(6,182,212,.12)', tc:'#67e8f9', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M2 12l3-6 3 3 2.5-4 3 7H2z" strokeLinecap="round" strokeLinejoin="round"/><circle cx="11.5" cy="3.5" r="1.2"/></svg>, action:()=>{ setSidebarPage('trips'); setShowSidebar(false) } },
+                    { label:'Notas', sub:'Rascunhos', color:'rgba(16,185,129,.12)', tc:'var(--green-l)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 6h6M5 9h4" strokeLinecap="round"/></svg>, action: toggleNp },
+                  ].map(q => (
+                    <button key={q.label} className="qa-bento-item" onClick={q.action}>
+                      <div className="qa-bento-ico" style={{ background: q.color, color: q.tc }}>{q.icon}</div>
+                      <div>
+                        <div className="qa-bento-lbl">{q.label}</div>
+                        <div className="qa-bento-sub">{q.sub}</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+            </div>
+
+            {/* ── Row 3: Rentals + Maintenance + Vehicles ── */}
+            <div className="bento-row bento-r3">
+              <RentalsSection />
+              <MaintenanceSection />
+              <VehicleHistorySection />
+            </div>
+
+          </main>
+        )
+      })()}
+
+      {/* keep legacy section components referenced to avoid unused-locals TS error */}
+      {false && <><PatrimonySection /><NotesSection onOpenNotepad={toggleNp} /></>}
 
       {viewMode && (
         <div className="view-mode-banner">
@@ -4059,130 +4255,7 @@ export default function App() {
         </div>
       )}
 
-      <main className={`main${sidebarPage !== 'dashboard' ? ' main-hidden' : ''}`}>
-        {/* ── Print header (hidden on screen) ── */}
-        <div className="print-only print-report-header">
-          <div className="print-report-brand">Lion Admin — Relatório Financeiro</div>
-          <div className="print-report-date">Gerado em {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
-        </div>
-
-        {/* ── Summary Cards ── */}
-        <section className="cards">
-          {[
-            ...(() => {
-              const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
-              const momDiff = dashData.thisMonthNet - dashData.lastMonthNet
-              const momPct = dashData.lastMonthNet !== 0 ? Math.round(momDiff / Math.abs(dashData.lastMonthNet) * 100) : 0
-              const momStr = momPct > 0 ? `+${momPct}% vs mês ant.` : momPct < 0 ? `${momPct}% vs mês ant.` : 'igual ao mês ant.'
-              const alertColor = dashData.dangerCount > 0 ? 'red' : dashData.warnCount > 0 ? 'amber' : 'green'
-              const alertChange = dashData.totalAlerts === 0 ? 'Tudo em ordem' : `${dashData.dangerCount} crítico(s), ${dashData.warnCount} aviso(s)`
-              return [
-                {
-                  label: 'Saldo Financeiro', value: fmt(dashData.balance), change: momStr, pos: dashData.thisMonthNet >= 0, color: 'purple',
-                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-                },
-                {
-                  label: 'Em Metas', value: fmt(dashData.totalGoals), change: `${dashData.goalsProgress}% do objetivo`, pos: dashData.goalsProgress >= 50, color: 'blue',
-                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></svg>
-                },
-                {
-                  label: 'Aluguéis/mês', value: fmt(dashData.monthlyRent), change: `${dashData.rentCount} imóvel(is)`, pos: true, color: 'amber',
-                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                },
-                {
-                  label: 'Alertas', value: String(dashData.totalAlerts), change: alertChange, pos: dashData.totalAlerts === 0, color: alertColor,
-                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-                },
-              ]
-            })()
-          ].map(c => (
-            <div key={c.label} className={`card card-${c.color}`}>
-              <div className={`card-icon-wrap ci-${c.color}`}>{c.icon}</div>
-              <div className="card-body">
-                <span className="card-label">{c.label}</span>
-                <span className="card-value">{c.value}</span>
-                <span className={`card-change${c.pos ? ' pos' : ''}`}>{c.pos ? '↑ ' : ''}{c.change}</span>
-              </div>
-            </div>
-          ))}
-        </section>
-
-        {sectionOrder.map((id, i) => {
-          const isDragTarget = dragOver === i
-          const wrapProps = {
-            key: id,
-            className: `drag-section drag-section--${id}${isDragTarget ? ' drag-over' : ''}`,
-            draggable: true,
-            onDragStart: () => onDragStart(i),
-            onDragEnter: () => onDragEnter(i),
-            onDragOver: (e: React.DragEvent) => e.preventDefault(),
-            onDragEnd: onDragEnd,
-          }
-          const handle = <div className="drag-handle" title="Arrastar para reordenar"><svg viewBox="0 0 16 16" fill="none"><circle cx="5" cy="4" r="1.2" fill="currentColor"/><circle cx="11" cy="4" r="1.2" fill="currentColor"/><circle cx="5" cy="8" r="1.2" fill="currentColor"/><circle cx="11" cy="8" r="1.2" fill="currentColor"/><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="11" cy="12" r="1.2" fill="currentColor"/></svg></div>
-
-          if (id === 'assets')      return (
-            <div {...wrapProps}>
-              {handle}
-              <section className="section">
-                <div className="section-header"><h2 className="section-title">Adicionar Ativo</h2></div>
-                <div className="actions">
-                  <button className="action action-blue" onClick={() => setModal('imovel')}>
-                    <div className="action-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
-                    <div className="action-body"><span className="action-title">Novo Imóvel</span><span className="action-sub">Casas, aptos, terrenos</span></div>
-                    <svg className="action-arrow" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                  </button>
-                  <button className="action action-amber" onClick={() => setModal('carro')}>
-                    <div className="action-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="9" width="22" height="11" rx="2"/><path d="M6 9V7a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg></div>
-                    <div className="action-body"><span className="action-title">Novo Carro</span><span className="action-sub">Veículos e frota</span></div>
-                    <svg className="action-arrow" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                  </button>
-                  <button className="action action-green" onClick={() => setModal('produto')}>
-                    <div className="action-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
-                    <div className="action-body"><span className="action-title">Novo Produto</span><span className="action-sub">Estoque e inventário</span></div>
-                    <svg className="action-arrow" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                  </button>
-                </div>
-              </section>
-            </div>
-          )
-          if (id === 'notes')       return <div {...wrapProps}>{handle}<NotesSection onOpenNotepad={toggleNp} /></div>
-          if (id === 'patrimony')   return <div {...wrapProps}>{handle}<PatrimonySection /></div>
-          if (id === 'rentals')     return <div {...wrapProps}>{handle}<RentalsSection /></div>
-          if (id === 'maintenance') return <div {...wrapProps}>{handle}<MaintenanceSection /></div>
-          if (id === 'vehicles')    return <div {...wrapProps}>{handle}<VehicleHistorySection /></div>
-          if (id === 'grid')        return (
-            <div {...wrapProps}>
-              {handle}
-              <div className="content-grid">
-          {/* ── Recent Activity ── */}
-          <section className="section">
-            <div className="section-header">
-              <h2 className="section-title">Atividade Recente</h2>
-            </div>
-            <div className="activity">
-              {activity.length === 0 ? (
-                <div className="act-empty">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01" strokeLinecap="round"/></svg>
-                  <span>Nenhuma atividade ainda. Adicione transações, metas ou imóveis.</span>
-                </div>
-              ) : activity.map(a => (
-                <div key={a.id} className={`act-item act-${a.color}`}>
-                  <div className={`act-icon act-icon-${a.color}`}>{a.icon}</div>
-                  <div className="act-body">
-                    <span className="act-title">{a.title}</span>
-                    <span className="act-sub">{a.sub}</span>
-                  </div>
-                  <span className="act-time">{a.time}</span>
-                </div>
-              ))}
-            </div>
-          </section>
-              </div>
-            </div>
-          )
-          return null
-        })}
-      </main>
+      </div>{/* /main-col */}
 
       {/* ── Floating Buttons ── */}
       <div className="floats">
