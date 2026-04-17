@@ -2859,33 +2859,37 @@ export default function App() {
 
       {/* ── Floating Buttons ── */}
       <div className="floats">
-        <button className={`float-btn float-docs${showDocs ? ' float-active' : ''}`} onClick={toggleDocs} title="Documentos">
+        <button className={`float-btn float-docs${showDocs ? ' float-active' : ''}`} onClick={toggleDocs}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
             <line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>
           </svg>
+          <span>Documentos</span>
         </button>
-        <button className={`float-btn float-sim${showSim ? ' float-active' : ''}`} onClick={toggleSim} title="Simulador">
+        <button className={`float-btn float-sim${showSim ? ' float-active' : ''}`} onClick={toggleSim}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M3 9l9-7 9 7v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             <path d="M9 22V12h6v10"/>
           </svg>
+          <span>Simulador</span>
         </button>
-        <button className={`float-btn float-fin${showFin ? ' float-active' : ''}`} onClick={toggleFin} title="Finanças">
+        <button className={`float-btn float-fin${showFin ? ' float-active' : ''}`} onClick={toggleFin}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" strokeLinecap="round"/>
           </svg>
+          <span>Finanças</span>
         </button>
-        <button className={`float-btn float-np${showNp ? ' float-active' : ''}`} onClick={toggleNp} title="Bloco de Notas">
+        <button className={`float-btn float-np${showNp ? ' float-active' : ''}`} onClick={toggleNp}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
             <line x1="8" y1="13" x2="16" y2="13"/>
             <line x1="8" y1="17" x2="13" y2="17"/>
           </svg>
+          <span>Notas</span>
         </button>
-        <button className={`float-btn float-calc${showCalc ? ' float-active' : ''}`} onClick={toggleCalc} title="Calculadora">
+        <button className={`float-btn float-calc${showCalc ? ' float-active' : ''}`} onClick={toggleCalc}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <rect x="4" y="2" width="16" height="20" rx="3"/>
             <rect x="7" y="5" width="10" height="4" rx="1" fill="currentColor" opacity=".3" stroke="none"/>
@@ -2896,6 +2900,7 @@ export default function App() {
             <circle cx="12" cy="17" r=".8" fill="currentColor" stroke="none"/>
             <circle cx="15.5" cy="17" r=".8" fill="currentColor" stroke="none"/>
           </svg>
+          <span>Calculadora</span>
         </button>
       </div>
 
