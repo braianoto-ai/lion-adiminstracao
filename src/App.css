@@ -293,6 +293,104 @@
 .bell-btn:hover { background: var(--bg4); color: var(--text3) }
 .bell-btn.bell-active { background: rgba(239,68,68,.12); color: #f87171; border-color: rgba(239,68,68,.25) }
 
+/* ── Onboarding Wizard ── */
+.ob-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.65);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 900;
+  padding: 24px;
+  animation: ob-fade-in .25s ease;
+}
+@keyframes ob-fade-in { from { opacity: 0 } to { opacity: 1 } }
+
+.ob-card {
+  position: relative;
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: 40px 36px 32px;
+  max-width: 420px;
+  width: 100%;
+  text-align: center;
+  animation: ob-slide-up .3s cubic-bezier(.34,1.56,.64,1);
+}
+@keyframes ob-slide-up { from { opacity: 0; transform: translateY(24px) scale(.96) } to { opacity: 1; transform: none } }
+
+.ob-skip {
+  position: absolute;
+  top: 16px; right: 16px;
+  font-size: calc(12px * var(--fs, 1));
+  color: var(--text);
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: background .15s, color .15s;
+}
+.ob-skip:hover { background: var(--bg4); color: var(--text2) }
+
+.ob-icon { width: 64px; height: 64px; margin: 0 auto 20px; }
+.ob-icon svg { width: 64px; height: 64px }
+
+.ob-title {
+  font-size: calc(18px * var(--fs, 1));
+  font-weight: 700;
+  color: var(--text3);
+  margin-bottom: 10px;
+  line-height: 1.3;
+}
+
+.ob-body {
+  font-size: calc(14px * var(--fs, 1));
+  color: var(--text);
+  line-height: 1.65;
+  margin-bottom: 28px;
+}
+
+.ob-dots {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+.ob-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--bg4);
+  transition: background .2s, width .2s;
+}
+.ob-dot-active { background: var(--purple); width: 18px; border-radius: 99px }
+
+.ob-actions { display: flex; gap: 10px; justify-content: center }
+
+.ob-back {
+  padding: 10px 20px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border2);
+  font-size: calc(13px * var(--fs, 1));
+  color: var(--text2);
+  transition: background .15s, color .15s;
+}
+.ob-back:hover { background: var(--bg4); color: var(--text3) }
+
+.ob-next {
+  padding: 10px 24px;
+  border-radius: var(--radius-sm);
+  background: var(--purple);
+  font-size: calc(13px * var(--fs, 1));
+  font-weight: 600;
+  color: #fff;
+  transition: background .15s, transform .15s;
+  box-shadow: 0 4px 16px rgba(192,57,43,.35);
+}
+.ob-next:hover { background: var(--purple-l); transform: translateY(-1px) }
+.ob-next:active { transform: translateY(0) }
+
 /* ── Keyboard shortcuts ── */
 .kb-toast {
   position: fixed;
