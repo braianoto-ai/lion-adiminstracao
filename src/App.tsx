@@ -2050,6 +2050,64 @@ function VehicleHistorySection() {
   )
 }
 
+// ─── Notes Section ───────────────────────────────────────────────────────────
+
+function NotesSection({ onOpenNotepad }: { onOpenNotepad: () => void }) {
+  const [folders, setFolders] = useState<Folder[]>(() => {
+    try { return JSON.parse(localStorage.getItem('np-folders') || 'null') || [] } catch { return [] }
+  })
+
+  useEffect(() => {
+    const handler = () => {
+      try { setFolders(JSON.parse(localStorage.getItem('np-folders') || 'null') || []) } catch { /* ignore */ }
+    }
+    window.addEventListener('storage', handler)
+    return () => window.removeEventListener('storage', handler)
+  }, [])
+
+  const allNotes: (Note & { folderName: string; folderColor: string })[] = folders
+    .flatMap(f => f.notes.map(n => ({ ...n, folderName: f.name, folderColor: f.color })))
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    .slice(0, 6)
+
+  const fmt = (iso: string) => {
+    const d = new Date(iso)
+    return d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })
+  }
+
+  return (
+    <section className="section notes-section">
+      <div className="section-header">
+        <div>
+          <h2 className="section-title">Notas</h2>
+          <span className="goals-sub">{allNotes.length} nota{allNotes.length !== 1 ? 's' : ''}</span>
+        </div>
+        <button className="goals-add-btn" onClick={onOpenNotepad}>+ Nova Nota</button>
+      </div>
+      {allNotes.length === 0 ? (
+        <div className="goals-empty">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>
+          <p>Nenhuma nota criada ainda.</p>
+        </div>
+      ) : (
+        <div className="notes-grid">
+          {allNotes.map(n => (
+            <button key={n.id} className="note-card" onClick={onOpenNotepad}>
+              <div className="note-card-top">
+                <span className="note-folder-dot" style={{ background: n.folderColor }} />
+                <span className="note-folder-name">{n.folderName}</span>
+                <span className="note-card-date">{fmt(n.updatedAt)}</span>
+              </div>
+              <div className="note-card-title">{n.title || 'Sem título'}</div>
+              <div className="note-card-preview">{n.content ? n.content.substring(0, 80) + (n.content.length > 80 ? '…' : '') : 'Sem conteúdo'}</div>
+            </button>
+          ))}
+        </div>
+      )}
+    </section>
+  )
+}
+
 // ─── Alerts Panel ────────────────────────────────────────────────────────────
 
 interface AppAlert {
@@ -2776,16 +2834,18 @@ export default function App() {
 
   const SECTION_DEFS: { id: string; label: string }[] = [
     { id: 'assets',      label: 'Ativos' },
+    { id: 'notes',       label: 'Notas' },
     { id: 'patrimony',   label: 'Patrimônio' },
     { id: 'rentals',     label: 'Aluguéis' },
     { id: 'maintenance', label: 'Manutenções' },
     { id: 'vehicles',    label: 'Veículos' },
-    { id: 'grid',        label: 'Ações & Atividade' },
+    { id: 'grid',        label: 'Atividade' },
   ]
+  const validIds = SECTION_DEFS.map(s => s.id)
   const [sectionOrder, setSectionOrder] = useState<string[]>(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('lion-section-order') || 'null')
-      if (Array.isArray(saved) && saved.length === SECTION_DEFS.length) return saved
+      if (Array.isArray(saved) && saved.length === SECTION_DEFS.length && saved.every((id: string) => validIds.includes(id))) return saved
     } catch { /* ignore */ }
     return SECTION_DEFS.map(s => s.id)
   })
@@ -3106,6 +3166,7 @@ export default function App() {
               </section>
             </div>
           )
+          if (id === 'notes')       return <div {...wrapProps}>{handle}<NotesSection onOpenNotepad={toggleNp} /></div>
           if (id === 'patrimony')   return <div {...wrapProps}>{handle}<PatrimonySection /></div>
           if (id === 'rentals')     return <div {...wrapProps}>{handle}<RentalsSection /></div>
           if (id === 'maintenance') return <div {...wrapProps}>{handle}<MaintenanceSection /></div>
