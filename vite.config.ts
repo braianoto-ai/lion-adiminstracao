@@ -12,7 +12,7 @@ export default defineConfig({
         name: 'Lion Admin',
         short_name: 'Lion',
         description: 'Gestão Financeira e Patrimonial',
-        theme_color: '#7c3aed',
+        theme_color: '#c0392b',
         background_color: '#0c0e14',
         display: 'standalone',
         orientation: 'portrait',

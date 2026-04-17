@@ -2603,8 +2603,9 @@ export default function App() {
   }, [themeId])
 
   useEffect(() => {
-    const sizes: Record<string, string> = { compact: '13px', normal: '14px', comfortable: '15px', large: '16px' }
-    document.documentElement.style.setProperty('--font-base', sizes[fontSize] || '14px')
+    const el = document.documentElement
+    el.removeAttribute('data-fs')
+    if (fontSize !== 'normal') el.setAttribute('data-fs', fontSize)
     localStorage.setItem('lion-font', fontSize)
   }, [fontSize])
   const [user, setUser] = useState<User | null>(null)
@@ -2664,8 +2665,8 @@ export default function App() {
               <path d="M8 22L13 10l5 8 4-5 4 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <defs>
                 <linearGradient id="bg" x1="0" y1="0" x2="32" y2="32">
-                  <stop stopColor="#7c3aed"/>
-                  <stop offset="1" stopColor="#4f46e5"/>
+                  <stop stopColor="#c0392b"/>
+                  <stop offset="1" stopColor="#96281b"/>
                 </linearGradient>
               </defs>
             </svg>
