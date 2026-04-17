@@ -723,7 +723,7 @@
 
 .hamburger-btn {
   display: flex; align-items: center; justify-content: center;
-  width: 36px; height: 36px;
+  width: 40px; height: 40px;
   border-radius: var(--radius);
   color: var(--text2);
   flex-shrink: 0;
@@ -789,7 +789,8 @@
 .sidebar-nav { flex: 1; overflow-y: auto; padding: 10px 8px; display: flex; flex-direction: column; gap: 2px }
 .sidebar-nav-item {
   display: flex; align-items: center; gap: 10px;
-  padding: 9px 10px;
+  padding: 11px 10px;
+  min-height: 44px;
   border-radius: var(--radius);
   color: var(--text2);
   font-size: 13px;
@@ -2078,9 +2079,11 @@
 .page-content {
   flex: 1;
   padding: 20px 28px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   max-width: 1400px;
   width: 100%;
   margin: 0 auto;
+  overflow-x: hidden;
 }
 
 .page-back-btn {
@@ -3172,6 +3175,10 @@
    RESPONSIVE
 ═══════════════════════════════════════════════════════════ */
 
+/* ── Global touch optimization ── */
+button, a, [role="button"] { touch-action: manipulation }
+
+/* ── 1200px — tablet landscape ── */
 @media (max-width: 1200px) {
   .main { grid-template-columns: repeat(2, 1fr) }
   .drag-section--assets, .drag-section--notes { grid-column: 1 / -1 }
@@ -3179,12 +3186,14 @@
   .rentals-list { grid-template-columns: repeat(2, 1fr) }
   .maint-list   { grid-template-columns: repeat(2, 1fr) }
   .veh-list     { grid-template-columns: repeat(2, 1fr) }
+  .goals-page-summary { grid-template-columns: repeat(2, 1fr) }
 }
 
+/* ── 800px — tablet portrait ── */
 @media (max-width: 800px) {
-  .main { padding: 16px; grid-template-columns: 1fr }
+  .main { padding: 14px; grid-template-columns: 1fr; gap: 10px }
   .drag-section--grid, .drag-section--alerts, .drag-section--activity { grid-column: 1 }
-  .header { padding: 14px 16px }
+  .header { padding: 10px 14px }
   .content-grid { grid-template-columns: 1fr }
   .rentals-list { grid-template-columns: 1fr }
   .maint-list   { grid-template-columns: 1fr }
@@ -3193,14 +3202,126 @@
   .usd-ticker { display: none }
   .header-search-wrap { display: none }
   .card-value { font-size: calc(15px * var(--fs, 1)) }
+  /* Notes: stack sidebar above viewer */
+  .notes-db-layout { grid-template-columns: 1fr; min-height: unset }
+  .notes-list { max-height: 180px }
+  /* Sim: 3→1 columns */
+  .sim-row { grid-template-columns: 1fr }
+  /* Family form: 3→2 columns */
+  .family-form-grid { grid-template-columns: 1fr 1fr }
+  /* Goals summary: 4→2 */
+  .goals-page-summary { grid-template-columns: repeat(2, 1fr) }
+  /* Goals page grid */
+  .goals-page-grid { grid-template-columns: repeat(2, 1fr) }
+  /* Page content padding */
+  .page-content { padding: 14px }
 }
 
-@media (max-width: 500px) {
-  .cards { grid-template-columns: 1fr }
+/* ── 600px — large mobile ── */
+@media (max-width: 600px) {
+  .header { padding: 9px 12px }
+  .brand-sub { display: none }
+  .brand-name { font-size: calc(14px * var(--fs, 1)) }
+  /* Float buttons: tighter corner */
+  .floats { bottom: 16px; right: 14px; gap: 6px }
+  /* Float panels: near-fullscreen */
+  .float-panel {
+    right: 0 !important;
+    left: 0 !important;
+    bottom: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    max-height: 85vh;
+    border-radius: 16px 16px 0 0;
+    transform: translateY(16px) scale(1) !important;
+  }
+  .float-panel.panel-open {
+    transform: translateY(0) scale(1) !important;
+  }
+  /* Alerts panel: top sheet instead */
+  .panel-alerts {
+    top: 52px !important;
+    bottom: auto !important;
+    left: 8px !important;
+    right: 8px !important;
+    width: auto !important;
+    border-radius: var(--radius-lg) !important;
+    transform: translateY(-8px) scale(.97) !important;
+  }
+  .panel-alerts.panel-open { transform: translateY(0) scale(1) !important }
+  .calc-wrap, .np-wrap, .docs-wrap, .sim-wrap, .fin-wrap {
+    width: 100% !important;
+    max-width: 100% !important;
+    border-radius: 16px 16px 0 0;
+    max-height: 80vh;
+  }
+  /* Modal */
   .modal-fields { grid-template-columns: 1fr }
-  .floats { bottom: 20px; right: 16px }
-  .float-panel { right: 70px }
-  .calc-wrap, .np-wrap { width: calc(100vw - 32px) }
+  .modal { margin: 8px; padding: 16px 14px 14px; border-radius: var(--radius-lg) }
+  /* Cards */
+  .cards { grid-template-columns: repeat(2, 1fr); gap: 8px }
+  .card { padding: 12px }
+  /* Family */
+  .family-form-grid { grid-template-columns: 1fr }
+  .family-grid { grid-template-columns: 1fr }
+  /* Trips */
+  .trips-grid { grid-template-columns: 1fr }
+  .trip-form-grid { grid-template-columns: 1fr }
+  .trip-span2 { grid-column: span 1 }
+  /* Goals */
+  .goals-page-summary { grid-template-columns: repeat(2, 1fr) }
+  .goals-page-grid { grid-template-columns: 1fr }
+  .goals-page-form-grid { grid-template-columns: 1fr }
+  .gp-span2 { grid-column: span 1 }
+  /* Calendar */
+  .cal-layout { grid-template-columns: 1fr }
+  .cal-day-panel { display: none }
+  /* Page content */
+  .page-content { padding: 12px }
+  .page-back-btn { font-size: calc(12px * var(--fs,1)); padding: 7px 12px }
+}
+
+/* ── 480px — standard mobile ── */
+@media (max-width: 480px) {
+  /* Header */
+  .header { padding: 8px 10px }
+  .hamburger-btn { width: 44px; height: 44px; margin-right: 0 }
+  .header-right { gap: 6px }
+  /* Larger touch targets for header buttons */
+  .bell-btn, .theme-toggle-btn, .print-btn, .share-btn { width: 40px; height: 40px }
+  /* Cards: single column */
+  .cards { grid-template-columns: 1fr }
+  .card-value { font-size: calc(18px * var(--fs, 1)) }
+  /* Main */
+  .main { padding: 10px; gap: 8px }
+  /* Section cards */
+  .card { padding: 12px 10px }
+  /* Floats */
+  .floats { bottom: 12px; right: 10px }
+  .float-btn { width: 46px; height: 46px }
+  /* Theme footer */
+  .theme-footer { left: 10px; bottom: 12px }
+  /* Goals summary: 2 columns */
+  .goals-page-summary { grid-template-columns: 1fr 1fr }
+  /* Sim result table: scroll */
+  .sim-table-wrap { overflow-x: auto }
+  /* Asset/notes sections: full width */
+  .drag-section--assets,
+  .drag-section--notes { grid-column: 1 }
+}
+
+/* ── 360px — small phones ── */
+@media (max-width: 360px) {
+  .header { padding: 7px 8px }
+  .brand-name { font-size: calc(13px * var(--fs, 1)) }
+  .main { padding: 8px; gap: 6px }
+  .cards { gap: 6px }
+  .card { padding: 10px 8px }
+  .card-value { font-size: calc(16px * var(--fs, 1)) }
+  .float-btn { width: 42px; height: 42px }
+  .floats { right: 8px; bottom: 8px }
+  .goals-page-summary { grid-template-columns: 1fr }
+  .section-title { font-size: calc(11px * var(--fs,1)) }
 }
 
 /* ═══════════════════════════════════════════════════════════

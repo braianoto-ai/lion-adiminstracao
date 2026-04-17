@@ -103,13 +103,20 @@ html[data-fs="large"]       { --fs: 1.143 }
 /* backward-compat alias */
 html.light { }
 
-body { min-height: 100vh }
-#root { min-height: 100vh }
+body { min-height: 100vh; min-height: 100dvh }
+#root { min-height: 100vh; min-height: 100dvh }
+
+/* iOS safe areas */
+.app { padding-bottom: env(safe-area-inset-bottom, 0) }
 
 button { cursor: pointer; border: none; background: none; font: inherit; color: inherit }
 input, textarea, select { font: inherit; color: inherit; background: none; border: none; outline: none }
 input::placeholder, textarea::placeholder { color: var(--text) }
 svg { display: block; flex-shrink: 0 }
+
+/* iOS momentum scroll */
+.notes-list, .sim-table-wrap, .fin-body, .np-body,
+.cal-layout, .goals-page, .trips-page, .family-page { -webkit-overflow-scrolling: touch }
 
 /* Custom scrollbar */
 ::-webkit-scrollbar { width: 5px; height: 5px }
