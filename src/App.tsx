@@ -798,17 +798,25 @@ function GoalsSection() {
     return 'goal-bar-red'
   }
 
+  const [collapsed, setCollapsed] = useState(false)
+
   return (
     <section className="goals-section">
       <div className="goals-header">
-        <div>
-          <h2 className="section-title">Metas de Patrimônio</h2>
-          <span className="goals-sub">{goals.length} meta{goals.length !== 1 ? 's' : ''} ativas</span>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <button className="section-collapse-btn" onClick={() => setCollapsed(v => !v)} title={collapsed ? 'Expandir' : 'Recolher'}>
+            <svg viewBox="0 0 16 16" fill="none" style={{ transform: collapsed ? 'rotate(-90deg)' : 'none', transition:'transform .2s' }}><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </button>
+          <div>
+            <h2 className="section-title">Metas de Patrimônio</h2>
+            <span className="goals-sub">{goals.length} meta{goals.length !== 1 ? 's' : ''} ativas</span>
+          </div>
         </div>
         <button className="goals-add-btn" onClick={() => { setShowForm(v => !v); setEditId(null); setForm(GOAL_FORM_INIT) }}>
           {showForm && !editId ? '✕ Cancelar' : '+ Nova Meta'}
         </button>
       </div>
+      {collapsed ? null : (<>
 
       {showForm && (
         <form className="goal-form" onSubmit={saveGoal}>
@@ -899,6 +907,7 @@ function GoalsSection() {
           })}
         </div>
       )}
+      </>)}
     </section>
   )
 }
@@ -1159,12 +1168,19 @@ function PatrimonySection() {
     )
   }
 
+  const [collapsed, setCollapsed] = useState(false)
+
   return (
     <section className="pat-section">
       <div className="goals-header">
-        <div>
-          <h2 className="section-title">Evolução do Patrimônio</h2>
-          <span className="goals-sub">{points.length} meses · saldo acumulado</span>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <button className="section-collapse-btn" onClick={() => setCollapsed(v => !v)} title={collapsed ? 'Expandir' : 'Recolher'}>
+            <svg viewBox="0 0 16 16" fill="none" style={{ transform: collapsed ? 'rotate(-90deg)' : 'none', transition:'transform .2s' }}><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </button>
+          <div>
+            <h2 className="section-title">Evolução do Patrimônio</h2>
+            <span className="goals-sub">{points.length} meses · saldo acumulado</span>
+          </div>
         </div>
         <div className="pat-summary">
           <div className="pat-stat">
@@ -1186,7 +1202,7 @@ function PatrimonySection() {
         </div>
       </div>
 
-      <div className="pat-chart-wrap">
+      {!collapsed && <div className="pat-chart-wrap">
         <svg viewBox={`0 0 ${W} ${H}`} className="pat-svg" preserveAspectRatio="xMidYMid meet">
           <defs>
             <linearGradient id="patGrad" x1="0" y1="0" x2="0" y2="1">
@@ -1237,7 +1253,7 @@ function PatrimonySection() {
             )
           })}
         </svg>
-      </div>
+      </div>}
     </section>
   )
 }
@@ -1987,15 +2003,22 @@ function VehicleHistorySection() {
     return (a && (a.cls === 'veh-alert-red' || a.cls === 'veh-alert-amber')) || da.length > 0
   }).length
 
+  const [collapsed, setCollapsed] = useState(false)
+
   return (
     <section className="veh-section">
       <div className="goals-header">
-        <div>
-          <h2 className="section-title">Histórico de Veículos</h2>
-          <span className="goals-sub">
-            {vehicles.length} veículo{vehicles.length !== 1 ? 's' : ''}
-            {alertCount > 0 && <span className="rentals-overdue-badge">{alertCount} alerta{alertCount > 1 ? 's' : ''}</span>}
-          </span>
+        <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+          <button className="section-collapse-btn" onClick={() => setCollapsed(v => !v)} title={collapsed ? 'Expandir' : 'Recolher'}>
+            <svg viewBox="0 0 16 16" fill="none" style={{ transform: collapsed ? 'rotate(-90deg)' : 'none', transition:'transform .2s' }}><path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </button>
+          <div>
+            <h2 className="section-title">Histórico de Veículos</h2>
+            <span className="goals-sub">
+              {vehicles.length} veículo{vehicles.length !== 1 ? 's' : ''}
+              {alertCount > 0 && <span className="rentals-overdue-badge">{alertCount} alerta{alertCount > 1 ? 's' : ''}</span>}
+            </span>
+          </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
           {vehicles.length > 0 && (
@@ -2010,6 +2033,7 @@ function VehicleHistorySection() {
         </div>
       </div>
 
+      {!collapsed && (<>
       {showVehForm && (
         <form className="goal-form" onSubmit={saveVehicle}>
           <div className="goal-form-grid">
@@ -2190,6 +2214,7 @@ function VehicleHistorySection() {
           })}
         </div>
       )}
+      </>)}
     </section>
   )
 }
@@ -2809,13 +2834,24 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('lion-onboarded'))
   const finishOnboarding = () => { localStorage.setItem('lion-onboarded', '1'); setShowOnboarding(false) }
 
-  const [usd, setUsd] = useState<{ bid: string; pct: string } | null>(null)
+  interface FxRate { code: string; bid: string; pct: string }
+  const [fxRates, setFxRates] = useState<FxRate[]>([])
   useEffect(() => {
-    const cached = localStorage.getItem('lion-usd-cache')
-    if (cached) { try { const p = JSON.parse(cached); if (Date.now() - p.ts < 300000) { setUsd(p); return } } catch { /* ignore */ } }
-    fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL')
+    const CACHE_KEY = 'lion-fx-cache'
+    const cached = localStorage.getItem(CACHE_KEY)
+    if (cached) { try { const p = JSON.parse(cached); if (Date.now() - p.ts < 300000) { setFxRates(p.rates); return } } catch { /* ignore */ } }
+    fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL,EUR-BRL,BTC-BRL,CNY-BRL')
       .then(r => r.json())
-      .then(d => { const v = { bid: parseFloat(d.USDBRL.bid).toFixed(2), pct: d.USDBRL.pctChange, ts: Date.now() }; setUsd(v); localStorage.setItem('lion-usd-cache', JSON.stringify(v)) })
+      .then(d => {
+        const rates: FxRate[] = [
+          { code: 'USD', bid: parseFloat(d.USDBRL.bid).toFixed(2), pct: d.USDBRL.pctChange },
+          { code: 'EUR', bid: parseFloat(d.EURBRL.bid).toFixed(2), pct: d.EURBRL.pctChange },
+          { code: 'BTC', bid: parseFloat(d.BTCBRL.bid).toLocaleString('pt-BR', { maximumFractionDigits: 0 }), pct: d.BTCBRL.pctChange },
+          { code: 'CNY', bid: parseFloat(d.CNYBRL.bid).toFixed(3), pct: d.CNYBRL.pctChange },
+        ]
+        setFxRates(rates)
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ rates, ts: Date.now() }))
+      })
       .catch(() => {})
   }, [])
 
@@ -3035,13 +3071,13 @@ export default function App() {
           <div className="header-date">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
           </div>
-          {usd && (
-            <div className={`usd-ticker${parseFloat(usd.pct) >= 0 ? ' usd-up' : ' usd-down'}`} title="USD/BRL — atualizado a cada 5 min">
-              <span className="usd-label">USD</span>
-              <span className="usd-value">R$ {usd.bid}</span>
-              <span className="usd-pct">{parseFloat(usd.pct) >= 0 ? '▲' : '▼'} {Math.abs(parseFloat(usd.pct)).toFixed(2)}%</span>
+          {fxRates.map(r => (
+            <div key={r.code} className={`usd-ticker${parseFloat(r.pct) >= 0 ? ' usd-up' : ' usd-down'}`} title={`${r.code}/BRL — atualizado a cada 5 min`}>
+              <span className="usd-label">{r.code}</span>
+              <span className="usd-value">{r.code === 'BTC' ? `R$${r.bid}` : `R$ ${r.bid}`}</span>
+              <span className="usd-pct">{parseFloat(r.pct) >= 0 ? '▲' : '▼'} {Math.abs(parseFloat(r.pct)).toFixed(2)}%</span>
             </div>
-          )}
+          ))}
           <button className="theme-toggle-btn" onClick={() => setThemeId(t => t === 'light' ? 'charcoal' : 'light')} title={themeId === 'light' ? 'Modo escuro' : 'Modo claro'}>
             {themeId === 'light' ? (
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -3268,37 +3304,33 @@ export default function App() {
 
       {/* ── Floating Buttons ── */}
       <div className="floats">
-        <button className={`float-btn float-docs${showDocs ? ' float-active' : ''}`} onClick={toggleDocs}>
+        <button className={`float-btn float-docs${showDocs ? ' float-active' : ''}`} onClick={toggleDocs} title="Documentos (D)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
             <line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/>
           </svg>
-          <span>Documentos</span>
         </button>
-        <button className={`float-btn float-sim${showSim ? ' float-active' : ''}`} onClick={toggleSim}>
+        <button className={`float-btn float-sim${showSim ? ' float-active' : ''}`} onClick={toggleSim} title="Simulador (S)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M3 9l9-7 9 7v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
             <path d="M9 22V12h6v10"/>
           </svg>
-          <span>Simulador</span>
         </button>
-        <button className={`float-btn float-fin${showFin ? ' float-active' : ''}`} onClick={toggleFin}>
+        <button className={`float-btn float-fin${showFin ? ' float-active' : ''}`} onClick={toggleFin} title="Finanças (F)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" strokeLinecap="round"/>
           </svg>
-          <span>Finanças</span>
         </button>
-        <button className={`float-btn float-np${showNp ? ' float-active' : ''}`} onClick={toggleNp}>
+        <button className={`float-btn float-np${showNp ? ' float-active' : ''}`} onClick={toggleNp} title="Notas (N)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <polyline points="14 2 14 8 20 8"/>
             <line x1="8" y1="13" x2="16" y2="13"/>
             <line x1="8" y1="17" x2="13" y2="17"/>
           </svg>
-          <span>Notas</span>
         </button>
-        <button className={`float-btn float-calc${showCalc ? ' float-active' : ''}`} onClick={toggleCalc}>
+        <button className={`float-btn float-calc${showCalc ? ' float-active' : ''}`} onClick={toggleCalc} title="Calculadora (C)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <rect x="4" y="2" width="16" height="20" rx="3"/>
             <rect x="7" y="5" width="10" height="4" rx="1" fill="currentColor" opacity=".3" stroke="none"/>
@@ -3309,7 +3341,6 @@ export default function App() {
             <circle cx="12" cy="17" r=".8" fill="currentColor" stroke="none"/>
             <circle cx="15.5" cy="17" r=".8" fill="currentColor" stroke="none"/>
           </svg>
-          <span>Calculadora</span>
         </button>
       </div>
 
