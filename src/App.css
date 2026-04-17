@@ -3605,6 +3605,218 @@ html[data-theme="light"] .share-file-btn { background: var(--bg3); border-color:
 @media print { .theme-footer { display: none !important } }
 
 /* ═══════════════════════════════════════════════════════════
+   GOALS PAGE
+═══════════════════════════════════════════════════════════ */
+
+.goals-page { display: flex; flex-direction: column; gap: 20px }
+
+.goals-page-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.goals-page-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.goals-summary-item {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.goals-summary-label {
+  font-size: calc(10px * var(--fs, 1));
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.goals-summary-val {
+  font-size: calc(18px * var(--fs, 1));
+  font-weight: 700;
+  color: var(--text3);
+}
+
+.goals-page-form {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.goals-page-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.gp-span2 { grid-column: span 2 }
+
+.goals-page-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.goals-filter-btn {
+  padding: 5px 12px;
+  border-radius: 99px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-size: calc(11px * var(--fs, 1));
+  font-weight: 600;
+  transition: background .15s, border-color .15s, color .15s;
+}
+.goals-filter-btn:hover { background: var(--bg4); color: var(--text2) }
+.goals-filter-btn.active { background: rgba(192,57,43,.15); border-color: var(--purple); color: var(--purple-l) }
+
+.goals-page-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 12px;
+}
+
+.goals-page-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-top: 3px solid var(--gpc-color, var(--border));
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: border-color .15s, transform .15s;
+}
+.goals-page-card:hover { transform: translateY(-2px) }
+.gpc-done { opacity: .75 }
+
+.gpc-top {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gpc-cat-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.gpc-cat {
+  font-size: calc(10px * var(--fs, 1));
+  font-weight: 700;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}
+
+.gpc-deadline {
+  font-size: calc(10px * var(--fs, 1));
+  font-weight: 700;
+  margin-left: 4px;
+  background: rgba(255,255,255,.05);
+  padding: 1px 6px;
+  border-radius: 99px;
+}
+
+.gpc-name {
+  font-size: calc(14px * var(--fs, 1));
+  font-weight: 700;
+  color: var(--text3);
+  line-height: 1.3;
+}
+
+.gpc-amounts {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.gpc-current {
+  font-size: calc(18px * var(--fs, 1));
+  font-weight: 700;
+  color: var(--text3);
+}
+
+.gpc-sep { color: var(--text); font-size: calc(13px * var(--fs, 1)) }
+
+.gpc-target {
+  font-size: calc(12px * var(--fs, 1));
+  color: var(--text);
+}
+
+.goal-bar-blue-solid { background: var(--blue) }
+
+.gpc-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.gpc-pct {
+  font-size: calc(12px * var(--fs, 1));
+  font-weight: 700;
+}
+
+.gpc-deposit-btn {
+  font-size: calc(11px * var(--fs, 1));
+  font-weight: 600;
+  padding: 4px 10px;
+  border-radius: var(--radius-sm);
+  background: rgba(59,130,246,.12);
+  border: 1px solid rgba(59,130,246,.25);
+  color: var(--blue-l);
+  transition: background .15s;
+}
+.gpc-deposit-btn:hover { background: rgba(59,130,246,.22) }
+
+.gpc-deposit-form {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.gpc-deposit-form input {
+  width: 90px;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  font-size: calc(11px * var(--fs, 1));
+  color: var(--text2);
+}
+
+@media (max-width: 800px) {
+  .goals-page-summary { grid-template-columns: repeat(2, 1fr) }
+  .goals-page-grid { grid-template-columns: 1fr }
+}
+
+@media (max-width: 500px) {
+  .goals-page-summary { grid-template-columns: 1fr 1fr }
+  .goals-page-form-grid { grid-template-columns: 1fr }
+  .gp-span2 { grid-column: span 1 }
+}
+
+html[data-theme="light"] .goals-page-card,
+html[data-theme="light"] .goals-summary-item { background: #fff; border-color: var(--border2) }
+html[data-theme="light"] .goals-filter-btn { background: var(--bg3) }
+
+/* ═══════════════════════════════════════════════════════════
    TRIPS PAGE
 ═══════════════════════════════════════════════════════════ */
 
