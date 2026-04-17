@@ -966,7 +966,7 @@
 .float-panel {
   position: fixed;
   bottom: 96px;
-  right: 28px;
+  right: 82px;
   z-index: 150;
   pointer-events: none;
   opacity: 0;
@@ -2730,7 +2730,7 @@
   .cards { grid-template-columns: 1fr }
   .modal-fields { grid-template-columns: 1fr }
   .floats { bottom: 20px; right: 16px }
-  .float-panel { right: 16px }
+  .float-panel { right: 70px }
   .calc-wrap, .np-wrap { width: calc(100vw - 32px) }
 }
 
