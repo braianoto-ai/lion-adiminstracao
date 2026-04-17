@@ -2476,6 +2476,70 @@ function SharePanel({ onClose, onImport }: { onClose: () => void; onImport: (own
   )
 }
 
+// ─── Theme Footer ─────────────────────────────────────────────────────────────
+
+const THEMES = [
+  { id: 'dark',     label: 'Noite',    swatch: '#0c0e14' },
+  { id: 'charcoal', label: 'Carvão',   swatch: '#1f1f1f' },
+  { id: 'slate',    label: 'Ardósia',  swatch: '#15202e' },
+  { id: 'light',    label: 'Claro',    swatch: '#e8eaed' },
+]
+
+const FONT_SIZES = [
+  { id: 'compact',     label: 'A',  size: '13px', title: 'Compacto' },
+  { id: 'normal',      label: 'A',  size: '14px', title: 'Normal' },
+  { id: 'comfortable', label: 'A',  size: '15px', title: 'Confortável' },
+  { id: 'large',       label: 'A',  size: '16px', title: 'Grande' },
+]
+
+function ThemeFooter({ themeId, setThemeId, fontSize, setFontSize }: {
+  themeId: string; setThemeId: (t: string) => void
+  fontSize: string; setFontSize: (f: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const current = THEMES.find(t => t.id === themeId) || THEMES[0]
+
+  return (
+    <div className="theme-footer">
+      {open && (
+        <div className="theme-popup">
+          <div className="theme-popup-section">
+            <div className="theme-popup-label">Tema</div>
+            <div className="theme-swatches">
+              {THEMES.map(t => (
+                <button key={t.id} className={`theme-swatch${themeId === t.id ? ' swatch-active' : ''}`}
+                  onClick={() => setThemeId(t.id)} title={t.label}>
+                  <span className="swatch-dot" style={{ background: t.swatch, border: t.id === 'light' ? '1px solid #ccc' : 'none' }}/>
+                  <span className="swatch-label">{t.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="theme-popup-divider"/>
+          <div className="theme-popup-section">
+            <div className="theme-popup-label">Tamanho da fonte</div>
+            <div className="font-size-btns">
+              {FONT_SIZES.map((f, i) => (
+                <button key={f.id} className={`font-size-btn${fontSize === f.id ? ' font-size-active' : ''}`}
+                  style={{ fontSize: f.size }} onClick={() => setFontSize(f.id)} title={f.title}>
+                  {['A−', 'A', 'A+', 'A++'][i]}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      <button className="theme-footer-btn" onClick={() => setOpen(v => !v)}>
+        <span className="theme-footer-swatch" style={{ background: current.swatch, border: themeId === 'light' ? '1px solid #aaa' : 'none' }}/>
+        <span>{current.label}</span>
+        <svg viewBox="0 0 16 16" fill="none" className={open ? 'tf-chevron-up' : ''}>
+          <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+        </svg>
+      </button>
+    </div>
+  )
+}
+
 // ─── Activity data ────────────────────────────────────────────────────────────
 
 const ACTIVITY_ICONS: Record<string, React.ReactNode> = {
@@ -2526,15 +2590,23 @@ export default function App() {
   const [showShare, setShowShare] = useState(false)
   const [viewMode, setViewMode] = useState(false)
   const [viewOwner, setViewOwner] = useState('')
-  const [theme, setTheme] = useState<'dark' | 'light'>(() =>
-    (localStorage.getItem('lion-theme') as 'dark' | 'light') || 'dark'
-  )
+  const [themeId, setThemeId] = useState(() => localStorage.getItem('lion-theme') || 'dark')
+  const [fontSize, setFontSize] = useState(() => localStorage.getItem('lion-font') || 'normal')
   const [modal, setModal] = useState<ModalType>(null)
 
   useEffect(() => {
-    document.documentElement.classList.toggle('light', theme === 'light')
-    localStorage.setItem('lion-theme', theme)
-  }, [theme])
+    const el = document.documentElement
+    el.removeAttribute('data-theme')
+    el.classList.remove('light')
+    if (themeId !== 'dark') el.setAttribute('data-theme', themeId === 'light' ? 'light' : themeId)
+    localStorage.setItem('lion-theme', themeId)
+  }, [themeId])
+
+  useEffect(() => {
+    const sizes: Record<string, string> = { compact: '13px', normal: '14px', comfortable: '15px', large: '16px' }
+    document.documentElement.style.setProperty('--font-base', sizes[fontSize] || '14px')
+    localStorage.setItem('lion-font', fontSize)
+  }, [fontSize])
   const [user, setUser] = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(false)
 
@@ -2607,15 +2679,15 @@ export default function App() {
           <div className="header-date">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
           </div>
-          <button className="theme-toggle-btn" onClick={() => setTheme(t => t === 'dark' ? 'light' : 'dark')} title={theme === 'dark' ? 'Modo claro' : 'Modo escuro'}>
-            {theme === 'dark' ? (
+          <button className="theme-toggle-btn" onClick={() => setThemeId(t => t === 'light' ? 'charcoal' : 'light')} title={themeId === 'light' ? 'Modo escuro' : 'Modo claro'}>
+            {themeId === 'light' ? (
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <circle cx="10" cy="10" r="4"/>
-                <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.93 4.93l1.41 1.41M13.66 13.66l1.41 1.41M4.93 15.07l1.41-1.41M13.66 6.34l1.41-1.41" strokeLinecap="round"/>
+                <path d="M17.293 13.293A8 8 0 0 1 6.707 2.707a8.001 8.001 0 1 0 10.586 10.586z"/>
               </svg>
             ) : (
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M17.293 13.293A8 8 0 0 1 6.707 2.707a8.001 8.001 0 1 0 10.586 10.586z"/>
+                <circle cx="10" cy="10" r="4"/>
+                <path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.93 4.93l1.41 1.41M13.66 13.66l1.41 1.41M4.93 15.07l1.41-1.41M13.66 6.34l1.41-1.41" strokeLinecap="round"/>
               </svg>
             )}
           </button>
@@ -2851,6 +2923,8 @@ export default function App() {
 
       {/* ── Modals ── */}
       {modal && <NewItemModal type={modal} onClose={() => setModal(null)} />}
+
+      <ThemeFooter themeId={themeId} setThemeId={setThemeId} fontSize={fontSize} setFontSize={setFontSize} />
     </div>
   )
 }
