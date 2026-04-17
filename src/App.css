@@ -2393,6 +2393,68 @@ html.light .fin-field textarea { background: var(--bg2) !important }
 html.light .share-file-btn { background: var(--bg3); border-color: var(--border2) }
 
 /* ═══════════════════════════════════════════════════════════
+   EMAIL NOTIFICATIONS
+═══════════════════════════════════════════════════════════ */
+
+.email-section {
+  margin-top: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.email-toggle-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: var(--radius-sm);
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .15s;
+}
+.email-toggle-btn svg:first-child { width: 16px; height: 16px; flex-shrink: 0 }
+.email-toggle-btn:hover { background: var(--bg4) }
+
+.email-config {
+  margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.email-setup-note {
+  font-size: 11px;
+  color: var(--text);
+  line-height: 1.6;
+  padding: 10px 12px;
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.email-setup-note strong { color: var(--text2) }
+.email-setup-note code {
+  font-family: monospace;
+  background: var(--bg4);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 10px;
+  color: var(--purple-l);
+}
+
+.email-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.email-actions .btn-ghost,
+.email-actions .btn-accent { flex: 1; justify-content: center }
+
+/* ═══════════════════════════════════════════════════════════
    SHARE PANEL
 ═══════════════════════════════════════════════════════════ */
 
