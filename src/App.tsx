@@ -2386,6 +2386,14 @@ export default function App() {
           <div className="header-date">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
           </div>
+          <button className="pdf-btn" onClick={() => window.print()} title="Exportar PDF">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M5 3h7l3 3v11H5V3z" strokeLinejoin="round"/>
+              <path d="M12 3v3h3" strokeLinejoin="round"/>
+              <path d="M7 11h6M7 14h4" strokeLinecap="round"/>
+            </svg>
+            <span>PDF</span>
+          </button>
           <button className={`bell-btn${showAlerts ? ' bell-active' : ''}`} onClick={toggleAlerts} title="Alertas">
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M10 2a6 6 0 0 0-6 6v3l-1.5 2.5h15L16 11V8a6 6 0 0 0-6-6z" strokeLinejoin="round"/>
@@ -2408,6 +2416,12 @@ export default function App() {
       </header>
 
       <main className="main">
+        {/* ── Print header (hidden on screen) ── */}
+        <div className="print-only print-report-header">
+          <div className="print-report-brand">Lion Admin — Relatório Financeiro</div>
+          <div className="print-report-date">Gerado em {new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })}</div>
+        </div>
+
         {/* ── Summary Cards ── */}
         <section className="cards">
           {[

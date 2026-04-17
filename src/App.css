@@ -91,6 +91,23 @@
 .logout-btn svg { width: 18px; height: 18px }
 .logout-btn:hover { background: rgba(239,68,68,.12); color: var(--red) }
 
+.pdf-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 12px;
+  height: 36px;
+  border-radius: var(--radius-sm);
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  font-size: 12px;
+  font-weight: 600;
+  transition: background .15s, color .15s, border-color .15s;
+}
+.pdf-btn svg { width: 16px; height: 16px; flex-shrink: 0 }
+.pdf-btn:hover { background: var(--bg4); color: var(--text3); border-color: var(--border2) }
+
 .bell-btn {
   position: relative;
   display: flex;
@@ -2255,4 +2272,94 @@
   .floats { bottom: 20px; right: 16px }
   .float-panel { right: 16px }
   .calc-wrap, .np-wrap { width: calc(100vw - 32px) }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PRINT / PDF EXPORT
+═══════════════════════════════════════════════════════════ */
+
+.print-only { display: none }
+
+@media print {
+  /* reset to white page */
+  *, *::before, *::after {
+    background: transparent !important;
+    color: #111 !important;
+    box-shadow: none !important;
+    border-color: #ddd !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  body, #root, .app { background: #fff !important }
+
+  /* hide everything interactive */
+  .header,
+  .floats,
+  .float-panel,
+  .overlay,
+  .modal,
+  .pdf-btn,
+  .bell-btn,
+  .goals-add-btn,
+  .goal-form,
+  .fin-add-btn,
+  .content-grid,
+  .logout-btn,
+  button { display: none !important }
+
+  .main { padding: 0 !important; max-width: 100% !important }
+
+  /* show print header */
+  .print-only { display: block !important }
+  .print-report-header {
+    display: flex !important;
+    justify-content: space-between;
+    align-items: baseline;
+    padding: 0 0 12px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid #111;
+  }
+  .print-report-brand { font-size: 18px; font-weight: 700; color: #111 !important }
+  .print-report-date  { font-size: 11px; color: #666 !important }
+
+  /* cards grid */
+  .cards { grid-template-columns: repeat(4, 1fr) !important; gap: 12px !important; margin-bottom: 20px !important }
+  .card  { border: 1px solid #ddd !important; border-radius: 8px !important; padding: 12px !important }
+  .card-label  { font-size: 10px !important; color: #666 !important }
+  .card-value  { font-size: 16px !important; font-weight: 700 !important }
+  .card-change { font-size: 10px !important }
+  .card-icon-wrap { display: none !important }
+
+  /* section titles */
+  .section-title { font-size: 13px !important; font-weight: 700 !important; color: #111 !important }
+  .goals-sub     { font-size: 11px !important; color: #666 !important }
+
+  /* sections */
+  .goals-section,
+  .pat-section,
+  .rentals-section,
+  .maint-section,
+  .veh-section    { margin-bottom: 16px !important; page-break-inside: avoid }
+
+  /* goal cards */
+  .goal-card      { border: 1px solid #ddd !important; margin-bottom: 6px !important; page-break-inside: avoid }
+  .goal-bar-fill  { background: #333 !important }
+
+  /* chart */
+  .pat-chart-wrap { border: 1px solid #ddd !important; padding: 8px !important }
+  .pat-svg text   { fill: #555 !important }
+
+  /* rental / maintenance / vehicle items */
+  .rental-item,
+  .maint-item,
+  .veh-card       { border: 1px solid #ddd !important; margin-bottom: 4px !important; page-break-inside: avoid }
+
+  /* hide expand/edit/delete actions */
+  .goal-actions,
+  .rental-chevron,
+  .veh-right .goal-actions { display: none !important }
+
+  /* alerts panel */
+  .alerts-wrap { display: none !important }
 }
