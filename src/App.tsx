@@ -23,7 +23,7 @@ interface Folder {
 }
 
 type ModalType = 'imovel' | 'carro' | 'produto' | null
-type SidebarPage = 'dashboard' | 'family'
+type SidebarPage = 'dashboard' | 'family' | 'calendar'
 
 interface FamilyMember {
   id: string
@@ -2805,6 +2805,234 @@ function buildSearchIndex(q: string): SearchResult[] {
   return results
 }
 
+// ─── Calendar Page ───────────────────────────────────────────────────────────
+
+interface CalEvent {
+  id: string
+  title: string
+  date: string   // YYYY-MM-DD
+  time: string
+  category: 'financeiro' | 'pessoal' | 'viagem' | 'manutencao' | 'sistema'
+  notes: string
+  auto?: boolean
+}
+
+const CAL_COLORS: Record<CalEvent['category'], string> = {
+  financeiro: '#3b82f6',
+  pessoal:    '#8b5cf6',
+  viagem:     '#f59e0b',
+  manutencao: '#10b981',
+  sistema:    '#94a3b8',
+}
+const CAL_LABELS: Record<CalEvent['category'], string> = {
+  financeiro: 'Financeiro', pessoal: 'Pessoal', viagem: 'Viagem', manutencao: 'Manutenção', sistema: 'Sistema'
+}
+
+function buildAutoEvents(): CalEvent[] {
+  const evs: CalEvent[] = []
+  const now = new Date()
+
+  // Vehicles: nextRevisionDate, ipvaExpiry, insuranceExpiry
+  const vehicles: Vehicle[] = (() => { try { return JSON.parse(localStorage.getItem('lion-vehicles') || '[]') } catch { return [] } })()
+  for (const v of vehicles) {
+    if (v.nextRevisionDate) evs.push({ id: `veh-rev-${v.id}`, title: `Revisão: ${v.name}`, date: v.nextRevisionDate, time: '', category: 'manutencao', notes: '', auto: true })
+    if (v.ipvaExpiry)       evs.push({ id: `veh-ipva-${v.id}`, title: `IPVA: ${v.name}`, date: v.ipvaExpiry, time: '', category: 'financeiro', notes: '', auto: true })
+    if (v.insuranceExpiry)  evs.push({ id: `veh-seg-${v.id}`, title: `Seguro: ${v.name}`, date: v.insuranceExpiry, time: '', category: 'financeiro', notes: '', auto: true })
+  }
+
+  // Maintenance: scheduledDate
+  const maint: Maintenance[] = (() => { try { return JSON.parse(localStorage.getItem('lion-maintenance') || '[]') } catch { return [] } })()
+  for (const m of maint) {
+    if (m.scheduledDate && m.status !== 'feito') evs.push({ id: `maint-${m.id}`, title: `${m.type}: ${m.asset}`, date: m.scheduledDate, time: '', category: 'manutencao', notes: m.notes, auto: true })
+  }
+
+  // Rentals: dueDay every month for next 3 months
+  const rentals: Rental[] = (() => { try { return JSON.parse(localStorage.getItem('lion-rentals') || '[]') } catch { return [] } })()
+  for (const r of rentals) {
+    for (let m = 0; m < 3; m++) {
+      const d = new Date(now.getFullYear(), now.getMonth() + m, r.dueDay)
+      const dateStr = d.toISOString().slice(0, 10)
+      evs.push({ id: `rent-${r.id}-${m}`, title: `Aluguel: ${r.property}`, date: dateStr, time: '', category: 'financeiro', notes: `Locatário: ${r.tenant}`, auto: true })
+    }
+  }
+
+  return evs
+}
+
+const CAL_FORM_INIT: Omit<CalEvent, 'id' | 'auto'> = { title: '', date: '', time: '', category: 'pessoal', notes: '' }
+
+function CalendarPage() {
+  const [userEvents, setUserEvents] = useState<CalEvent[]>(() => {
+    try { return JSON.parse(localStorage.getItem('lion-calendar') || '[]') } catch { return [] }
+  })
+  const [autoEvents] = useState<CalEvent[]>(() => buildAutoEvents())
+  const [currentMonth, setCurrentMonth] = useState(() => { const d = new Date(); d.setDate(1); return d })
+  const [selectedDate, setSelectedDate] = useState<string | null>(null)
+  const [showForm, setShowForm] = useState(false)
+  const [form, setForm] = useState({ ...CAL_FORM_INIT })
+
+  useEffect(() => { localStorage.setItem('lion-calendar', JSON.stringify(userEvents)) }, [userEvents])
+
+  const allEvents = [...userEvents, ...autoEvents]
+  const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
+
+  function saveEvent(e: React.FormEvent) {
+    e.preventDefault()
+    if (!form.title.trim() || !form.date) return
+    setUserEvents(prev => [...prev, { ...form, id: Date.now().toString() }])
+    setForm({ ...CAL_FORM_INIT, date: form.date }); setShowForm(false)
+  }
+
+  function delEvent(id: string) { setUserEvents(prev => prev.filter(e => e.id !== id)) }
+
+  // Build calendar grid
+  const year = currentMonth.getFullYear()
+  const month = currentMonth.getMonth()
+  const firstDay = new Date(year, month, 1).getDay()
+  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1 // Mon-start
+  const today = new Date().toISOString().slice(0, 10)
+
+  const cells: (number | null)[] = [...Array(startOffset).fill(null), ...Array.from({ length: daysInMonth }, (_, i) => i + 1)]
+  while (cells.length % 7 !== 0) cells.push(null)
+
+  const eventsOnDay = (day: number) => {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    return allEvents.filter(e => e.date === dateStr)
+  }
+
+  const selectedEvents = selectedDate ? allEvents.filter(e => e.date === selectedDate).sort((a, b) => a.time.localeCompare(b.time)) : []
+
+  const monthNames = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro']
+
+  return (
+    <div className="cal-page">
+      <div className="cal-layout">
+        {/* Calendar grid */}
+        <div className="cal-main">
+          <div className="cal-nav">
+            <button className="cal-nav-btn" onClick={() => setCurrentMonth(d => new Date(d.getFullYear(), d.getMonth() - 1, 1))}>
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M10 4L6 8l4 4"/></svg>
+            </button>
+            <h2 className="cal-month-title">{monthNames[month]} {year}</h2>
+            <button className="cal-nav-btn" onClick={() => setCurrentMonth(d => new Date(d.getFullYear(), d.getMonth() + 1, 1))}>
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M6 4l4 4-4 4"/></svg>
+            </button>
+            <button className="cal-today-btn" onClick={() => { const d = new Date(); d.setDate(1); setCurrentMonth(d); setSelectedDate(today) }}>Hoje</button>
+          </div>
+
+          <div className="cal-grid">
+            {['Seg','Ter','Qua','Qui','Sex','Sáb','Dom'].map(d => (
+              <div key={d} className="cal-weekday">{d}</div>
+            ))}
+            {cells.map((day, i) => {
+              if (!day) return <div key={`empty-${i}`} className="cal-cell cal-cell-empty" />
+              const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+              const dayEvents = eventsOnDay(day)
+              const isToday = dateStr === today
+              const isSelected = dateStr === selectedDate
+              return (
+                <button key={dateStr} className={`cal-cell${isToday ? ' cal-today' : ''}${isSelected ? ' cal-selected' : ''}`}
+                  onClick={() => setSelectedDate(isSelected ? null : dateStr)}>
+                  <span className="cal-day-num">{day}</span>
+                  <div className="cal-dots">
+                    {dayEvents.slice(0, 3).map(ev => (
+                      <span key={ev.id} className="cal-dot" style={{ background: CAL_COLORS[ev.category] }} />
+                    ))}
+                    {dayEvents.length > 3 && <span className="cal-dot-more">+{dayEvents.length - 3}</span>}
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+
+          {/* Legend */}
+          <div className="cal-legend">
+            {Object.entries(CAL_COLORS).map(([k, c]) => (
+              <div key={k} className="cal-legend-item">
+                <span className="cal-dot" style={{ background: c }} />
+                <span>{CAL_LABELS[k as CalEvent['category']]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Day panel */}
+        <div className="cal-sidebar">
+          {!selectedDate ? (
+            <div className="cal-no-day">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" width="32" height="32" style={{ opacity: .2 }}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round"/></svg>
+              <span>Selecione um dia</span>
+            </div>
+          ) : (
+            <>
+              <div className="cal-day-header">
+                <div>
+                  <div className="cal-day-title">{new Date(selectedDate + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' })}</div>
+                  <div className="cal-day-count">{selectedEvents.length} evento{selectedEvents.length !== 1 ? 's' : ''}</div>
+                </div>
+                <button className="goals-add-btn" onClick={() => { setShowForm(v => !v); setForm({ ...CAL_FORM_INIT, date: selectedDate }) }}>
+                  {showForm ? '✕' : '+ Evento'}
+                </button>
+              </div>
+
+              {showForm && (
+                <form className="cal-form" onSubmit={saveEvent}>
+                  <div className="fin-field">
+                    <label>Título *</label>
+                    <input type="text" value={form.title} onChange={e => f('title', e.target.value)} placeholder="Ex: Reunião de negócios" required />
+                  </div>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
+                    <div className="fin-field">
+                      <label>Horário</label>
+                      <input type="time" value={form.time} onChange={e => f('time', e.target.value)} />
+                    </div>
+                    <div className="fin-field">
+                      <label>Categoria</label>
+                      <select value={form.category} onChange={e => f('category', e.target.value)}>
+                        {Object.entries(CAL_LABELS).filter(([k]) => k !== 'sistema').map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <div className="fin-field">
+                    <label>Notas</label>
+                    <input type="text" value={form.notes} onChange={e => f('notes', e.target.value)} placeholder="Opcional" />
+                  </div>
+                  <div className="goal-form-actions">
+                    <button type="button" className="btn-ghost" onClick={() => setShowForm(false)}>Cancelar</button>
+                    <button type="submit" className="btn-accent">Salvar</button>
+                  </div>
+                </form>
+              )}
+
+              {selectedEvents.length === 0 && !showForm ? (
+                <div className="cal-empty-day">Nenhum evento neste dia.</div>
+              ) : (
+                <div className="cal-events-list">
+                  {selectedEvents.map(ev => (
+                    <div key={ev.id} className="cal-event-item" style={{ borderLeftColor: CAL_COLORS[ev.category] }}>
+                      <div className="cal-event-top">
+                        <span className="cal-event-cat" style={{ color: CAL_COLORS[ev.category] }}>{CAL_LABELS[ev.category]}</span>
+                        {ev.time && <span className="cal-event-time">{ev.time}</span>}
+                        {!ev.auto && <button className="goal-action-btn goal-del-btn" onClick={() => delEvent(ev.id)} style={{ marginLeft:'auto' }}>
+                          <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                        </button>}
+                        {ev.auto && <span className="cal-event-auto">automático</span>}
+                      </div>
+                      <div className="cal-event-title">{ev.title}</div>
+                      {ev.notes && <div className="cal-event-notes">{ev.notes}</div>}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 // ─── Family Page ─────────────────────────────────────────────────────────────
 
 const MEMBER_COLORS = ['#c0392b','#3b82f6','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#84cc16']
@@ -3282,7 +3510,7 @@ export default function App() {
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="2" width="7" height="7" rx="1"/><rect x="2" y="11" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></svg>, label: 'Dashboard', action: () => { setSidebarPage('dashboard'); setShowSidebar(false) }, active: sidebarPage === 'dashboard' },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 2a7 7 0 1 0 0 14A7 7 0 0 0 9 2z"/><path d="M15 15l3 3" strokeLinecap="round"/></svg>, label: 'Buscar', action: () => { setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M4 18a6 6 0 0 1 12 0"/></svg>, label: 'Família', active: sidebarPage === 'family', action: () => { setSidebarPage('family'); setShowSidebar(false) } },
-            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="4" width="16" height="14" rx="2"/><path d="M6 2v4M14 2v4M2 9h16" strokeLinecap="round"/></svg>, label: 'Calendário', badge: 'Em breve', action: () => {} },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="4" width="16" height="14" rx="2"/><path d="M6 2v4M14 2v4M2 9h16" strokeLinecap="round"/></svg>, label: 'Calendário', active: sidebarPage === 'calendar', action: () => { setSidebarPage('calendar'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 10h12M10 4l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/></svg>, label: 'Próximas Viagens', badge: 'Em breve', action: () => {} },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 2l2.4 4.8 5.3.8-3.85 3.75.91 5.3L10 14.25 5.2 16.63l.91-5.3L2.26 7.58l5.3-.78z"/></svg>, label: 'Metas', badge: 'Em breve', action: () => {} },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/><path d="M8 8h4M8 12h4" strokeLinecap="round"/></svg>, label: 'Documentos', action: () => { setShowSidebar(false); toggleDocs() } },
@@ -3320,7 +3548,8 @@ export default function App() {
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M10 4L6 8l4 4"/></svg>
             Voltar ao Dashboard
           </button>
-          {sidebarPage === 'family' && <FamilyPage />}
+          {sidebarPage === 'family'   && <FamilyPage />}
+          {sidebarPage === 'calendar' && <CalendarPage />}
         </div>
       )}
 
