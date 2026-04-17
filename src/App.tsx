@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './App.css'
 import { supabase } from './lib/supabase'
 import LoginPage from './LoginPage'
@@ -2895,6 +2895,38 @@ export default function App() {
 
   const [kbHint, setKbHint] = useState<string | null>(null)
   const [showKbLegend, setShowKbLegend] = useState(false)
+
+  const SECTION_DEFS: { id: string; label: string }[] = [
+    { id: 'goals',       label: 'Metas' },
+    { id: 'patrimony',   label: 'Patrimônio' },
+    { id: 'rentals',     label: 'Aluguéis' },
+    { id: 'maintenance', label: 'Manutenções' },
+    { id: 'vehicles',    label: 'Veículos' },
+    { id: 'grid',        label: 'Ações & Atividade' },
+  ]
+  const [sectionOrder, setSectionOrder] = useState<string[]>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('lion-section-order') || 'null')
+      if (Array.isArray(saved) && saved.length === SECTION_DEFS.length) return saved
+    } catch { /* ignore */ }
+    return SECTION_DEFS.map(s => s.id)
+  })
+  const dragIdx = useRef<number | null>(null)
+  const [dragOver, setDragOver] = useState<number | null>(null)
+
+  const onDragStart = (i: number) => { dragIdx.current = i }
+  const onDragEnter = (i: number) => setDragOver(i)
+  const onDragEnd = () => {
+    if (dragIdx.current === null || dragOver === null || dragIdx.current === dragOver) {
+      dragIdx.current = null; setDragOver(null); return
+    }
+    const next = [...sectionOrder]
+    const [moved] = next.splice(dragIdx.current, 1)
+    next.splice(dragOver, 0, moved)
+    setSectionOrder(next)
+    localStorage.setItem('lion-section-order', JSON.stringify(next))
+    dragIdx.current = null; setDragOver(null)
+  }
   useEffect(() => {
     let hintTimer: ReturnType<typeof setTimeout>
     const onKey = (e: KeyboardEvent) => {
@@ -3113,13 +3145,28 @@ export default function App() {
           ))}
         </section>
 
-        <GoalsSection />
-        <PatrimonySection />
-        <RentalsSection />
-        <MaintenanceSection />
-        <VehicleHistorySection />
+        {sectionOrder.map((id, i) => {
+          const isDragTarget = dragOver === i
+          const wrapProps = {
+            key: id,
+            className: `drag-section${isDragTarget ? ' drag-over' : ''}`,
+            draggable: true,
+            onDragStart: () => onDragStart(i),
+            onDragEnter: () => onDragEnter(i),
+            onDragOver: (e: React.DragEvent) => e.preventDefault(),
+            onDragEnd: onDragEnd,
+          }
+          const handle = <div className="drag-handle" title="Arrastar para reordenar"><svg viewBox="0 0 16 16" fill="none"><circle cx="5" cy="4" r="1.2" fill="currentColor"/><circle cx="11" cy="4" r="1.2" fill="currentColor"/><circle cx="5" cy="8" r="1.2" fill="currentColor"/><circle cx="11" cy="8" r="1.2" fill="currentColor"/><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="11" cy="12" r="1.2" fill="currentColor"/></svg></div>
 
-        <div className="content-grid">
+          if (id === 'goals')       return <div {...wrapProps}>{handle}<GoalsSection /></div>
+          if (id === 'patrimony')   return <div {...wrapProps}>{handle}<PatrimonySection /></div>
+          if (id === 'rentals')     return <div {...wrapProps}>{handle}<RentalsSection /></div>
+          if (id === 'maintenance') return <div {...wrapProps}>{handle}<MaintenanceSection /></div>
+          if (id === 'vehicles')    return <div {...wrapProps}>{handle}<VehicleHistorySection /></div>
+          if (id === 'grid')        return (
+            <div {...wrapProps}>
+              {handle}
+              <div className="content-grid">
           {/* ── Quick Actions ── */}
           <section className="section">
             <div className="section-header">
@@ -3195,7 +3242,11 @@ export default function App() {
               ))}
             </div>
           </section>
-        </div>
+              </div>
+            </div>
+          )
+          return null
+        })}
       </main>
 
       {/* ── Floating Buttons ── */}

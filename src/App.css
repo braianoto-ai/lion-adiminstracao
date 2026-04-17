@@ -596,6 +596,35 @@
    MAIN
 ═══════════════════════════════════════════════════════════ */
 
+/* ── Draggable sections ── */
+.drag-section {
+  position: relative;
+  transition: opacity .15s;
+}
+.drag-section[draggable="true"] { cursor: default }
+.drag-section.drag-over { opacity: .5 }
+
+.drag-handle {
+  position: absolute;
+  top: 12px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  opacity: 0;
+  cursor: grab;
+  transition: opacity .15s, background .15s;
+  z-index: 2;
+}
+.drag-section:hover .drag-handle { opacity: 1 }
+.drag-handle:hover { background: var(--bg4); color: var(--text2) }
+.drag-handle:active { cursor: grabbing }
+.drag-handle svg { width: 16px; height: 16px; pointer-events: none }
+
 .main {
   flex: 1;
   padding: 32px;
