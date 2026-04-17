@@ -1401,7 +1401,7 @@ function RentalsSection() {
           <p>Nenhum aluguel cadastrado ainda.</p>
           <span>Cadastre seus imóveis alugados para acompanhar os pagamentos.</span>
         </div>
-      ) : (
+      ) : (<>
         <div className="rentals-list">
           {rentals.map(r => {
             const thisStatus = getMonthStatus(r, curMonth)
@@ -1464,14 +1464,14 @@ function RentalsSection() {
             )
           })}
 
-          <div className="rentals-summary">
-            <span>Total recebido este mês:</span>
-            <strong>{fmtCurr(rentals.filter(r => r.payments[curMonth] === 'pago').reduce((s, r) => s + r.value, 0))}</strong>
-            <span className="rentals-summary-sep">·</span>
-            <span>{paidThisMonth}/{rentals.length} pagos</span>
-          </div>
         </div>
-      )}
+        <div className="rentals-summary">
+          <span>Total recebido este mês:</span>
+          <strong>{fmtCurr(rentals.filter(r => r.payments[curMonth] === 'pago').reduce((s, r) => s + r.value, 0))}</strong>
+          <span className="rentals-summary-sep">·</span>
+          <span>{paidThisMonth}/{rentals.length} pagos</span>
+        </div>
+      </>)}
     </section>
   )
 }

@@ -373,7 +373,7 @@
   font-size: calc(14px * var(--fs, 1));
   color: var(--text);
   line-height: 1.65;
-  margin-bottom: 28px;
+  margin-bottom: 8px;
 }
 
 .ob-dots {
@@ -548,7 +548,7 @@
 .login-desc {
   font-size: calc(13px * var(--fs, 1));
   color: var(--text);
-  margin-bottom: 28px;
+  margin-bottom: 8px;
 }
 
 .login-form { display: flex; flex-direction: column; gap: 16px }
@@ -651,10 +651,10 @@
 
 .main {
   flex: 1;
-  padding: 32px;
+  padding: 20px 28px;
   display: flex;
   flex-direction: column;
-  gap: 32px;
+  gap: 16px;
   max-width: 1280px;
   width: 100%;
   margin: 0 auto;
@@ -1821,7 +1821,7 @@
 ═══════════════════════════════════════════════════════════ */
 
 .goals-section {
-  margin-bottom: 28px;
+  margin-bottom: 8px;
 }
 
 .section-collapse-btn {
@@ -1842,7 +1842,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 10px;
   gap: 12px;
 }
 
@@ -2016,7 +2016,7 @@
    VEHICLE HISTORY SECTION
 ═══════════════════════════════════════════════════════════ */
 
-.veh-section { margin-bottom: 28px }
+.veh-section { margin-bottom: 8px }
 .veh-list { display: flex; flex-direction: column; gap: 8px }
 
 .veh-card {
@@ -2111,7 +2111,7 @@
    MAINTENANCE SECTION
 ═══════════════════════════════════════════════════════════ */
 
-.maint-section { margin-bottom: 28px }
+.maint-section { margin-bottom: 8px }
 
 .maint-soon-badge {
   display: inline-block;
@@ -2125,13 +2125,13 @@
   border: 1px solid rgba(245,158,11,.2);
 }
 
-.maint-list { display: flex; flex-direction: column; gap: 6px }
+.maint-list { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-items: start }
 
 .maint-item {
   display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  padding: 12px 14px;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
   background: var(--bg2);
   border: 1px solid var(--border);
   border-radius: var(--radius);
@@ -2140,9 +2140,11 @@
 .maint-item:hover { border-color: var(--border2) }
 .maint-item:hover .goal-actions { opacity: 1 }
 
-.maint-atrasado { border-left: 3px solid var(--red) }
-.maint-pendente { border-left: 3px solid var(--border2) }
-.maint-feito    { border-left: 3px solid var(--green); opacity: .7 }
+.maint-atrasado { border-top: 2px solid var(--red) }
+.maint-pendente { border-top: 2px solid var(--border2) }
+.maint-feito    { border-top: 2px solid var(--green); opacity: .7 }
+
+.maint-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px }
 
 .maint-icon-col {
   width: 28px; height: 28px;
@@ -2155,8 +2157,6 @@
 .maint-icon-atrasado { background: rgba(239,68,68,.15);  color: #fca5a5 }
 .maint-icon-pendente { background: rgba(245,158,11,.12); color: var(--amber-l) }
 .maint-icon-feito    { background: rgba(16,185,129,.12); color: var(--green-l) }
-
-.maint-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px }
 
 .maint-top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap }
 .maint-asset { font-size: calc(13px * var(--fs, 1)); font-weight: 600; color: var(--text3) }
@@ -2190,7 +2190,7 @@
    PATRIMONY CHART SECTION
 ═══════════════════════════════════════════════════════════ */
 
-.pat-section { margin-bottom: 28px }
+.pat-section { margin-bottom: 8px }
 
 .pat-summary {
   display: flex;
@@ -2225,7 +2225,7 @@
    RENTALS SECTION
 ═══════════════════════════════════════════════════════════ */
 
-.rentals-section { margin-bottom: 28px }
+.rentals-section { margin-bottom: 8px }
 
 .rentals-overdue-badge {
   display: inline-block;
@@ -2241,7 +2241,7 @@
 
 .rentals-form-grid { grid-template-columns: repeat(2, 1fr) }
 
-.rentals-list { display: flex; flex-direction: column; gap: 8px }
+.rentals-list { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; align-items: start }
 
 .rental-card {
   background: var(--bg2);
@@ -2257,9 +2257,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  padding: 10px 12px;
   cursor: pointer;
-  gap: 12px;
+  gap: 8px;
 }
 
 .rental-left {
@@ -2714,12 +2714,16 @@
 
 @media (max-width: 1100px) {
   .cards { grid-template-columns: repeat(2, 1fr) }
+  .rentals-list { grid-template-columns: repeat(2, 1fr) }
+  .maint-list   { grid-template-columns: repeat(2, 1fr) }
 }
 
 @media (max-width: 800px) {
-  .main { padding: 20px 16px }
+  .main { padding: 16px }
   .header { padding: 14px 16px }
   .content-grid { grid-template-columns: 1fr }
+  .rentals-list { grid-template-columns: 1fr }
+  .maint-list   { grid-template-columns: 1fr }
   .header-date { display: none }
   .usd-ticker { display: none }
   .header-search-wrap { display: none }
