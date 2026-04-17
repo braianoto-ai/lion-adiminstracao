@@ -2860,6 +2860,7 @@ export default function App() {
   const [themeId, setThemeId] = useState(() => localStorage.getItem('lion-theme') || 'dark')
   const [fontSize, setFontSize] = useState(() => localStorage.getItem('lion-font') || 'normal')
   const [modal, setModal] = useState<ModalType>(null)
+  const [showSidebar, setShowSidebar] = useState(false)
   const [searchQ, setSearchQ] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const searchResults = searchOpen && searchQ.trim().length >= 2 ? buildSearchIndex(searchQ) : []
@@ -2943,7 +2944,7 @@ export default function App() {
   const [showKbLegend, setShowKbLegend] = useState(false)
 
   const SECTION_DEFS: { id: string; label: string }[] = [
-    { id: 'goals',       label: 'Metas' },
+    { id: 'assets',      label: 'Ativos' },
     { id: 'patrimony',   label: 'Patrimônio' },
     { id: 'rentals',     label: 'Aluguéis' },
     { id: 'maintenance', label: 'Manutenções' },
@@ -3008,6 +3009,11 @@ export default function App() {
 
       {/* ── Header ── */}
       <header className="header">
+        <button className="hamburger-btn" onClick={() => setShowSidebar(v => !v)} title="Menu">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+            <path d="M3 5h14M3 10h14M3 15h14"/>
+          </svg>
+        </button>
         <div className="header-brand">
           <div className="brand-mark">
             <svg viewBox="0 0 32 32" fill="none">
@@ -3125,19 +3131,52 @@ export default function App() {
             </svg>
             {alertCount > 0 && <span className="bell-badge">{alertCount > 9 ? '9+' : alertCount}</span>}
           </button>
-          <div className="header-user">
-            <div className="header-avatar">{initials || '?'}</div>
-            <span className="header-username">{displayName}</span>
-            <button className="logout-btn" onClick={handleLogout} title="Sair">
-              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M13 15l3-5-3-5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M16 10H7" strokeLinecap="round"/>
-                <path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" strokeLinecap="round"/>
-              </svg>
+          <div className="header-user" style={{ position: 'relative' }}>
+            <button className="user-avatar-btn" onClick={() => setShowSidebar(v => !v)} title="Perfil e configurações">
+              <div className="header-avatar">{initials || '?'}</div>
             </button>
           </div>
         </div>
       </header>
+
+      {/* ── Sidebar ── */}
+      {showSidebar && <div className="sidebar-overlay" onClick={() => setShowSidebar(false)} />}
+      <aside className={`sidebar${showSidebar ? ' sidebar-open' : ''}`}>
+        <div className="sidebar-user">
+          <div className="sidebar-avatar">{initials || '?'}</div>
+          <div className="sidebar-user-info">
+            <div className="sidebar-user-name">{displayName.split('@')[0]}</div>
+            <div className="sidebar-user-email">{user?.email || ''}</div>
+          </div>
+          <button className="sidebar-close-btn" onClick={() => setShowSidebar(false)} title="Fechar">
+            <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </button>
+        </div>
+        <nav className="sidebar-nav">
+          {[
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="2" width="7" height="7" rx="1"/><rect x="2" y="11" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></svg>, label: 'Dashboard', action: () => setShowSidebar(false), active: true },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M9 2a7 7 0 1 0 0 14A7 7 0 0 0 9 2z"/><path d="M15 15l3 3" strokeLinecap="round"/></svg>, label: 'Buscar', action: () => { setShowSidebar(false) } },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M4 18a6 6 0 0 1 12 0"/></svg>, label: 'Família', badge: 'Em breve', action: () => {} },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="4" width="16" height="14" rx="2"/><path d="M6 2v4M14 2v4M2 9h16" strokeLinecap="round"/></svg>, label: 'Calendário', badge: 'Em breve', action: () => {} },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 10h12M10 4l6 6-6 6" strokeLinecap="round" strokeLinejoin="round"/></svg>, label: 'Próximas Viagens', badge: 'Em breve', action: () => {} },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 2l2.4 4.8 5.3.8-3.85 3.75.91 5.3L10 14.25 5.2 16.63l.91-5.3L2.26 7.58l5.3-.78z"/></svg>, label: 'Metas', badge: 'Em breve', action: () => {} },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/><path d="M8 8h4M8 12h4" strokeLinecap="round"/></svg>, label: 'Documentos', action: () => { setShowSidebar(false); toggleDocs() } },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" strokeLinecap="round"/></svg>, label: 'Simulador', action: () => { setShowSidebar(false); toggleSim() } },
+          ].map(item => (
+            <button key={item.label} className={`sidebar-nav-item${item.active ? ' sidebar-nav-active' : ''}`} onClick={item.action}>
+              <span className="sidebar-nav-icon">{item.icon}</span>
+              <span className="sidebar-nav-label">{item.label}</span>
+              {item.badge && <span className="sidebar-nav-badge">{item.badge}</span>}
+            </button>
+          ))}
+        </nav>
+        <div className="sidebar-footer">
+          <button className="sidebar-nav-item" onClick={handleLogout}>
+            <span className="sidebar-nav-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M13 15l3-5-3-5" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 10H7" strokeLinecap="round"/><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" strokeLinecap="round"/></svg></span>
+            <span className="sidebar-nav-label">Sair</span>
+          </button>
+        </div>
+      </aside>
 
       {viewMode && (
         <div className="view-mode-banner">
@@ -3211,7 +3250,31 @@ export default function App() {
           }
           const handle = <div className="drag-handle" title="Arrastar para reordenar"><svg viewBox="0 0 16 16" fill="none"><circle cx="5" cy="4" r="1.2" fill="currentColor"/><circle cx="11" cy="4" r="1.2" fill="currentColor"/><circle cx="5" cy="8" r="1.2" fill="currentColor"/><circle cx="11" cy="8" r="1.2" fill="currentColor"/><circle cx="5" cy="12" r="1.2" fill="currentColor"/><circle cx="11" cy="12" r="1.2" fill="currentColor"/></svg></div>
 
-          if (id === 'goals')       return <div {...wrapProps}>{handle}<GoalsSection /></div>
+          if (id === 'assets')      return (
+            <div {...wrapProps}>
+              {handle}
+              <section className="section">
+                <div className="section-header"><h2 className="section-title">Adicionar Ativo</h2></div>
+                <div className="actions">
+                  <button className="action action-blue" onClick={() => setModal('imovel')}>
+                    <div className="action-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+                    <div className="action-body"><span className="action-title">Novo Imóvel</span><span className="action-sub">Casas, aptos, terrenos</span></div>
+                    <svg className="action-arrow" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  </button>
+                  <button className="action action-amber" onClick={() => setModal('carro')}>
+                    <div className="action-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="9" width="22" height="11" rx="2"/><path d="M6 9V7a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg></div>
+                    <div className="action-body"><span className="action-title">Novo Carro</span><span className="action-sub">Veículos e frota</span></div>
+                    <svg className="action-arrow" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  </button>
+                  <button className="action action-green" onClick={() => setModal('produto')}>
+                    <div className="action-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div>
+                    <div className="action-body"><span className="action-title">Novo Produto</span><span className="action-sub">Estoque e inventário</span></div>
+                    <svg className="action-arrow" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                  </button>
+                </div>
+              </section>
+            </div>
+          )
           if (id === 'patrimony')   return <div {...wrapProps}>{handle}<PatrimonySection /></div>
           if (id === 'rentals')     return <div {...wrapProps}>{handle}<RentalsSection /></div>
           if (id === 'maintenance') return <div {...wrapProps}>{handle}<MaintenanceSection /></div>
@@ -3220,58 +3283,6 @@ export default function App() {
             <div {...wrapProps}>
               {handle}
               <div className="content-grid">
-          {/* ── Quick Actions ── */}
-          <section className="section">
-            <div className="section-header">
-              <h2 className="section-title">Adicionar Ativo</h2>
-            </div>
-            <div className="actions">
-              <button className="action action-blue" onClick={() => setModal('imovel')}>
-                <div className="action-icon-wrap">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-                    <polyline points="9 22 9 12 15 12 15 22"/>
-                  </svg>
-                </div>
-                <div className="action-body">
-                  <span className="action-title">Novo Imóvel</span>
-                  <span className="action-sub">Casas, aptos, terrenos</span>
-                </div>
-                <svg className="action-arrow" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-              </button>
-
-              <button className="action action-amber" onClick={() => setModal('carro')}>
-                <div className="action-icon-wrap">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <rect x="1" y="9" width="22" height="11" rx="2"/>
-                    <path d="M6 9V7a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
-                    <circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/>
-                  </svg>
-                </div>
-                <div className="action-body">
-                  <span className="action-title">Novo Carro</span>
-                  <span className="action-sub">Veículos e frota</span>
-                </div>
-                <svg className="action-arrow" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-              </button>
-
-              <button className="action action-green" onClick={() => setModal('produto')}>
-                <div className="action-icon-wrap">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                    <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-                    <line x1="12" y1="22.08" x2="12" y2="12"/>
-                  </svg>
-                </div>
-                <div className="action-body">
-                  <span className="action-title">Novo Produto</span>
-                  <span className="action-sub">Estoque e inventário</span>
-                </div>
-                <svg className="action-arrow" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-              </button>
-            </div>
-          </section>
-
           {/* ── Recent Activity ── */}
           <section className="section">
             <div className="section-header">
