@@ -2768,11 +2768,40 @@ export default function App() {
     return () => { window.removeEventListener('storage', refresh); clearInterval(id) }
   }, [])
 
+  const [kbHint, setKbHint] = useState<string | null>(null)
+  const [showKbLegend, setShowKbLegend] = useState(false)
+  useEffect(() => {
+    let hintTimer: ReturnType<typeof setTimeout>
+    const onKey = (e: KeyboardEvent) => {
+      const tag = (e.target as HTMLElement).tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
+      const key = e.key.toLowerCase()
+      const hints: Record<string, string> = { f: 'Finanças', n: 'Notas', c: 'Calculadora', s: 'Simulador', a: 'Alertas', d: 'Documentos', '?': 'Atalhos', escape: 'Fechar' }
+      if (!hints[key] && key !== '?') return
+      e.preventDefault()
+      clearTimeout(hintTimer)
+      if (key === '?') { setShowKbLegend(v => !v); return }
+      setKbHint(hints[key])
+      hintTimer = setTimeout(() => setKbHint(null), 1200)
+      if (key === 'escape') { closeAll(); setShowKbLegend(false); return }
+      if (key === 'f') toggleFin()
+      if (key === 'n') toggleNp()
+      if (key === 'c') toggleCalc()
+      if (key === 's') toggleSim()
+      if (key === 'a') toggleAlerts()
+      if (key === 'd') toggleDocs()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => { window.removeEventListener('keydown', onKey); clearTimeout(hintTimer) }
+  }, [showCalc, showNp, showFin, showSim, showDocs, showAlerts])
+
   if (!authReady) return null
   if (supabase && !user) return <LoginPage />
 
   return (
     <div className={`app${viewMode ? ' view-mode' : ''}`}>
+      {kbHint && <div className="kb-toast">{kbHint}</div>}
+
       {/* ── Header ── */}
       <header className="header">
         <div className="header-brand">
@@ -2864,6 +2893,20 @@ export default function App() {
             </svg>
             <span>PDF</span>
           </button>
+          <div className="kb-legend-wrap">
+            <button className="kb-legend-btn" onClick={() => setShowKbLegend(v => !v)} title="Atalhos de teclado">
+              <span>?</span>
+            </button>
+            {showKbLegend && (
+              <div className="kb-legend">
+                <div className="kb-legend-title">Atalhos de teclado</div>
+                {[['F','Finanças'],['N','Notas'],['C','Calculadora'],['S','Simulador'],['A','Alertas'],['D','Documentos'],['Esc','Fechar painel']].map(([k,l]) => (
+                  <div key={k} className="kb-row"><kbd>{k}</kbd><span>{l}</span></div>
+                ))}
+              </div>
+            )}
+          </div>
+
           <button className={`bell-btn${showAlerts ? ' bell-active' : ''}`} onClick={toggleAlerts} title="Alertas">
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M10 2a6 6 0 0 0-6 6v3l-1.5 2.5h15L16 11V8a6 6 0 0 0-6-6z" strokeLinejoin="round"/>
