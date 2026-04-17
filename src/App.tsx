@@ -983,7 +983,7 @@ function FinancingSimulator({ onClose }: { onClose: () => void }) {
                   <tr><th>Mês</th><th>Parcela</th><th>Juros</th><th>Amort.</th><th>Saldo</th></tr>
                 </thead>
                 <tbody>
-                  {preview.map((row, i) =>
+                  {preview.map((row) =>
                     row === null
                       ? <tr key="ellipsis" className="sim-ellipsis"><td colSpan={5}>⋯</td></tr>
                       : <tr key={row.month} className={row.month === n ? 'sim-last-row' : ''}>
