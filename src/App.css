@@ -153,6 +153,30 @@
   text-transform: capitalize;
 }
 
+.usd-ticker {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 99px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  font-size: calc(11px * var(--fs, 1));
+  cursor: default;
+  white-space: nowrap;
+}
+.usd-label {
+  font-weight: 700;
+  color: var(--text2);
+  letter-spacing: .04em;
+}
+.usd-value {
+  font-weight: 600;
+  color: var(--text3);
+}
+.usd-up .usd-pct  { color: var(--green) }
+.usd-down .usd-pct { color: var(--red) }
+
 .header-avatar {
   width: 36px;
   height: 36px;
@@ -2687,6 +2711,7 @@
   .header { padding: 14px 16px }
   .content-grid { grid-template-columns: 1fr }
   .header-date { display: none }
+  .usd-ticker { display: none }
   .header-search-wrap { display: none }
   .card-value { font-size: calc(15px * var(--fs, 1)) }
 }

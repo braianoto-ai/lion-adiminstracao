@@ -2809,6 +2809,16 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('lion-onboarded'))
   const finishOnboarding = () => { localStorage.setItem('lion-onboarded', '1'); setShowOnboarding(false) }
 
+  const [usd, setUsd] = useState<{ bid: string; pct: string } | null>(null)
+  useEffect(() => {
+    const cached = localStorage.getItem('lion-usd-cache')
+    if (cached) { try { const p = JSON.parse(cached); if (Date.now() - p.ts < 300000) { setUsd(p); return } } catch { /* ignore */ } }
+    fetch('https://economia.awesomeapi.com.br/json/last/USD-BRL')
+      .then(r => r.json())
+      .then(d => { const v = { bid: parseFloat(d.USDBRL.bid).toFixed(2), pct: d.USDBRL.pctChange, ts: Date.now() }; setUsd(v); localStorage.setItem('lion-usd-cache', JSON.stringify(v)) })
+      .catch(() => {})
+  }, [])
+
   const [dashData, setDashData] = useState(() => computeDashData())
   const [activity, setActivity] = useState(() => buildActivity())
   const [themeId, setThemeId] = useState(() => localStorage.getItem('lion-theme') || 'dark')
@@ -3025,6 +3035,13 @@ export default function App() {
           <div className="header-date">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
           </div>
+          {usd && (
+            <div className={`usd-ticker${parseFloat(usd.pct) >= 0 ? ' usd-up' : ' usd-down'}`} title="USD/BRL — atualizado a cada 5 min">
+              <span className="usd-label">USD</span>
+              <span className="usd-value">R$ {usd.bid}</span>
+              <span className="usd-pct">{parseFloat(usd.pct) >= 0 ? '▲' : '▼'} {Math.abs(parseFloat(usd.pct)).toFixed(2)}%</span>
+            </div>
+          )}
           <button className="theme-toggle-btn" onClick={() => setThemeId(t => t === 'light' ? 'charcoal' : 'light')} title={themeId === 'light' ? 'Modo escuro' : 'Modo claro'}>
             {themeId === 'light' ? (
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
