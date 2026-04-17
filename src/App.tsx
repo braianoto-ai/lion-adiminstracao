@@ -146,7 +146,7 @@ function Calculator({ onClose }: { onClose: () => void }) {
 
 const FOLDER_COLORS = ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16']
 
-function Notepad({ onClose }: { onClose: () => void }) {
+function Notepad({ onClose, npTarget, onTargetHandled }: { onClose: () => void; npTarget?: { folderId: string; noteId: string } | null; onTargetHandled?: () => void }) {
   const [folders, setFolders] = useState<Folder[]>(() => {
     try { return JSON.parse(localStorage.getItem('np-folders') || 'null') || defaultFolders() } catch { return defaultFolders() }
   })
@@ -160,6 +160,16 @@ function Notepad({ onClose }: { onClose: () => void }) {
   const [editFolderId, setEditFolderId] = useState<string | null>(null)
 
   useEffect(() => { localStorage.setItem('np-folders', JSON.stringify(folders)) }, [folders])
+
+  useEffect(() => {
+    if (!npTarget) return
+    const f = folders.find(x => x.id === npTarget.folderId)
+    const n = f?.notes.find(x => x.id === npTarget.noteId)
+    if (f && n) {
+      setFolderId(f.id); setNoteId(n.id); setDraft({ title: n.title, content: n.content }); setView('edit')
+    }
+    onTargetHandled?.()
+  }, [npTarget])
 
   const folder = folders.find(f => f.id === folderId)
   const note = folder?.notes.find(n => n.id === noteId)
@@ -2815,6 +2825,13 @@ function buildSearchIndex(q: string): SearchResult[] {
     push({ id: m.id, type: 'Manutenção', label: m.asset, sub: `${m.description} · ${m.scheduledDate}`, color: 'purple', section: 'maint' })
   })
 
+  const npFolders: Folder[] = (() => { try { return JSON.parse(localStorage.getItem('np-folders') || '[]') } catch { return [] } })()
+  npFolders.forEach(folder => {
+    folder.notes.filter(n => n.title?.toLowerCase().includes(lq) || n.content?.toLowerCase().includes(lq)).forEach(n => {
+      push({ id: `${folder.id}:${n.id}`, type: 'Nota', label: n.title || 'Sem título', sub: `${folder.name} · ${n.content ? n.content.substring(0, 50) : 'Sem conteúdo'}`, color: 'blue', section: 'note' })
+    })
+  })
+
   return results
 }
 
@@ -3736,6 +3753,7 @@ export default function App() {
   const [sidebarPage, setSidebarPage] = useState<SidebarPage>('dashboard')
   const [searchQ, setSearchQ] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
+  const [npTarget, setNpTarget] = useState<{ folderId: string; noteId: string } | null>(null)
   const searchResults = searchOpen && searchQ.trim().length >= 2 ? buildSearchIndex(searchQ) : []
 
   useEffect(() => {
@@ -3792,6 +3810,12 @@ export default function App() {
     setSearchQ(''); setSearchOpen(false)
     closeAll()
     if (r.section === 'fin') { setShowFin(true); return }
+    if (r.section === 'note') {
+      const [folderId, noteId] = r.id.split(':')
+      setNpTarget({ folderId, noteId })
+      setShowNp(true)
+      return
+    }
     setTimeout(() => {
       const sectionMap: Record<string, string> = { goals: '.goals-section', rentals: '.rentals-section', vehicles: '.vehicles-section', maint: '.maintenance-section', pat: '.pat-section' }
       const el = document.querySelector(sectionMap[r.section] || `.${r.section}-section`)
@@ -4303,7 +4327,7 @@ export default function App() {
         <FinancePanel onClose={() => setShowFin(false)} />
       </div>
       <div className={`float-panel panel-np${showNp ? ' panel-open' : ''}`}>
-        <Notepad onClose={() => setShowNp(false)} />
+        <Notepad onClose={() => setShowNp(false)} npTarget={npTarget} onTargetHandled={() => setNpTarget(null)} />
       </div>
       <div className={`float-panel panel-calc${showCalc ? ' panel-open' : ''}`}>
         <Calculator onClose={() => setShowCalc(false)} />
