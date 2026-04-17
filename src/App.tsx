@@ -545,6 +545,33 @@ function FinancePanel({ onClose }: { onClose: () => void }) {
   const gap = 3
   const groupW = barW * 2 + gap + 14
 
+  // ── Pie chart data ──
+  const PIE_COLORS = ['#ef4444','#f59e0b','#3b82f6','#10b981','#8b5cf6','#ec4899','#06b6d4','#84cc16']
+  const catTotals = TX_CATEGORIES.despesa.map((cat, i) => ({
+    cat,
+    val: txs.filter(t => t.type === 'despesa' && t.category === cat).reduce((s, t) => s + t.amount, 0),
+    color: PIE_COLORS[i % PIE_COLORS.length],
+  })).filter(c => c.val > 0).sort((a, b) => b.val - a.val)
+
+  function donutSlices(data: typeof catTotals, cx: number, cy: number, r: number, ir: number) {
+    const total = data.reduce((s, d) => s + d.val, 0)
+    if (total === 0) return []
+    let angle = -Math.PI / 2
+    return data.map(d => {
+      const sweep = (d.val / total) * Math.PI * 2
+      const x1 = cx + r * Math.cos(angle), y1 = cy + r * Math.sin(angle)
+      const x2 = cx + r * Math.cos(angle + sweep), y2 = cy + r * Math.sin(angle + sweep)
+      const ix1 = cx + ir * Math.cos(angle + sweep), iy1 = cy + ir * Math.sin(angle + sweep)
+      const ix2 = cx + ir * Math.cos(angle), iy2 = cy + ir * Math.sin(angle)
+      const large = sweep > Math.PI ? 1 : 0
+      const path = `M${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} L${ix1},${iy1} A${ir},${ir} 0 ${large} 0 ${ix2},${iy2} Z`
+      angle += sweep
+      return { ...d, path, pct: Math.round((d.val / total) * 100) }
+    })
+  }
+
+  const slices = donutSlices(catTotals, 72, 72, 58, 34)
+
   return (
     <div className="fin-wrap">
       <div className="panel-header">
@@ -606,6 +633,33 @@ function FinancePanel({ onClose }: { onClose: () => void }) {
               <span className="fin-leg-label">Despesas</span>
             </div>
           </div>
+
+          {catTotals.length > 0 && (
+            <div className="fin-pie-section">
+              <div className="fin-chart-title">Despesas por categoria</div>
+              <div className="fin-pie-wrap">
+                <svg viewBox="0 0 144 144" className="fin-pie-svg">
+                  {slices.map((s, i) => (
+                    <path key={i} d={s.path} fill={s.color} opacity=".9">
+                      <title>{s.cat}: {fmtCurr(s.val)} ({s.pct}%)</title>
+                    </path>
+                  ))}
+                  <circle cx="72" cy="72" r="26" fill="var(--bg2)" />
+                  <text x="72" y="68" textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--text3)">{fmtCurr(totalDespesas).replace('R$\u00a0','').split(',')[0]}</text>
+                  <text x="72" y="82" textAnchor="middle" fontSize="8" fill="var(--text)">total</text>
+                </svg>
+                <div className="fin-pie-legend">
+                  {slices.slice(0, 6).map((s, i) => (
+                    <div key={i} className="fin-pie-row">
+                      <span className="fin-pie-dot" style={{ background: s.color }} />
+                      <span className="fin-pie-cat">{s.cat}</span>
+                      <span className="fin-pie-pct">{s.pct}%</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

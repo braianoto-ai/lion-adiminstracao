@@ -2456,6 +2456,64 @@
   flex-shrink: 0;
 }
 
+/* Pie chart */
+.fin-pie-section {
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin-top: 2px;
+}
+
+.fin-pie-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 8px;
+}
+
+.fin-pie-svg {
+  width: 144px;
+  height: 144px;
+  flex-shrink: 0;
+}
+
+.fin-pie-legend {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.fin-pie-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.fin-pie-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.fin-pie-cat {
+  flex: 1;
+  font-size: calc(11px * var(--fs, 1));
+  color: var(--text2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.fin-pie-pct {
+  font-size: calc(11px * var(--fs, 1));
+  font-weight: 600;
+  color: var(--text3);
+  flex-shrink: 0;
+}
+
 /* Filters */
 .fin-filters {
   display: flex;
