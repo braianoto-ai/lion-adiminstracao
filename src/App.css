@@ -653,21 +653,68 @@
   flex: 1;
   padding: 20px 28px;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 16px;
-  max-width: 1280px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  max-width: 1400px;
   width: 100%;
   margin: 0 auto;
   align-items: start;
 }
 
-/* sections that span both columns */
+/* full-width sections */
 .drag-section--grid,
 .drag-section--alerts,
 .drag-section--activity,
 .print-only,
 .cards {
   grid-column: 1 / -1;
+}
+
+/* assets + notes each take 2 of 4 columns */
+.drag-section--assets,
+.drag-section--notes {
+  grid-column: span 2;
+}
+
+/* compact boxes for the 4 summary sections */
+.drag-section--patrimony .section,
+.drag-section--rentals .section,
+.drag-section--maintenance .section,
+.drag-section--vehicles .section {
+  padding: 14px;
+  gap: 10px;
+}
+.drag-section--patrimony .section-title,
+.drag-section--rentals .section-title,
+.drag-section--maintenance .section-title,
+.drag-section--vehicles .section-title {
+  font-size: calc(12px * var(--fs, 1));
+}
+.drag-section--patrimony .goals-sub,
+.drag-section--rentals .goals-sub,
+.drag-section--maintenance .goals-sub,
+.drag-section--vehicles .goals-sub {
+  font-size: calc(11px * var(--fs, 1));
+}
+.drag-section--patrimony .goals-add-btn,
+.drag-section--rentals .goals-add-btn,
+.drag-section--maintenance .goals-add-btn,
+.drag-section--vehicles .goals-add-btn {
+  font-size: 11px; padding: 4px 8px;
+}
+/* hide inner lists in compact mode — just show header + empty state */
+.drag-section--patrimony .rentals-list,
+.drag-section--rentals .rentals-list,
+.drag-section--maintenance .maint-list,
+.drag-section--vehicles .veh-list {
+  grid-template-columns: 1fr;
+}
+/* keep summary visible but hide individual cards if many */
+.drag-section--patrimony .rental-card:nth-child(n+3),
+.drag-section--rentals .rental-card:nth-child(n+3),
+.drag-section--maintenance .maint-item:nth-child(n+3),
+.drag-section--vehicles .veh-card:nth-child(n+3) {
+  display: none;
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -2903,7 +2950,9 @@
    RESPONSIVE
 ═══════════════════════════════════════════════════════════ */
 
-@media (max-width: 1100px) {
+@media (max-width: 1200px) {
+  .main { grid-template-columns: repeat(2, 1fr) }
+  .drag-section--assets, .drag-section--notes { grid-column: 1 / -1 }
   .cards        { grid-template-columns: repeat(2, 1fr) }
   .rentals-list { grid-template-columns: repeat(2, 1fr) }
   .maint-list   { grid-template-columns: repeat(2, 1fr) }
