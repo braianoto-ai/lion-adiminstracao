@@ -3437,7 +3437,7 @@ button, a, [role="button"] { touch-action: manipulation }
   .bento-r1, .bento-r2, .bento-r3 { grid-template-columns: 1fr }
   .bento-r1 .bc-hero { grid-column: 1 }
   .bento-r3 > :last-child { grid-column: 1 }
-  .dash-content { padding: 10px 12px; gap: 10px }
+  .dash-content { padding: 10px 12px 80px; gap: 10px }
   .hero-amount { font-size: 26px }
   .metric-val { font-size: 18px }
   .header { padding: 9px 12px }
@@ -3504,45 +3504,60 @@ button, a, [role="button"] { touch-action: manipulation }
 
 /* ── 480px — standard mobile ── */
 @media (max-width: 480px) {
-  /* Header */
+  /* Topbar: tighter padding + smaller gap */
+  .topbar { padding: 7px 10px; gap: 6px }
   .header { padding: 8px 10px }
-  .hamburger-btn { width: 44px; height: 44px; margin-right: 0 }
-  .header-right { gap: 6px }
-  /* Larger touch targets for header buttons */
-  .bell-btn, .theme-toggle-btn, .print-btn, .share-btn { width: 40px; height: 40px }
+  .hamburger-btn { width: 40px; height: 40px; margin-right: 0; flex-shrink: 0 }
+  .header-right { gap: 4px }
+  .bell-btn, .theme-toggle-btn, .share-header-btn { width: 36px; height: 36px; flex-shrink: 0 }
+  /* Hide PDF text label, keep icon only */
+  .pdf-btn span { display: none }
+  .pdf-btn { width: 36px; height: 36px; padding: 0; justify-content: center }
+  /* Hide keyboard shortcut button on mobile */
+  .kb-legend-wrap { display: none }
+  /* Search wrap: still flex:1 but min-width small */
+  .topbar-search-wrap { min-width: 0; margin: 0 4px }
   /* Cards: single column */
   .cards { grid-template-columns: 1fr }
   .card-value { font-size: calc(18px * var(--fs, 1)) }
   /* Main */
   .main { padding: 10px; gap: 8px }
-  /* Section cards */
   .card { padding: 12px 10px }
-  /* Floats */
-  .floats { bottom: 12px; right: 10px }
-  .float-btn { width: 46px; height: 46px }
-  /* Theme footer */
-  .theme-footer { left: 10px; bottom: 12px }
-  /* Goals summary: 2 columns */
+  /* Dash content: add bottom clearance for floats */
+  .dash-content { padding-bottom: 80px }
+  .page-content { padding-bottom: 80px }
+  /* Floats: smaller buttons, same row */
+  .floats { bottom: 10px; right: 10px; gap: 5px }
+  .float-btn { width: 40px; height: 40px }
+  .float-btn svg { width: 18px; height: 18px }
+  /* Theme footer: bottom-left clear of floats */
+  .theme-footer { left: 10px; bottom: 10px }
   .goals-page-summary { grid-template-columns: 1fr 1fr }
-  /* Sim result table: scroll */
   .sim-table-wrap { overflow-x: auto }
-  /* Asset/notes sections: full width */
-  .drag-section--assets,
-  .drag-section--notes { grid-column: 1 }
 }
 
 /* ── 360px — small phones ── */
 @media (max-width: 360px) {
+  .topbar { padding: 6px 8px; gap: 4px }
   .header { padding: 7px 8px }
+  .topbar-brand-name { font-size: 13px }
   .brand-name { font-size: calc(13px * var(--fs, 1)) }
+  /* Hide share button to save space */
+  .share-header-btn { display: none }
   .main { padding: 8px; gap: 6px }
   .cards { gap: 6px }
   .card { padding: 10px 8px }
   .card-value { font-size: calc(16px * var(--fs, 1)) }
-  .float-btn { width: 42px; height: 42px }
-  .floats { right: 8px; bottom: 8px }
+  .dash-content { padding: 8px 8px 80px }
+  .float-btn { width: 38px; height: 38px }
+  .float-btn svg { width: 16px; height: 16px }
+  .floats { right: 8px; bottom: 8px; gap: 4px }
+  .theme-footer { left: 8px; bottom: 8px }
   .goals-page-summary { grid-template-columns: 1fr }
   .section-title { font-size: calc(11px * var(--fs,1)) }
+  /* Bento: tighter */
+  .bc { border-radius: 8px }
+  .bento-row { gap: 8px }
 }
 
 /* ═══════════════════════════════════════════════════════════
