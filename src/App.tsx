@@ -2603,6 +2603,51 @@ const ACTIVITY = [
   { icon: 'blue',   title: 'Casa Alphaville avaliada', sub: 'Imóvel · R$ 1.100.000', time: '2d atrás', color: 'blue' },
 ]
 
+// ─── Search ───────────────────────────────────────────────────────────────────
+
+interface SearchResult {
+  id: string
+  type: string
+  label: string
+  sub: string
+  color: string
+  section: string
+}
+
+function buildSearchIndex(q: string): SearchResult[] {
+  if (q.trim().length < 2) return []
+  const lq = q.toLowerCase()
+  const results: SearchResult[] = []
+  const push = (item: SearchResult) => { if (results.length < 12) results.push(item) }
+
+  const txs: Transaction[] = (() => { try { return JSON.parse(localStorage.getItem('lion-txs') || '[]') } catch { return [] } })()
+  txs.filter(t => t.description?.toLowerCase().includes(lq) || t.category?.toLowerCase().includes(lq)).forEach(t => {
+    push({ id: t.id, type: 'Transação', label: t.description || t.category, sub: `${t.type === 'receita' ? '+' : '-'} R$ ${t.amount.toLocaleString('pt-BR')} · ${t.category}`, color: t.type === 'receita' ? 'green' : 'red', section: 'fin' })
+  })
+
+  const goals: Goal[] = (() => { try { return JSON.parse(localStorage.getItem('lion-goals') || '[]') } catch { return [] } })()
+  goals.filter(g => g.name?.toLowerCase().includes(lq) || g.category?.toLowerCase().includes(lq)).forEach(g => {
+    push({ id: g.id, type: 'Meta', label: g.name, sub: `R$ ${(g.current||0).toLocaleString('pt-BR')} / R$ ${(g.target||0).toLocaleString('pt-BR')}`, color: 'blue', section: 'goals' })
+  })
+
+  const rentals: Rental[] = (() => { try { return JSON.parse(localStorage.getItem('lion-rentals') || '[]') } catch { return [] } })()
+  rentals.filter(r => r.property?.toLowerCase().includes(lq) || r.tenant?.toLowerCase().includes(lq)).forEach(r => {
+    push({ id: r.id, type: 'Aluguel', label: r.property, sub: `${r.tenant} · R$ ${(r.value||0).toLocaleString('pt-BR')}/mês`, color: 'amber', section: 'rentals' })
+  })
+
+  const vehicles: Vehicle[] = (() => { try { return JSON.parse(localStorage.getItem('lion-vehicles') || '[]') } catch { return [] } })()
+  vehicles.filter(v => v.name?.toLowerCase().includes(lq) || v.plate?.toLowerCase().includes(lq)).forEach(v => {
+    push({ id: v.id, type: 'Veículo', label: v.name, sub: `${v.plate} · ${v.year} · ${(v.currentKm||0).toLocaleString('pt-BR')} km`, color: 'amber', section: 'vehicles' })
+  })
+
+  const maint: Maintenance[] = (() => { try { return JSON.parse(localStorage.getItem('lion-maintenance') || '[]') } catch { return [] } })()
+  maint.filter(m => m.asset?.toLowerCase().includes(lq) || m.description?.toLowerCase().includes(lq)).forEach(m => {
+    push({ id: m.id, type: 'Manutenção', label: m.asset, sub: `${m.description} · ${m.scheduledDate}`, color: 'purple', section: 'maint' })
+  })
+
+  return results
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -2620,6 +2665,9 @@ export default function App() {
   const [themeId, setThemeId] = useState(() => localStorage.getItem('lion-theme') || 'dark')
   const [fontSize, setFontSize] = useState(() => localStorage.getItem('lion-font') || 'normal')
   const [modal, setModal] = useState<ModalType>(null)
+  const [searchQ, setSearchQ] = useState('')
+  const [searchOpen, setSearchOpen] = useState(false)
+  const searchResults = searchOpen && searchQ.trim().length >= 2 ? buildSearchIndex(searchQ) : []
 
   useEffect(() => {
     const el = document.documentElement
@@ -2670,6 +2718,17 @@ export default function App() {
     .join('')
 
   const closeAll = () => { setShowCalc(false); setShowNp(false); setShowFin(false); setShowSim(false); setShowDocs(false); setShowAlerts(false); setShowShare(false) }
+
+  const handleSearchSelect = (r: SearchResult) => {
+    setSearchQ(''); setSearchOpen(false)
+    closeAll()
+    if (r.section === 'fin') { setShowFin(true); return }
+    setTimeout(() => {
+      const sectionMap: Record<string, string> = { goals: '.goals-section', rentals: '.rentals-section', vehicles: '.vehicles-section', maint: '.maintenance-section', pat: '.pat-section' }
+      const el = document.querySelector(sectionMap[r.section] || `.${r.section}-section`)
+      el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 100)
+  }
   const toggleCalc   = () => { const v = !showCalc;   closeAll(); setShowCalc(v) }
   const toggleNp     = () => { const v = !showNp;     closeAll(); setShowNp(v) }
   const toggleFin    = () => { const v = !showFin;    closeAll(); setShowFin(v) }
@@ -2710,6 +2769,47 @@ export default function App() {
             <div className="brand-sub">Gestão Financeira</div>
           </div>
         </div>
+        <div className="header-search-wrap">
+          <div className={`header-search${searchOpen ? ' search-active' : ''}`}>
+            <svg className="search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <circle cx="9" cy="9" r="6"/><path d="M15 15l3 3" strokeLinecap="round"/>
+            </svg>
+            <input
+              className="search-input"
+              placeholder="Buscar transações, metas, imóveis…"
+              value={searchQ}
+              onChange={e => { setSearchQ(e.target.value); setSearchOpen(true) }}
+              onFocus={() => setSearchOpen(true)}
+              onBlur={() => setTimeout(() => setSearchOpen(false), 180)}
+            />
+            {searchQ && (
+              <button className="search-clear" onClick={() => { setSearchQ(''); setSearchOpen(false) }}>
+                <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              </button>
+            )}
+          </div>
+          {searchOpen && searchResults.length > 0 && (
+            <div className="search-dropdown">
+              {searchResults.map(r => (
+                <button key={r.id} className="search-result" onMouseDown={() => handleSearchSelect(r)}>
+                  <span className={`search-result-dot dot-${r.color}`}/>
+                  <div className="search-result-text">
+                    <span className="search-result-label">{r.label}</span>
+                    <span className="search-result-sub"><span className="search-result-type">{r.type}</span> · {r.sub}</span>
+                  </div>
+                  <svg className="search-result-arrow" viewBox="0 0 16 16" fill="none"><path d="M6 4l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                </button>
+              ))}
+            </div>
+          )}
+          {searchOpen && searchQ.trim().length >= 2 && searchResults.length === 0 && (
+            <div className="search-dropdown search-empty">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="9" cy="9" r="6"/><path d="M15 15l3 3" strokeLinecap="round"/></svg>
+              <span>Nenhum resultado para "<strong>{searchQ}</strong>"</span>
+            </div>
+          )}
+        </div>
+
         <div className="header-right">
           <div className="header-date">
             {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
