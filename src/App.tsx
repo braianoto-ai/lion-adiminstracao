@@ -2476,6 +2476,32 @@ function SharePanel({ onClose, onImport }: { onClose: () => void; onImport: (own
   )
 }
 
+// ─── Dashboard data ───────────────────────────────────────────────────────────
+
+function computeDashData() {
+  const txs: Transaction[] = (() => { try { return JSON.parse(localStorage.getItem('lion-txs') || '[]') } catch { return [] } })()
+  const goals: Goal[] = (() => { try { return JSON.parse(localStorage.getItem('lion-goals') || '[]') } catch { return [] } })()
+  const rentals: Rental[] = (() => { try { return JSON.parse(localStorage.getItem('lion-rentals') || '[]') } catch { return [] } })()
+  const alerts = buildAlerts()
+
+  const balance = txs.reduce((s, t) => s + (t.type === 'receita' ? t.amount : -t.amount), 0)
+  const totalGoals = goals.reduce((s, g) => s + (g.current || 0), 0)
+  const targetGoals = goals.reduce((s, g) => s + (g.target || 0), 0)
+  const goalsProgress = targetGoals > 0 ? Math.round(totalGoals / targetGoals * 100) : 0
+  const monthlyRent = rentals.reduce((s, r) => s + (r.value || 0), 0)
+  const dangerCount = alerts.filter(a => a.severity === 'danger').length
+  const warnCount = alerts.filter(a => a.severity === 'warning').length
+
+  // month-over-month balance change
+  const now = new Date()
+  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const lastMonth = (() => { const d = new Date(now.getFullYear(), now.getMonth() - 1, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` })()
+  const thisMonthNet = txs.filter(t => t.date === thisMonth).reduce((s, t) => s + (t.type === 'receita' ? t.amount : -t.amount), 0)
+  const lastMonthNet = txs.filter(t => t.date === lastMonth).reduce((s, t) => s + (t.type === 'receita' ? t.amount : -t.amount), 0)
+
+  return { balance, totalGoals, targetGoals, goalsProgress, monthlyRent, dangerCount, warnCount, totalAlerts: alerts.length, txCount: txs.length, rentCount: rentals.length, goalsCount: goals.length, thisMonthNet, lastMonthNet }
+}
+
 // ─── Theme Footer ─────────────────────────────────────────────────────────────
 
 const THEMES = [
@@ -2590,6 +2616,7 @@ export default function App() {
   const [showShare, setShowShare] = useState(false)
   const [viewMode, setViewMode] = useState(false)
   const [viewOwner, setViewOwner] = useState('')
+  const [dashData, setDashData] = useState(() => computeDashData())
   const [themeId, setThemeId] = useState(() => localStorage.getItem('lion-theme') || 'dark')
   const [fontSize, setFontSize] = useState(() => localStorage.getItem('lion-font') || 'normal')
   const [modal, setModal] = useState<ModalType>(null)
@@ -2608,6 +2635,13 @@ export default function App() {
     if (fontSize !== 'normal') el.setAttribute('data-fs', fontSize)
     localStorage.setItem('lion-font', fontSize)
   }, [fontSize])
+
+  useEffect(() => {
+    const refresh = () => setDashData(computeDashData())
+    window.addEventListener('storage', refresh)
+    return () => window.removeEventListener('storage', refresh)
+  }, [])
+
   const [user, setUser] = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(false)
 
@@ -2748,22 +2782,32 @@ export default function App() {
         {/* ── Summary Cards ── */}
         <section className="cards">
           {[
-            {
-              label: 'Patrimônio Total', value: 'R$ 2.847.500', change: '+12,4%', pos: true, color: 'purple',
-              icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-            },
-            {
-              label: 'Imóveis', value: 'R$ 1.950.000', change: '3 ativos', pos: true, color: 'blue',
-              icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            },
-            {
-              label: 'Veículos', value: 'R$ 387.500', change: '2 veículos', pos: false, color: 'amber',
-              icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="9" width="22" height="11" rx="2"/><path d="M6 9V7a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg>
-            },
-            {
-              label: 'Produtos', value: 'R$ 510.000', change: '+8,2%', pos: true, color: 'green',
-              icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
-            },
+            ...(() => {
+              const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+              const momDiff = dashData.thisMonthNet - dashData.lastMonthNet
+              const momPct = dashData.lastMonthNet !== 0 ? Math.round(momDiff / Math.abs(dashData.lastMonthNet) * 100) : 0
+              const momStr = momPct > 0 ? `+${momPct}% vs mês ant.` : momPct < 0 ? `${momPct}% vs mês ant.` : 'igual ao mês ant.'
+              const alertColor = dashData.dangerCount > 0 ? 'red' : dashData.warnCount > 0 ? 'amber' : 'green'
+              const alertChange = dashData.totalAlerts === 0 ? 'Tudo em ordem' : `${dashData.dangerCount} crítico(s), ${dashData.warnCount} aviso(s)`
+              return [
+                {
+                  label: 'Saldo Financeiro', value: fmt(dashData.balance), change: momStr, pos: dashData.thisMonthNet >= 0, color: 'purple',
+                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+                },
+                {
+                  label: 'Em Metas', value: fmt(dashData.totalGoals), change: `${dashData.goalsProgress}% do objetivo`, pos: dashData.goalsProgress >= 50, color: 'blue',
+                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></svg>
+                },
+                {
+                  label: 'Aluguéis/mês', value: fmt(dashData.monthlyRent), change: `${dashData.rentCount} imóvel(is)`, pos: true, color: 'amber',
+                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                },
+                {
+                  label: 'Alertas', value: String(dashData.totalAlerts), change: alertChange, pos: dashData.totalAlerts === 0, color: alertColor,
+                  icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                },
+              ]
+            })()
           ].map(c => (
             <div key={c.label} className={`card card-${c.color}`}>
               <div className={`card-icon-wrap ci-${c.color}`}>{c.icon}</div>

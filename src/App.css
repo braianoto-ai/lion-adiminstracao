@@ -376,11 +376,15 @@
 .card-blue:hover   { border-color: rgba(59,130,246,.35) }
 .card-amber:hover  { border-color: rgba(245,158,11,.35) }
 .card-green:hover  { border-color: rgba(16,185,129,.35) }
+.card-red:hover    { border-color: rgba(239,68,68,.35) }
 
 .card-purple::after { background: linear-gradient(90deg, transparent, rgba(192,57,43,.6), transparent) }
 .card-blue::after   { background: linear-gradient(90deg, transparent, rgba(59,130,246,.6), transparent) }
 .card-amber::after  { background: linear-gradient(90deg, transparent, rgba(245,158,11,.6), transparent) }
 .card-green::after  { background: linear-gradient(90deg, transparent, rgba(16,185,129,.6), transparent) }
+.card-red::after    { background: linear-gradient(90deg, transparent, rgba(239,68,68,.6), transparent) }
+
+.ci-red { background: rgba(239,68,68,.15); color: #fca5a5 }
 
 .card-icon-wrap {
   width: 44px;
