@@ -4403,3 +4403,204 @@ html[data-theme="light"] .goals-filter-btn { background: var(--bg3) }
 html[data-theme="light"] .trip-card { background: #fff; border-color: var(--border2) }
 html[data-theme="light"] .trip-checklist-toggle { background: var(--bg3) }
 html[data-theme="light"] .trip-notes { background: var(--bg3) }
+
+/* ═══════════════════════════════════════════════════════════
+   SETTINGS PAGE
+═══════════════════════════════════════════════════════════ */
+
+.settings-page {
+  padding: 20px 0;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.page-content--settings {
+  padding-inline: 24px;
+}
+
+.settings-title {
+  font-size: calc(1.15rem * var(--fs));
+  font-weight: 600;
+  color: var(--text3);
+  margin: 0;
+}
+
+.settings-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.settings-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: calc(.85rem * var(--fs));
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.settings-card-title svg { width: 16px; height: 16px; color: var(--purple-l) }
+
+.settings-account-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.settings-avatar {
+  width: 52px; height: 52px;
+  border-radius: 50%;
+  background: var(--purple);
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 600;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+
+.settings-account-info { display: flex; flex-direction: column; gap: 3px; min-width: 0 }
+
+.settings-account-name {
+  font-size: calc(.95rem * var(--fs));
+  font-weight: 600;
+  color: var(--text3);
+}
+
+.settings-account-email {
+  font-size: calc(.82rem * var(--fs));
+  color: var(--text);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+.settings-account-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 2px;
+}
+
+.settings-badge {
+  font-size: calc(.72rem * var(--fs));
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 20px;
+  background: rgba(192,57,43,.18);
+  color: var(--purple-l);
+  border: 1px solid rgba(192,57,43,.3);
+}
+
+.settings-account-date {
+  font-size: calc(.75rem * var(--fs));
+  color: var(--text);
+}
+
+.settings-pw-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+  border-top: 1px solid var(--border);
+}
+
+.settings-field-label {
+  font-size: calc(.8rem * var(--fs));
+  color: var(--text);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.settings-pw-msg {
+  font-size: calc(.8rem * var(--fs));
+  color: var(--green);
+}
+.settings-pw-msg.settings-pw-err { color: var(--red) }
+
+.settings-hint {
+  font-size: calc(.78rem * var(--fs));
+  color: var(--text);
+  line-height: 1.5;
+  margin: -4px 0;
+}
+
+.settings-img-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.settings-img-preview {
+  width: 72px; height: 72px;
+  border: 1px dashed var(--border2);
+  border-radius: var(--radius-lg);
+  background: var(--bg3);
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.settings-img-preview--sm {
+  width: 48px; height: 48px;
+}
+
+.settings-img-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.settings-upload-btn {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  background: var(--purple);
+  color: #fff;
+  font-size: calc(.82rem * var(--fs));
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: opacity .15s;
+}
+.settings-upload-btn:hover { opacity: .88 }
+.settings-upload-btn svg { width: 14px; height: 14px }
+
+.settings-action-btn {
+  padding: 7px 14px;
+  border-radius: var(--radius);
+  background: var(--bg4);
+  color: var(--text2);
+  font-size: calc(.82rem * var(--fs));
+  font-weight: 500;
+  border: 1px solid var(--border2);
+  cursor: pointer;
+  transition: background .15s;
+}
+.settings-action-btn:hover { background: var(--border2) }
+.settings-action-btn:disabled { opacity: .5; cursor: not-allowed }
+
+.settings-remove-btn {
+  background: none;
+  border: 1px solid var(--border2);
+  color: var(--red);
+  font-size: calc(.78rem * var(--fs));
+  padding: 5px 12px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background .15s;
+}
+.settings-remove-btn:hover { background: rgba(239,68,68,.08) }
+
+html[data-theme="light"] .settings-card { background: #fff; border-color: var(--border2) }
+html[data-theme="light"] .settings-img-preview { background: var(--bg2) }
