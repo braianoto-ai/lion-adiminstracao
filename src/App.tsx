@@ -455,8 +455,47 @@ const MODAL_CONFIG: Record<string, { title: string; icon: React.ReactNode; color
 
 function NewItemModal({ type, onClose }: { type: ModalType; onClose: () => void }) {
   const [form, setForm] = useState<Record<string, string>>({})
+  const [error, setError] = useState('')
   if (!type) return null
   const cfg = MODAL_CONFIG[type]
+
+  const handleSave = () => {
+    const id = Date.now().toString()
+
+    if (type === 'carro') {
+      if (!form.marca?.trim() || !form.modelo?.trim()) { setError('Marca e modelo são obrigatórios.'); return }
+      const vehicles: Vehicle[] = (() => { try { return JSON.parse(localStorage.getItem('lion-vehicles') || '[]') } catch { return [] } })()
+      const v: Vehicle = {
+        id,
+        name: `${form.marca.trim()} ${form.modelo.trim()}`,
+        plate: form.placa?.trim() || '',
+        year: form.ano?.trim() || new Date().getFullYear().toString(),
+        currentKm: parseInt(form.km) || 0,
+        nextRevisionKm: 0,
+        nextRevisionDate: '',
+        notes: [form.valor && `Compra: R$ ${form.valor}`, form.valorAtual && `Atual: R$ ${form.valorAtual}`].filter(Boolean).join(' | '),
+        ipvaExpiry: '',
+        insuranceExpiry: '',
+      }
+      localStorage.setItem('lion-vehicles', JSON.stringify([v, ...vehicles]))
+    }
+
+    if (type === 'imovel') {
+      if (!form.descricao?.trim()) { setError('Descrição é obrigatória.'); return }
+      const imoveis = (() => { try { return JSON.parse(localStorage.getItem('lion-imoveis') || '[]') } catch { return [] } })()
+      const item = { id, descricao: form.descricao.trim(), tipo: form.tipo || '', valor: form.valor || '0', valorAtual: form.valorAtual || '0', endereco: form.endereco || '', area: form.area || '0', createdAt: new Date().toISOString() }
+      localStorage.setItem('lion-imoveis', JSON.stringify([item, ...imoveis]))
+    }
+
+    if (type === 'produto') {
+      if (!form.nome?.trim()) { setError('Nome é obrigatório.'); return }
+      const produtos = (() => { try { return JSON.parse(localStorage.getItem('lion-produtos') || '[]') } catch { return [] } })()
+      const item = { id, nome: form.nome.trim(), categoria: form.categoria || '', valor: form.valor || '0', quantidade: form.quantidade || '1', fornecedor: form.fornecedor || '', descricao: form.descricao || '', createdAt: new Date().toISOString() }
+      localStorage.setItem('lion-produtos', JSON.stringify([item, ...produtos]))
+    }
+
+    onClose()
+  }
 
   return (
     <div className="overlay" onClick={onClose}>
@@ -474,20 +513,21 @@ function NewItemModal({ type, onClose }: { type: ModalType; onClose: () => void 
               <div key={f.key} className="field">
                 <label className="field-label">{f.label}</label>
                 {f.type === 'select' ? (
-                  <select className="field-select" value={form[f.key] || ''} onChange={e => setForm({ ...form, [f.key]: e.target.value })}>
+                  <select className="field-select" value={form[f.key] || ''} onChange={e => { setForm({ ...form, [f.key]: e.target.value }); setError('') }}>
                     <option value="">Selecione...</option>
                     {f.options?.map((o: string) => <option key={o}>{o}</option>)}
                   </select>
                 ) : (
-                  <input className="field-input" type={f.type} placeholder={f.placeholder} value={form[f.key] || ''} onChange={e => setForm({ ...form, [f.key]: e.target.value })} />
+                  <input className="field-input" type={f.type} placeholder={f.placeholder} value={form[f.key] || ''} onChange={e => { setForm({ ...form, [f.key]: e.target.value }); setError('') }} />
                 )}
               </div>
             ))}
           </div>
+          {error && <p className="modal-error">{error}</p>}
         </div>
         <div className="modal-footer">
           <button className="btn-ghost" onClick={onClose}>Cancelar</button>
-          <button className={`btn-modal btn-${cfg.color}`} onClick={onClose}>
+          <button className={`btn-modal btn-${cfg.color}`} onClick={handleSave}>
             <svg viewBox="0 0 16 16" fill="none"><path d="M3 8l3.5 3.5L13 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
             Salvar
           </button>
@@ -1590,7 +1630,15 @@ function DocumentsPanel({ onClose }: { onClose: () => void }) {
     }
 
     const path = `${Date.now()}_${file.name.replace(/\s/g, '_')}`
-    const { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false })
+    let { error: upErr } = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false })
+    if (upErr && (upErr.message.includes('Bucket not found') || upErr.message.includes('bucket') || (upErr as { statusCode?: string }).statusCode === '404' || (upErr as { statusCode?: string }).statusCode === '400')) {
+      const { error: bucketErr } = await supabase.storage.createBucket(BUCKET, { public: false })
+      if (bucketErr && !bucketErr.message.includes('already exists')) {
+        setError('Erro ao criar bucket: ' + bucketErr.message); setUploading(false); return
+      }
+      const retry = await supabase.storage.from(BUCKET).upload(path, file, { upsert: false })
+      upErr = retry.error
+    }
     if (upErr) { setError('Erro no upload: ' + upErr.message); setUploading(false); return }
 
     const doc: DocMeta = {
