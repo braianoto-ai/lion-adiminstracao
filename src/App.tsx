@@ -16,6 +16,8 @@ const DATA_KEYS = [
   'lion-docs-meta','lion-imoveis','lion-produtos',
 ]
 
+const CLOUD_BUS = new EventTarget()
+
 function useCloudTable<T extends { id: string }>(
   tableName: string,
   lsKey: string,
@@ -47,10 +49,23 @@ function useCloudTable<T extends { id: string }>(
       })
   }, [userId, tableName, lsKey])
 
+  // Listen for cross-instance updates (same lsKey, different component)
+  useEffect(() => {
+    const handler = () => {
+      try {
+        const fresh = JSON.parse(localStorage.getItem(lsKey) || '[]') as T[]
+        _setData(fresh)
+      } catch { /* ignore */ }
+    }
+    CLOUD_BUS.addEventListener(lsKey, handler)
+    return () => CLOUD_BUS.removeEventListener(lsKey, handler)
+  }, [lsKey])
+
   const setData: React.Dispatch<React.SetStateAction<T[]>> = useCallback((action) => {
     _setData(prev => {
       const next = typeof action === 'function' ? (action as (p: T[]) => T[])(prev) : action
       localStorage.setItem(lsKey, JSON.stringify(next))
+      CLOUD_BUS.dispatchEvent(new Event(lsKey))
       if (supabase && userIdRef.current) {
         if (syncTimer.current) clearTimeout(syncTimer.current)
         syncTimer.current = setTimeout(async () => {
@@ -591,6 +606,11 @@ function NewItemModal({ type, onClose }: { type: ModalType; onClose: () => void 
     }
 
     onClose()
+    if (type === 'carro') {
+      setTimeout(() => {
+        document.getElementById('veh-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 200)
+    }
   }
 
   return (
@@ -1999,7 +2019,7 @@ function VehicleHistorySection() {
   const [collapsed, setCollapsed] = useState(false)
 
   return (
-    <section className="veh-section">
+    <section className="veh-section" id="veh-section">
       <div className="goals-header">
         <div style={{ display:'flex', alignItems:'center', gap:8 }}>
           <button className="section-collapse-btn" onClick={() => setCollapsed(v => !v)} title={collapsed ? 'Expandir' : 'Recolher'}>
