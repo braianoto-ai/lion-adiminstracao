@@ -4838,3 +4838,559 @@ html[data-theme="light"] .ap-font-card,
 html[data-theme="light"] .ap-accent-btn { background: var(--bg3) }
 html[data-theme="light"] .ap-font-card:hover,
 html[data-theme="light"] .ap-accent-btn:hover { background: var(--bg4) }
+
+/* ═══════════════════════════════════════════════════════════
+   PAYMENT HUB
+═══════════════════════════════════════════════════════════ */
+
+.ph-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 4px 0 32px;
+  height: 100%;
+}
+
+/* Summary */
+.ph-summary {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.ph-summary-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.ph-summary-icon {
+  width: 36px; height: 36px;
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.ph-summary-icon svg { width: 18px; height: 18px }
+
+.ph-summary-label {
+  font-size: calc(.72rem * var(--fs));
+  color: var(--text);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  display: block;
+}
+
+.ph-summary-value {
+  font-size: calc(1rem * var(--fs));
+  font-weight: 700;
+  color: var(--text3);
+  display: block;
+  margin-top: 2px;
+}
+
+.ph-summary-sub {
+  font-size: calc(.7rem * var(--fs));
+  color: var(--text);
+  display: block;
+  margin-top: 1px;
+}
+
+/* Layout */
+.ph-layout {
+  display: flex;
+  gap: 14px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* Collectors sidebar */
+.ph-collectors {
+  width: 220px;
+  flex-shrink: 0;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.ph-collectors-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.ph-collectors-title {
+  font-size: calc(.78rem * var(--fs));
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.ph-add-btn {
+  width: 22px; height: 22px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg4);
+  color: var(--text2);
+  border: 1px solid var(--border2);
+  cursor: pointer;
+  transition: background .15s;
+}
+.ph-add-btn:hover { background: var(--purple); color: #fff; border-color: var(--purple) }
+.ph-add-btn svg { width: 12px; height: 12px }
+
+.ph-collector-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 12px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  text-align: left;
+  width: 100%;
+  border-radius: 0;
+  transition: background .12s;
+  position: relative;
+}
+.ph-collector-item:hover { background: var(--bg3) }
+.ph-collector-active { background: var(--bg3) !important }
+.ph-collector-active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 4px; bottom: 4px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--purple);
+}
+
+.ph-collector-avatar {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  flex-shrink: 0;
+  position: relative;
+  color: var(--text2);
+}
+.ph-collector-avatar svg { width: 14px; height: 14px }
+
+.ph-collector-overdue-dot {
+  position: absolute;
+  top: -2px; right: -2px;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--red);
+  border: 1.5px solid var(--bg2);
+}
+
+.ph-collector-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.ph-collector-name {
+  font-size: calc(.8rem * var(--fs));
+  font-weight: 600;
+  color: var(--text2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.ph-collector-meta {
+  font-size: calc(.7rem * var(--fs));
+  color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.ph-collector-total {
+  font-size: calc(.72rem * var(--fs));
+  font-weight: 600;
+}
+
+.ph-collector-actions {
+  display: none;
+  gap: 2px;
+  flex-shrink: 0;
+}
+.ph-collector-item:hover .ph-collector-actions { display: flex }
+
+.ph-empty-hint {
+  font-size: calc(.75rem * var(--fs));
+  color: var(--text);
+  text-align: center;
+  padding: 20px 12px;
+}
+
+/* Bills panel */
+.ph-bills {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: hidden;
+}
+
+.ph-bills-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.ph-status-filters {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.ph-status-btn {
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid var(--border2);
+  background: var(--bg2);
+  color: var(--text);
+  font-size: calc(.75rem * var(--fs));
+  font-weight: 500;
+  cursor: pointer;
+  transition: background .12s, color .12s, border-color .12s;
+}
+.ph-status-btn:hover { background: var(--bg4); color: var(--text2) }
+.ph-status-active { background: var(--bg4) !important; color: var(--text3) !important }
+
+.ph-new-bill-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: calc(.8rem * var(--fs));
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+.ph-new-bill-btn svg { width: 13px; height: 13px }
+
+.ph-bills-list {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-right: 2px;
+}
+
+.ph-bills-empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  color: var(--text);
+  font-size: calc(.85rem * var(--fs));
+}
+.ph-bills-empty svg { width: 48px; height: 48px; color: var(--text) }
+
+/* Bill card */
+.ph-bill-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: border-color .15s;
+}
+.ph-bill-card:hover { border-color: var(--border2) }
+.ph-bill-paid { opacity: .65 }
+.ph-bill-overdue { border-left: 3px solid var(--red) }
+
+.ph-bill-left { flex-shrink: 0 }
+
+.ph-bill-avatar {
+  width: 36px; height: 36px;
+  border-radius: 9px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+}
+
+.ph-bill-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.ph-bill-top {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ph-bill-collector {
+  font-size: calc(.85rem * var(--fs));
+  font-weight: 600;
+  color: var(--text3);
+}
+
+.ph-bill-status {
+  font-size: calc(.68rem * var(--fs));
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.ph-bill-status-em_aberto { background: rgba(59,130,246,.15); color: var(--blue) }
+.ph-bill-status-pago      { background: rgba(16,185,129,.15); color: var(--green) }
+.ph-bill-status-vencido   { background: rgba(239,68,68,.15);  color: var(--red) }
+.ph-bill-status-cancelado { background: var(--bg4); color: var(--text) }
+
+.ph-bill-desc {
+  font-size: calc(.78rem * var(--fs));
+  color: var(--text2);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.ph-bill-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ph-bill-due {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: calc(.72rem * var(--fs));
+  color: var(--text);
+}
+.ph-bill-due svg { width: 11px; height: 11px; flex-shrink: 0 }
+
+.ph-bill-recurrence, .ph-bill-cat {
+  font-size: calc(.68rem * var(--fs));
+  color: var(--text);
+  background: var(--bg4);
+  padding: 1px 6px;
+  border-radius: 8px;
+}
+
+.ph-bill-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.ph-bill-amount {
+  font-size: calc(.95rem * var(--fs));
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.ph-bill-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  transition: opacity .15s;
+}
+.ph-bill-card:hover .ph-bill-actions { opacity: 1 }
+
+/* Icon buttons */
+.ph-icon-btn {
+  width: 26px; height: 26px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text2);
+  cursor: pointer;
+  transition: background .12s, color .12s;
+  text-decoration: none;
+}
+.ph-icon-btn:hover { background: var(--bg4); color: var(--text3) }
+.ph-icon-btn svg { width: 12px; height: 12px }
+.ph-icon-btn-del:hover { background: rgba(239,68,68,.15); color: var(--red); border-color: rgba(239,68,68,.3) }
+.ph-icon-btn-pay:hover { background: rgba(16,185,129,.15); color: var(--green); border-color: rgba(16,185,129,.3) }
+
+/* Modals */
+.ph-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.55);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.ph-modal {
+  background: var(--bg2);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-lg);
+  width: 100%;
+  max-width: 460px;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: var(--shadow-lg);
+}
+
+.ph-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px 14px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--bg2);
+  z-index: 1;
+}
+
+.ph-modal-title {
+  font-size: calc(.9rem * var(--fs));
+  font-weight: 600;
+  color: var(--text3);
+}
+
+.ph-modal-close {
+  width: 28px; height: 28px;
+  border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  cursor: pointer;
+}
+.ph-modal-close:hover { background: var(--bg4); color: var(--text3) }
+.ph-modal-close svg { width: 12px; height: 12px }
+
+.ph-modal-form {
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ph-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.ph-field label {
+  font-size: calc(.75rem * var(--fs));
+  font-weight: 500;
+  color: var(--text);
+}
+.ph-field input, .ph-field select {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 8px 10px;
+  color: var(--text2);
+  font-size: calc(.85rem * var(--fs));
+  transition: border-color .15s;
+}
+.ph-field input:focus, .ph-field select:focus { outline: none; border-color: var(--purple) }
+
+.ph-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.ph-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.ph-color-picker {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ph-color-dot {
+  width: 24px; height: 24px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform .12s, border-color .12s;
+}
+.ph-color-dot:hover { transform: scale(1.15) }
+.ph-color-active { border-color: var(--text3) !important; transform: scale(1.15) }
+
+/* Barcode modal */
+.ph-barcode-modal {
+  padding: 16px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: center;
+}
+
+.ph-barcode-text {
+  background: var(--bg3);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  font-family: monospace;
+  font-size: calc(.78rem * var(--fs));
+  color: var(--text2);
+  word-break: break-all;
+  text-align: center;
+  width: 100%;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .ph-summary { grid-template-columns: repeat(2, 1fr) }
+}
+
+@media (max-width: 700px) {
+  .ph-layout { flex-direction: column }
+  .ph-collectors { width: 100%; max-height: 160px; flex-direction: row; flex-wrap: nowrap; overflow-x: auto; overflow-y: hidden }
+  .ph-collectors-header { display: none }
+  .ph-collector-item { flex-direction: column; align-items: center; text-align: center; padding: 8px; min-width: 72px; gap: 4px }
+  .ph-collector-info { align-items: center }
+  .ph-collector-meta, .ph-collector-total { display: none }
+  .ph-collector-actions { display: none !important }
+  .ph-summary { grid-template-columns: repeat(2, 1fr) }
+  .ph-bills-header { flex-direction: column; align-items: flex-start }
+  .ph-form-row { grid-template-columns: 1fr }
+}
+
+html[data-theme="light"] .ph-summary-card,
+html[data-theme="light"] .ph-collectors,
+html[data-theme="light"] .ph-bill-card,
+html[data-theme="light"] .ph-modal { background: #fff; border-color: var(--border2) }
+html[data-theme="light"] .ph-collector-item:hover,
+html[data-theme="light"] .ph-collector-active { background: var(--bg3) }
+html[data-theme="light"] .ph-field input,
+html[data-theme="light"] .ph-field select { background: var(--bg2) }
+html[data-theme="light"] .ph-icon-btn { background: var(--bg2) }
+html[data-theme="light"] .ph-barcode-text { background: var(--bg2) }

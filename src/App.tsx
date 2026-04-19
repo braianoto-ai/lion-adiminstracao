@@ -23,7 +23,37 @@ interface Folder {
 }
 
 type ModalType = 'imovel' | 'carro' | 'produto' | null
-type SidebarPage = 'dashboard' | 'family' | 'calendar' | 'trips' | 'goals' | 'settings' | 'appearance'
+type SidebarPage = 'dashboard' | 'family' | 'calendar' | 'trips' | 'goals' | 'payment-hub' | 'settings' | 'appearance'
+
+type BillStatus = 'em_aberto' | 'pago' | 'vencido' | 'cancelado'
+type BillRecurrence = 'mensal' | 'unica' | 'anual' | 'semanal'
+
+interface Collector {
+  id: string
+  name: string
+  category: string
+  color: string
+  createdAt: string
+}
+
+interface Bill {
+  id: string
+  collectorId: string
+  description: string
+  amount: number
+  dueDate: string
+  status: BillStatus
+  recurrence: BillRecurrence
+  paymentLink?: string
+  barcode?: string
+  paidAt?: string
+  notes?: string
+  createdAt: string
+  updatedAt: string
+}
+
+const BILL_CATEGORIES = ['Energia','Água','Internet','Telefonia','Condomínio','Aluguel','Cartão','Streaming','Educação','Saúde','Imposto','Outros']
+const BILL_COLORS = ['#7c3aed','#3b82f6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#84cc16','#a855f7','#f97316']
 
 interface FamilyMember {
   id: string
@@ -3985,6 +4015,464 @@ function SettingsPage({ user }: { user: User | null }) {
   )
 }
 
+// ─── Payment Hub ──────────────────────────────────────────────────────────────
+
+const BILL_STATUS_LABEL: Record<BillStatus, string> = {
+  em_aberto: 'Em aberto', pago: 'Pago', vencido: 'Vencido', cancelado: 'Cancelado',
+}
+const BILL_RECURRENCE_LABEL: Record<BillRecurrence, string> = {
+  mensal: 'Mensal', unica: 'Única', anual: 'Anual', semanal: 'Semanal',
+}
+
+function isOverdue(bill: Bill): boolean {
+  if (bill.status !== 'em_aberto') return false
+  return new Date(bill.dueDate + 'T23:59:59') < new Date()
+}
+
+function effectiveStatus(bill: Bill): BillStatus {
+  return isOverdue(bill) ? 'vencido' : bill.status
+}
+
+const fmtCurrency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+const fmtDate = (s: string) => new Date(s + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })
+
+const COLL_INIT = { name: '', category: BILL_CATEGORIES[0], color: BILL_COLORS[0] }
+const BILL_INIT = { collectorId: '', description: '', amount: '', dueDate: '', status: 'em_aberto' as BillStatus, recurrence: 'mensal' as BillRecurrence, paymentLink: '', barcode: '', notes: '' }
+
+function CollectorForm({ initial, onSave, onCancel }: { initial: typeof COLL_INIT; onSave: (v: typeof COLL_INIT) => void; onCancel: () => void }) {
+  const [form, setForm] = useState(initial)
+  const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
+  return (
+    <form className="ph-modal-form" onSubmit={e => { e.preventDefault(); if (!form.name.trim()) return; onSave(form) }}>
+      <div className="ph-field">
+        <label>Nome *</label>
+        <input autoFocus value={form.name} onChange={e => f('name', e.target.value)} placeholder="Ex: CEMIG, Claro, Condomínio…" required />
+      </div>
+      <div className="ph-field">
+        <label>Categoria</label>
+        <select value={form.category} onChange={e => f('category', e.target.value)}>
+          {BILL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
+      </div>
+      <div className="ph-field">
+        <label>Cor</label>
+        <div className="ph-color-picker">
+          {BILL_COLORS.map(c => (
+            <button key={c} type="button" className={`ph-color-dot${form.color === c ? ' ph-color-active' : ''}`}
+              style={{ background: c }} onClick={() => f('color', c)} />
+          ))}
+        </div>
+      </div>
+      <div className="ph-form-actions">
+        <button type="button" className="btn-ghost" onClick={onCancel}>Cancelar</button>
+        <button type="submit" className="btn-accent">Salvar</button>
+      </div>
+    </form>
+  )
+}
+
+function BillForm({ initial, collectors, onSave, onCancel }: {
+  initial: typeof BILL_INIT; collectors: Collector[]
+  onSave: (v: typeof BILL_INIT) => void; onCancel: () => void
+}) {
+  const [form, setForm] = useState(initial)
+  const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
+  return (
+    <form className="ph-modal-form" onSubmit={e => { e.preventDefault(); if (!form.collectorId || !form.amount || !form.dueDate) return; onSave(form) }}>
+      <div className="ph-field">
+        <label>Cobrador *</label>
+        <select value={form.collectorId} onChange={e => f('collectorId', e.target.value)} required>
+          <option value="">Selecione…</option>
+          {collectors.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+      </div>
+      <div className="ph-field">
+        <label>Descrição</label>
+        <input value={form.description} onChange={e => f('description', e.target.value)} placeholder="Ex: Fatura março 2026" />
+      </div>
+      <div className="ph-form-row">
+        <div className="ph-field">
+          <label>Valor (R$) *</label>
+          <input type="number" min="0.01" step="0.01" value={form.amount} onChange={e => f('amount', e.target.value)} placeholder="0,00" required />
+        </div>
+        <div className="ph-field">
+          <label>Vencimento *</label>
+          <input type="date" value={form.dueDate} onChange={e => f('dueDate', e.target.value)} required />
+        </div>
+      </div>
+      <div className="ph-form-row">
+        <div className="ph-field">
+          <label>Recorrência</label>
+          <select value={form.recurrence} onChange={e => f('recurrence', e.target.value)}>
+            {(Object.entries(BILL_RECURRENCE_LABEL) as [BillRecurrence, string][]).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+        </div>
+        <div className="ph-field">
+          <label>Status</label>
+          <select value={form.status} onChange={e => f('status', e.target.value as BillStatus)}>
+            {(Object.entries(BILL_STATUS_LABEL) as [BillStatus, string][]).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+          </select>
+        </div>
+      </div>
+      <div className="ph-field">
+        <label>Link de pagamento</label>
+        <input type="url" value={form.paymentLink} onChange={e => f('paymentLink', e.target.value)} placeholder="https://…" />
+      </div>
+      <div className="ph-field">
+        <label>Código de barras / PIX</label>
+        <input value={form.barcode} onChange={e => f('barcode', e.target.value)} placeholder="Cole o código aqui" />
+      </div>
+      <div className="ph-field">
+        <label>Observações</label>
+        <input value={form.notes} onChange={e => f('notes', e.target.value)} placeholder="Opcional" />
+      </div>
+      <div className="ph-form-actions">
+        <button type="button" className="btn-ghost" onClick={onCancel}>Cancelar</button>
+        <button type="submit" className="btn-accent">Salvar</button>
+      </div>
+    </form>
+  )
+}
+
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="ph-modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="ph-modal">
+        <div className="ph-modal-header">
+          <span className="ph-modal-title">{title}</span>
+          <button className="ph-modal-close" onClick={onClose}>
+            <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function PaymentHubPage() {
+  const [collectors, setCollectors] = useState<Collector[]>(() => {
+    try { return JSON.parse(localStorage.getItem('lion-collectors') || '[]') } catch { return [] }
+  })
+  const [bills, setBills] = useState<Bill[]>(() => {
+    try { return JSON.parse(localStorage.getItem('lion-bills') || '[]') } catch { return [] }
+  })
+  const [selCollector, setSelCollector] = useState<string | null>(null)
+  const [filterStatus, setFilterStatus] = useState<BillStatus | 'all'>('all')
+  const [modal, setModal] = useState<'new-collector' | 'edit-collector' | 'new-bill' | 'edit-bill' | 'barcode' | null>(null)
+  const [editingCollector, setEditingCollector] = useState<Collector | null>(null)
+  const [editingBill, setEditingBill] = useState<Bill | null>(null)
+  const [barcodeText, setBarcodeText] = useState('')
+  const [copied, setCopied] = useState(false)
+
+  useEffect(() => { localStorage.setItem('lion-collectors', JSON.stringify(collectors)) }, [collectors])
+  useEffect(() => { localStorage.setItem('lion-bills', JSON.stringify(bills)) }, [bills])
+
+  const saveCollector = (form: typeof COLL_INIT) => {
+    if (editingCollector) {
+      setCollectors(prev => prev.map(c => c.id === editingCollector.id ? { ...c, ...form } : c))
+    } else {
+      setCollectors(prev => [...prev, { ...form, id: Date.now().toString(), createdAt: new Date().toISOString() }])
+    }
+    setModal(null); setEditingCollector(null)
+  }
+
+  const deleteCollector = (id: string) => {
+    if (!confirm('Remover cobrador e todas as suas contas?')) return
+    setCollectors(prev => prev.filter(c => c.id !== id))
+    setBills(prev => prev.filter(b => b.collectorId !== id))
+    if (selCollector === id) setSelCollector(null)
+  }
+
+  const saveBill = (form: typeof BILL_INIT) => {
+    const now = new Date().toISOString()
+    if (editingBill) {
+      setBills(prev => prev.map(b => b.id === editingBill.id
+        ? { ...b, ...form, amount: parseFloat(form.amount), updatedAt: now }
+        : b))
+    } else {
+      const bill: Bill = { id: Date.now().toString(), ...form, amount: parseFloat(form.amount), createdAt: now, updatedAt: now }
+      setBills(prev => [...prev, bill])
+    }
+    setModal(null); setEditingBill(null)
+  }
+
+  const deleteBill = (id: string) => {
+    if (!confirm('Remover esta conta?')) return
+    setBills(prev => prev.filter(b => b.id !== id))
+  }
+
+  const markPaid = (id: string) => {
+    const now = new Date().toISOString()
+    setBills(prev => prev.map(b => b.id === id ? { ...b, status: 'pago', paidAt: now, updatedAt: now } : b))
+  }
+
+  const markOpen = (id: string) => {
+    setBills(prev => prev.map(b => b.id === id ? { ...b, status: 'em_aberto', paidAt: undefined, updatedAt: new Date().toISOString() } : b))
+  }
+
+  const copyBarcode = (code: string) => {
+    navigator.clipboard.writeText(code).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000) })
+  }
+
+  // Filtered + effective status
+  const visibleBills = bills
+    .filter(b => !selCollector || b.collectorId === selCollector)
+    .filter(b => filterStatus === 'all' || effectiveStatus(b) === filterStatus)
+    .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+
+  // Summary (all bills, no collector filter)
+  const today = new Date()
+  const thisMonth = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`
+
+  const totalAberto   = bills.filter(b => effectiveStatus(b) === 'em_aberto').reduce((s, b) => s + b.amount, 0)
+  const totalVencido  = bills.filter(b => effectiveStatus(b) === 'vencido').reduce((s, b) => s + b.amount, 0)
+  const totalPagoMes  = bills.filter(b => b.status === 'pago' && b.paidAt?.startsWith(thisMonth)).reduce((s, b) => s + b.amount, 0)
+  const totalMensal   = bills.filter(b => b.recurrence === 'mensal' && b.status !== 'cancelado').reduce((s, b) => s + b.amount, 0)
+
+  const countVencido  = bills.filter(b => effectiveStatus(b) === 'vencido').length
+  const countAberto   = bills.filter(b => effectiveStatus(b) === 'em_aberto').length
+
+  const getCollector = (id: string) => collectors.find(c => c.id === id)
+
+  const statusColors: Record<BillStatus, string> = {
+    em_aberto: 'var(--blue)', pago: 'var(--green)', vencido: 'var(--red)', cancelado: 'var(--text)',
+  }
+
+  return (
+    <div className="ph-page">
+      {/* Summary */}
+      <div className="ph-summary">
+        <div className="ph-summary-card">
+          <div className="ph-summary-icon" style={{ background: 'rgba(59,130,246,.15)', color: 'var(--blue)' }}>
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="8"/><path d="M10 6v4l3 3" strokeLinecap="round"/></svg>
+          </div>
+          <div>
+            <div className="ph-summary-label">Em aberto</div>
+            <div className="ph-summary-value">{fmtCurrency(totalAberto)}</div>
+            <div className="ph-summary-sub">{countAberto} conta{countAberto !== 1 ? 's' : ''}</div>
+          </div>
+        </div>
+        <div className="ph-summary-card">
+          <div className="ph-summary-icon" style={{ background: 'rgba(239,68,68,.15)', color: 'var(--red)' }}>
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 6v4M10 14h.01" strokeLinecap="round"/><circle cx="10" cy="10" r="8"/></svg>
+          </div>
+          <div>
+            <div className="ph-summary-label">Vencidas</div>
+            <div className="ph-summary-value" style={{ color: countVencido > 0 ? 'var(--red)' : undefined }}>{fmtCurrency(totalVencido)}</div>
+            <div className="ph-summary-sub">{countVencido} conta{countVencido !== 1 ? 's' : ''}</div>
+          </div>
+        </div>
+        <div className="ph-summary-card">
+          <div className="ph-summary-icon" style={{ background: 'rgba(16,185,129,.15)', color: 'var(--green)' }}>
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 10l4 4 8-8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </div>
+          <div>
+            <div className="ph-summary-label">Pago este mês</div>
+            <div className="ph-summary-value" style={{ color: 'var(--green)' }}>{fmtCurrency(totalPagoMes)}</div>
+            <div className="ph-summary-sub">{bills.filter(b => b.status === 'pago' && b.paidAt?.startsWith(thisMonth)).length} quitada{bills.filter(b => b.status === 'pago' && b.paidAt?.startsWith(thisMonth)).length !== 1 ? 's' : ''}</div>
+          </div>
+        </div>
+        <div className="ph-summary-card">
+          <div className="ph-summary-icon" style={{ background: 'rgba(245,158,11,.15)', color: 'var(--amber)' }}>
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h12v12H4z" rx="2"/><path d="M8 9h4M8 12h2" strokeLinecap="round"/></svg>
+          </div>
+          <div>
+            <div className="ph-summary-label">Total mensal</div>
+            <div className="ph-summary-value">{fmtCurrency(totalMensal)}</div>
+            <div className="ph-summary-sub">contas recorrentes</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Layout */}
+      <div className="ph-layout">
+        {/* Collectors */}
+        <aside className="ph-collectors">
+          <div className="ph-collectors-header">
+            <span className="ph-collectors-title">Cobradores</span>
+            <button className="ph-add-btn" onClick={() => { setEditingCollector(null); setModal('new-collector') }} title="Novo cobrador">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            </button>
+          </div>
+          <button className={`ph-collector-item${!selCollector ? ' ph-collector-active' : ''}`} onClick={() => setSelCollector(null)}>
+            <div className="ph-collector-avatar" style={{ background: 'var(--bg4)' }}>
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1" y="3" width="14" height="10" rx="2"/><path d="M1 7h14" strokeLinecap="round"/></svg>
+            </div>
+            <div className="ph-collector-info">
+              <span className="ph-collector-name">Todas</span>
+              <span className="ph-collector-meta">{bills.length} conta{bills.length !== 1 ? 's' : ''}</span>
+            </div>
+          </button>
+          {collectors.map(c => {
+            const cBills = bills.filter(b => b.collectorId === c.id)
+            const cTotal = cBills.filter(b => effectiveStatus(b) === 'em_aberto' || effectiveStatus(b) === 'vencido').reduce((s, b) => s + b.amount, 0)
+            const hasOverdue = cBills.some(b => effectiveStatus(b) === 'vencido')
+            return (
+              <div key={c.id} className={`ph-collector-item${selCollector === c.id ? ' ph-collector-active' : ''}`}
+                onClick={() => setSelCollector(selCollector === c.id ? null : c.id)}>
+                <div className="ph-collector-avatar" style={{ background: c.color + '28', color: c.color }}>
+                  {c.name.slice(0, 2).toUpperCase()}
+                  {hasOverdue && <span className="ph-collector-overdue-dot" />}
+                </div>
+                <div className="ph-collector-info">
+                  <span className="ph-collector-name">{c.name}</span>
+                  <span className="ph-collector-meta">{c.category} · {cBills.length} conta{cBills.length !== 1 ? 's' : ''}</span>
+                  {cTotal > 0 && <span className="ph-collector-total" style={{ color: hasOverdue ? 'var(--red)' : 'var(--text)' }}>{fmtCurrency(cTotal)}</span>}
+                </div>
+                <div className="ph-collector-actions">
+                  <button className="ph-icon-btn" onClick={e => { e.stopPropagation(); setEditingCollector(c); setModal('edit-collector') }} title="Editar">
+                    <svg viewBox="0 0 14 14" fill="none"><path d="M2 10l7-7 2 2-7 7H2v-2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
+                  </button>
+                  <button className="ph-icon-btn ph-icon-btn-del" onClick={e => { e.stopPropagation(); deleteCollector(c.id) }} title="Remover">
+                    <svg viewBox="0 0 14 14" fill="none"><path d="M4 4l6 6M10 4l-6 6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                  </button>
+                </div>
+              </div>
+            )
+          })}
+          {collectors.length === 0 && (
+            <div className="ph-empty-hint">Adicione um cobrador para começar</div>
+          )}
+        </aside>
+
+        {/* Bills */}
+        <div className="ph-bills">
+          <div className="ph-bills-header">
+            <div className="ph-status-filters">
+              {(['all', 'em_aberto', 'vencido', 'pago', 'cancelado'] as const).map(s => (
+                <button key={s} className={`ph-status-btn${filterStatus === s ? ' ph-status-active' : ''}`}
+                  onClick={() => setFilterStatus(s)}
+                  style={filterStatus === s && s !== 'all' ? { borderColor: statusColors[s as BillStatus], color: statusColors[s as BillStatus] } : {}}>
+                  {s === 'all' ? 'Todas' : BILL_STATUS_LABEL[s]}
+                </button>
+              ))}
+            </div>
+            <button className="btn-accent ph-new-bill-btn" onClick={() => {
+              setEditingBill(null)
+              setModal('new-bill')
+            }}>
+              <svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              Nova conta
+            </button>
+          </div>
+
+          {visibleBills.length === 0 ? (
+            <div className="ph-bills-empty">
+              <svg viewBox="0 0 48 48" fill="none">
+                <rect x="8" y="12" width="32" height="28" rx="4" stroke="currentColor" strokeWidth="1.5" opacity=".3"/>
+                <path d="M8 20h32" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity=".3"/>
+                <path d="M18 30h12M18 34h8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity=".3"/>
+              </svg>
+              <span>Nenhuma conta encontrada</span>
+              <button className="btn-accent" onClick={() => { setEditingBill(null); setModal('new-bill') }}>Adicionar conta</button>
+            </div>
+          ) : (
+            <div className="ph-bills-list">
+              {visibleBills.map(bill => {
+                const coll = getCollector(bill.collectorId)
+                const status = effectiveStatus(bill)
+                const isPaid = status === 'pago'
+                const isVencido = status === 'vencido'
+                return (
+                  <div key={bill.id} className={`ph-bill-card${isPaid ? ' ph-bill-paid' : ''}${isVencido ? ' ph-bill-overdue' : ''}`}>
+                    <div className="ph-bill-left">
+                      {coll && <div className="ph-bill-avatar" style={{ background: coll.color + '22', color: coll.color }}>{coll.name.slice(0,2).toUpperCase()}</div>}
+                    </div>
+                    <div className="ph-bill-body">
+                      <div className="ph-bill-top">
+                        <span className="ph-bill-collector">{coll?.name ?? '—'}</span>
+                        <span className={`ph-bill-status ph-bill-status-${status}`}>{BILL_STATUS_LABEL[status]}</span>
+                      </div>
+                      {bill.description && <div className="ph-bill-desc">{bill.description}</div>}
+                      <div className="ph-bill-meta">
+                        <span className="ph-bill-due" style={{ color: isVencido ? 'var(--red)' : undefined }}>
+                          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3"><rect x="1" y="2" width="10" height="9" rx="1.5"/><path d="M1 5h10M4 1v2M8 1v2" strokeLinecap="round"/></svg>
+                          {fmtDate(bill.dueDate)}
+                          {isVencido && ' · Vencida'}
+                          {isPaid && bill.paidAt && ` · Pago em ${fmtDate(bill.paidAt.slice(0,10))}`}
+                        </span>
+                        <span className="ph-bill-recurrence">{BILL_RECURRENCE_LABEL[bill.recurrence]}</span>
+                        {coll && <span className="ph-bill-cat">{coll.category}</span>}
+                      </div>
+                    </div>
+                    <div className="ph-bill-right">
+                      <div className="ph-bill-amount" style={{ color: isVencido ? 'var(--red)' : isPaid ? 'var(--green)' : 'var(--text3)' }}>
+                        {fmtCurrency(bill.amount)}
+                      </div>
+                      <div className="ph-bill-actions">
+                        {bill.barcode && (
+                          <button className="ph-icon-btn" title="Ver código" onClick={() => { setBarcodeText(bill.barcode!); setModal('barcode') }}>
+                            <svg viewBox="0 0 14 14" fill="none"><rect x="1" y="2" width="2" height="10" fill="currentColor" rx=".5"/><rect x="4" y="2" width="1" height="10" fill="currentColor" rx=".5"/><rect x="6" y="2" width="2" height="10" fill="currentColor" rx=".5"/><rect x="9" y="2" width="1" height="10" fill="currentColor" rx=".5"/><rect x="11" y="2" width="2" height="10" fill="currentColor" rx=".5"/></svg>
+                          </button>
+                        )}
+                        {bill.paymentLink && (
+                          <a className="ph-icon-btn" href={bill.paymentLink} target="_blank" rel="noreferrer" title="Abrir link de pagamento">
+                            <svg viewBox="0 0 14 14" fill="none"><path d="M6 3H3a1 1 0 0 0-1 1v7a1 1 0 0 0 1 1h7a1 1 0 0 0 1-1V8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><path d="M9 2h3v3M12 2l-5 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                          </a>
+                        )}
+                        {!isPaid && status !== 'cancelado' && (
+                          <button className="ph-icon-btn ph-icon-btn-pay" title="Marcar como pago" onClick={() => markPaid(bill.id)}>
+                            <svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          </button>
+                        )}
+                        {isPaid && (
+                          <button className="ph-icon-btn" title="Reabrir" onClick={() => markOpen(bill.id)}>
+                            <svg viewBox="0 0 14 14" fill="none"><path d="M2 7a5 5 0 1 1 5 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><path d="M2 4v3h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                          </button>
+                        )}
+                        <button className="ph-icon-btn" title="Editar" onClick={() => {
+                          setEditingBill(bill)
+                          setModal('edit-bill')
+                        }}>
+                          <svg viewBox="0 0 14 14" fill="none"><path d="M2 10l7-7 2 2-7 7H2v-2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
+                        </button>
+                        <button className="ph-icon-btn ph-icon-btn-del" title="Remover" onClick={() => deleteBill(bill.id)}>
+                          <svg viewBox="0 0 14 14" fill="none"><path d="M4 4l6 6M10 4l-6 6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Modals */}
+      {(modal === 'new-collector' || modal === 'edit-collector') && (
+        <Modal title={modal === 'edit-collector' ? 'Editar cobrador' : 'Novo cobrador'} onClose={() => { setModal(null); setEditingCollector(null) }}>
+          <CollectorForm
+            initial={editingCollector ? { name: editingCollector.name, category: editingCollector.category, color: editingCollector.color } : { ...COLL_INIT }}
+            onSave={saveCollector} onCancel={() => { setModal(null); setEditingCollector(null) }}
+          />
+        </Modal>
+      )}
+      {(modal === 'new-bill' || modal === 'edit-bill') && (
+        <Modal title={modal === 'edit-bill' ? 'Editar conta' : 'Nova conta'} onClose={() => { setModal(null); setEditingBill(null) }}>
+          <BillForm
+            initial={editingBill
+              ? { collectorId: editingBill.collectorId, description: editingBill.description, amount: String(editingBill.amount), dueDate: editingBill.dueDate, status: editingBill.status, recurrence: editingBill.recurrence, paymentLink: editingBill.paymentLink || '', barcode: editingBill.barcode || '', notes: editingBill.notes || '' }
+              : { ...BILL_INIT, collectorId: selCollector || '' }}
+            collectors={collectors} onSave={saveBill} onCancel={() => { setModal(null); setEditingBill(null) }}
+          />
+        </Modal>
+      )}
+      {modal === 'barcode' && (
+        <Modal title="Código de barras / PIX" onClose={() => { setModal(null); setBarcodeText('') }}>
+          <div className="ph-barcode-modal">
+            <div className="ph-barcode-text">{barcodeText}</div>
+            <button className="btn-accent" onClick={() => copyBarcode(barcodeText)}>
+              {copied ? '✓ Copiado!' : 'Copiar código'}
+            </button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  )
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -4212,6 +4700,7 @@ export default function App() {
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="8"/><circle cx="10" cy="10" r="4.5"/><circle cx="10" cy="10" r="1.5" fill="currentColor" stroke="none"/></svg>, label: 'Metas', active: sidebarPage === 'goals', action: () => { setSidebarPage('goals'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/><path d="M8 8h4M8 12h4" strokeLinecap="round"/></svg>, label: 'Documentos', action: () => { setShowSidebar(false); toggleDocs() } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" strokeLinecap="round"/></svg>, label: 'Simulador', action: () => { setShowSidebar(false); toggleSim() } },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="5" width="16" height="11" rx="2"/><path d="M2 9h16" strokeLinecap="round"/><path d="M5 13h3M11 13h4" strokeLinecap="round"/></svg>, label: 'Hub de Pagamentos', active: sidebarPage === 'payment-hub', action: () => { setSidebarPage('payment-hub'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="7"/><path d="M10 7v3l2 2" strokeLinecap="round"/><circle cx="10" cy="3" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="17" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="17" cy="10" r="1" fill="currentColor" stroke="none"/></svg>, label: 'Aparência', active: sidebarPage === 'appearance', action: () => { setSidebarPage('appearance'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2h4M10 2v3M7 5h6a1 1 0 0 1 1 1v1H6V6a1 1 0 0 1 1-1zM5 7h10l-1 10H6L5 7z" strokeLinejoin="round"/></svg>, label: 'Configurações', active: sidebarPage === 'settings', action: () => { setSidebarPage('settings'); setShowSidebar(false) } },
           ] as { icon: React.ReactNode; label: string; active?: boolean; badge?: string; action: () => void }[]).map(item => (
@@ -4377,10 +4866,11 @@ export default function App() {
           </button>
           {sidebarPage === 'family'     && <FamilyPage />}
           {sidebarPage === 'calendar'   && <CalendarPage />}
-          {sidebarPage === 'trips'      && <TripsPage />}
-          {sidebarPage === 'goals'      && <GoalsPage />}
-          {sidebarPage === 'appearance' && <AppearancePage themeId={themeId} setThemeId={setThemeId} fontSize={fontSize} setFontSize={setFontSize} accentId={accentId} setAccentId={setAccentId} animations={animations} setAnimations={setAnimations} sidebarFixed={sidebarFixed} setSidebarFixed={setSidebarFixed} />}
-          {sidebarPage === 'settings'   && <SettingsPage user={user} />}
+          {sidebarPage === 'trips'        && <TripsPage />}
+          {sidebarPage === 'goals'        && <GoalsPage />}
+          {sidebarPage === 'payment-hub'  && <PaymentHubPage />}
+          {sidebarPage === 'appearance'   && <AppearancePage themeId={themeId} setThemeId={setThemeId} fontSize={fontSize} setFontSize={setFontSize} accentId={accentId} setAccentId={setAccentId} animations={animations} setAnimations={setAnimations} sidebarFixed={sidebarFixed} setSidebarFixed={setSidebarFixed} />}
+          {sidebarPage === 'settings'     && <SettingsPage user={user} />}
         </div>
       )}
 
