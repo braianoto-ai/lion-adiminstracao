@@ -30,6 +30,9 @@ function useCloudTable<T extends { id: string }>(
     try { return JSON.parse(localStorage.getItem(lsKey) || '[]') } catch { return [] }
   })
 
+  const dataRef = useRef(data)
+  useEffect(() => { dataRef.current = data }, [data])
+
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -43,7 +46,6 @@ function useCloudTable<T extends { id: string }>(
       .then(({ data: rows }) => {
         if (rows) {
           const remote = rows.map(r => ({ ...(r.data as object), id: r.id })) as T[]
-          // Merge: keep local items not yet synced to Supabase (pending writes)
           const local: T[] = (() => { try { return JSON.parse(localStorage.getItem(lsKey) || '[]') } catch { return [] } })()
           const remoteIds = new Set(remote.map(i => i.id))
           const pending = local.filter(i => !remoteIds.has(i.id))
@@ -67,25 +69,26 @@ function useCloudTable<T extends { id: string }>(
   }, [lsKey])
 
   const setData: React.Dispatch<React.SetStateAction<T[]>> = useCallback((action) => {
-    _setData(prev => {
-      const next = typeof action === 'function' ? (action as (p: T[]) => T[])(prev) : action
-      localStorage.setItem(lsKey, JSON.stringify(next))
-      CLOUD_BUS.dispatchEvent(new Event(lsKey))
-      if (supabase && userIdRef.current) {
-        if (syncTimer.current) clearTimeout(syncTimer.current)
-        syncTimer.current = setTimeout(async () => {
-          const uid = userIdRef.current
-          if (!uid || !supabase) return
-          await supabase.from(tableName).delete().eq('user_id', uid)
-          if (next.length > 0) {
-            await supabase.from(tableName).insert(
-              next.map(item => ({ id: item.id, user_id: uid, data: item }))
-            )
-          }
-        }, 800)
-      }
-      return next
-    })
+    // Compute next synchronously using ref — side effects run immediately,
+    // not inside the React updater (which can be dropped if component unmounts)
+    const next = typeof action === 'function' ? (action as (p: T[]) => T[])(dataRef.current) : action
+    dataRef.current = next
+    localStorage.setItem(lsKey, JSON.stringify(next))
+    CLOUD_BUS.dispatchEvent(new Event(lsKey))
+    _setData(next)
+    if (supabase && userIdRef.current) {
+      if (syncTimer.current) clearTimeout(syncTimer.current)
+      syncTimer.current = setTimeout(async () => {
+        const uid = userIdRef.current
+        if (!uid || !supabase) return
+        await supabase.from(tableName).delete().eq('user_id', uid)
+        if (next.length > 0) {
+          await supabase.from(tableName).insert(
+            next.map(item => ({ id: item.id, user_id: uid, data: item }))
+          )
+        }
+      }, 800)
+    }
   }, [tableName, lsKey])
 
   return [data, setData]
