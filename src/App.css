@@ -5397,3 +5397,75 @@ html[data-theme="light"] .ph-field input,
 html[data-theme="light"] .ph-field select { background: var(--bg2) }
 html[data-theme="light"] .ph-icon-btn { background: var(--bg2) }
 html[data-theme="light"] .ph-barcode-text { background: var(--bg2) }
+
+/* ─── Patrimônio Page ──────────────────────────────────────── */
+.patr-page { display: flex; flex-direction: column; gap: 20px; padding: 20px; max-width: 900px; margin: 0 auto; width: 100% }
+
+.patr-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px }
+.patr-summary-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; display: flex; flex-direction: column; gap: 4px }
+.patr-summary-total { border-color: var(--purple); background: rgba(192,57,43,.06) }
+.patr-summary-label { font-size: calc(.72rem * var(--fs)); color: var(--text); text-transform: uppercase; letter-spacing: .04em }
+.patr-summary-val { font-size: calc(1.1rem * var(--fs)); font-weight: 700; color: var(--text3) }
+.patr-summary-val-accent { color: var(--purple-l) }
+.patr-summary-sub { font-size: calc(.7rem * var(--fs)); color: var(--text) }
+
+.patr-tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--border); padding-bottom: 2px }
+.patr-tab { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: var(--radius) var(--radius) 0 0; font-size: calc(.8rem * var(--fs)); color: var(--text); background: none; border: 1px solid transparent; border-bottom: none; transition: all .15s }
+.patr-tab svg { width: 14px; height: 14px }
+.patr-tab:hover { color: var(--text2); background: var(--bg3) }
+.patr-tab-active { color: var(--text3); background: var(--bg3); border-color: var(--border) }
+
+.patr-section { display: flex; flex-direction: column; gap: 12px }
+
+.patr-form { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px }
+.patr-form-title { font-size: calc(.85rem * var(--fs)); font-weight: 600; color: var(--text3); margin-bottom: 14px }
+.patr-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+.patr-span2 { grid-column: span 2 }
+.patr-field { display: flex; flex-direction: column; gap: 4px }
+.patr-field label { font-size: calc(.72rem * var(--fs)); color: var(--text); text-transform: uppercase; letter-spacing: .04em }
+.patr-field input, .patr-field select { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 10px; font-size: calc(.82rem * var(--fs)); color: var(--text3); outline: none; transition: border-color .15s }
+.patr-field input:focus, .patr-field select:focus { border-color: var(--purple) }
+.patr-form-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 14px }
+
+.patr-add-btn { display: flex; align-items: center; gap: 7px; padding: 9px 16px; background: var(--bg3); border: 1px dashed var(--border2); border-radius: var(--radius-lg); font-size: calc(.82rem * var(--fs)); color: var(--text2); width: fit-content; transition: all .15s }
+.patr-add-btn svg { width: 14px; height: 14px }
+.patr-add-btn:hover { border-color: var(--purple); color: var(--purple-l); background: rgba(192,57,43,.06) }
+
+.patr-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 40px 0; color: var(--text) }
+.patr-empty svg { width: 48px; height: 48px; opacity: .3 }
+.patr-empty span { font-size: calc(.82rem * var(--fs)) }
+
+.patr-list { display: flex; flex-direction: column; gap: 8px }
+.patr-card { display: flex; align-items: flex-start; gap: 12px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; transition: border-color .15s }
+.patr-card:hover { border-color: var(--border2) }
+.patr-card-icon { width: 38px; height: 38px; border-radius: var(--radius); display: flex; align-items: center; justify-content: center; flex-shrink: 0 }
+.patr-card-icon svg { width: 18px; height: 18px }
+.patr-card-icon-blue { background: rgba(59,130,246,.15); color: var(--blue-l) }
+.patr-card-icon-green { background: rgba(16,185,129,.15); color: var(--green-l) }
+.patr-card-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px }
+.patr-card-title { font-size: calc(.88rem * var(--fs)); font-weight: 600; color: var(--text3) }
+.patr-card-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: calc(.75rem * var(--fs)); color: var(--text) }
+.patr-card-addr { color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px }
+.patr-card-values { display: flex; flex-wrap: wrap; gap: 10px; font-size: calc(.78rem * var(--fs)); color: var(--text2) }
+.patr-badge { background: var(--bg4); border-radius: 4px; padding: 1px 6px; font-size: calc(.7rem * var(--fs)); color: var(--text2) }
+.patr-gain-pos { color: var(--green); font-weight: 600 }
+.patr-gain-neg { color: var(--red); font-weight: 600 }
+.patr-card-actions { display: flex; gap: 4px; flex-shrink: 0 }
+.patr-icon-btn { width: 28px; height: 28px; border-radius: var(--radius); background: var(--bg3); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; color: var(--text); transition: all .15s }
+.patr-icon-btn svg { width: 12px; height: 12px }
+.patr-icon-btn:hover { background: var(--bg4); color: var(--text3) }
+.patr-icon-btn-del:hover { background: rgba(239,68,68,.15); border-color: var(--red); color: var(--red) }
+
+@media (max-width: 600px) {
+  .patr-summary { grid-template-columns: 1fr 1fr }
+  .patr-summary-total { grid-column: span 2 }
+  .patr-fields { grid-template-columns: 1fr }
+  .patr-span2 { grid-column: span 1 }
+}
+
+html[data-theme="light"] .patr-summary-card,
+html[data-theme="light"] .patr-form,
+html[data-theme="light"] .patr-card { background: #fff; border-color: var(--border2) }
+html[data-theme="light"] .patr-field input,
+html[data-theme="light"] .patr-field select { background: var(--bg2) }
+html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }

@@ -104,7 +104,29 @@ interface Folder {
 }
 
 type ModalType = 'imovel' | 'carro' | 'produto' | null
-type SidebarPage = 'dashboard' | 'family' | 'calendar' | 'trips' | 'goals' | 'payment-hub' | 'settings' | 'appearance'
+type SidebarPage = 'dashboard' | 'family' | 'calendar' | 'trips' | 'goals' | 'payment-hub' | 'settings' | 'appearance' | 'patrimonio'
+
+interface Imovel {
+  id: string
+  descricao: string
+  tipo: string
+  valor: string
+  valorAtual: string
+  endereco: string
+  area: string
+  createdAt: string
+}
+
+interface Produto {
+  id: string
+  nome: string
+  categoria: string
+  valor: string
+  quantidade: string
+  fornecedor: string
+  descricao: string
+  createdAt: string
+}
 
 type BillStatus = 'em_aberto' | 'pago' | 'vencido' | 'cancelado'
 type BillRecurrence = 'mensal' | 'unica' | 'anual' | 'semanal'
@@ -564,10 +586,12 @@ const MODAL_CONFIG: Record<string, { title: string; icon: React.ReactNode; color
   },
 }
 
-function NewItemModal({ type, onClose }: { type: ModalType; onClose: () => void }) {
+function NewItemModal({ type, onClose, onNavigate }: { type: ModalType; onClose: () => void; onNavigate?: (page: SidebarPage) => void }) {
   const [form, setForm] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
   const [, setVehicles] = useCloudTable<Vehicle>('vehicles', 'lion-vehicles')
+  const [, setImoveis] = useCloudTable<Imovel>('imoveis', 'lion-imoveis')
+  const [, setProdutos] = useCloudTable<Produto>('produtos', 'lion-produtos')
   if (!type) return null
   const cfg = MODAL_CONFIG[type]
 
@@ -593,16 +617,14 @@ function NewItemModal({ type, onClose }: { type: ModalType; onClose: () => void 
 
     if (type === 'imovel') {
       if (!form.descricao?.trim()) { setError('Descrição é obrigatória.'); return }
-      const imoveis = (() => { try { return JSON.parse(localStorage.getItem('lion-imoveis') || '[]') } catch { return [] } })()
-      const item = { id, descricao: form.descricao.trim(), tipo: form.tipo || '', valor: form.valor || '0', valorAtual: form.valorAtual || '0', endereco: form.endereco || '', area: form.area || '0', createdAt: new Date().toISOString() }
-      localStorage.setItem('lion-imoveis', JSON.stringify([item, ...imoveis]))
+      const item: Imovel = { id, descricao: form.descricao.trim(), tipo: form.tipo || '', valor: form.valor || '0', valorAtual: form.valorAtual || '0', endereco: form.endereco || '', area: form.area || '0', createdAt: new Date().toISOString() }
+      setImoveis(prev => [item, ...prev])
     }
 
     if (type === 'produto') {
       if (!form.nome?.trim()) { setError('Nome é obrigatório.'); return }
-      const produtos = (() => { try { return JSON.parse(localStorage.getItem('lion-produtos') || '[]') } catch { return [] } })()
-      const item = { id, nome: form.nome.trim(), categoria: form.categoria || '', valor: form.valor || '0', quantidade: form.quantidade || '1', fornecedor: form.fornecedor || '', descricao: form.descricao || '', createdAt: new Date().toISOString() }
-      localStorage.setItem('lion-produtos', JSON.stringify([item, ...produtos]))
+      const item: Produto = { id, nome: form.nome.trim(), categoria: form.categoria || '', valor: form.valor || '0', quantidade: form.quantidade || '1', fornecedor: form.fornecedor || '', descricao: form.descricao || '', createdAt: new Date().toISOString() }
+      setProdutos(prev => [item, ...prev])
     }
 
     onClose()
@@ -610,6 +632,9 @@ function NewItemModal({ type, onClose }: { type: ModalType; onClose: () => void 
       setTimeout(() => {
         document.getElementById('veh-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       }, 200)
+    }
+    if (type === 'imovel' || type === 'produto') {
+      onNavigate?.('patrimonio')
     }
   }
 
@@ -1772,7 +1797,7 @@ function DocumentsPanel({ onClose }: { onClose: () => void }) {
   const filtered = filterCat === 'Todos' ? docs : docs.filter(d => d.category === filterCat)
   const fmtDate = (s: string) => new Date(s).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })
 
-  const iconForCat: Record<string, JSX.Element> = {
+  const iconForCat: Record<string, React.ReactElement> = {
     Escritura: <svg viewBox="0 0 16 16" fill="none"><path d="M4 2a1 1 0 0 1 1-1h5l3 3v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2z" stroke="currentColor" strokeWidth="1.3"/><path d="M10 1v3h3" stroke="currentColor" strokeWidth="1.3"/><path d="M6 8h4M6 11h2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
     IPTU:      <svg viewBox="0 0 16 16" fill="none"><path d="M2 7l6-5 6 5v7H2V7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 14V9h4v5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
     Contrato:  <svg viewBox="0 0 16 16" fill="none"><path d="M4 2a1 1 0 0 1 1-1h5l3 3v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2z" stroke="currentColor" strokeWidth="1.3"/><path d="M10 1v3h3" stroke="currentColor" strokeWidth="1.3"/><path d="M6 6h4M6 8.5h4M6 11h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
@@ -4076,6 +4101,286 @@ function SettingsPage({ user }: { user: User | null }) {
   )
 }
 
+// ─── Patrimônio Page ─────────────────────────────────────────────────────────
+
+const IMOVEL_TIPOS = ['Residencial', 'Comercial', 'Rural', 'Terreno', 'Galpão']
+const PRODUTO_CATS = ['Eletrônico', 'Móvel', 'Eletrodoméstico', 'Veículo', 'Arte', 'Joia', 'Equipamento', 'Outros']
+const IMOVEL_INIT = { descricao: '', tipo: 'Residencial', valor: '', valorAtual: '', endereco: '', area: '' }
+const PRODUTO_INIT = { nome: '', categoria: 'Eletrônico', valor: '', quantidade: '1', fornecedor: '', descricao: '' }
+
+function PatrimonioPage() {
+  const [imoveis, setImoveis] = useCloudTable<Imovel>('imoveis', 'lion-imoveis')
+  const [produtos, setProdutos] = useCloudTable<Produto>('produtos', 'lion-produtos')
+
+  const [tab, setTab] = useState<'imoveis' | 'produtos'>('imoveis')
+  const [showImovelForm, setShowImovelForm] = useState(false)
+  const [editImovelId, setEditImovelId] = useState<string | null>(null)
+  const [imovelForm, setImovelForm] = useState({ ...IMOVEL_INIT })
+  const [showProdForm, setShowProdForm] = useState(false)
+  const [editProdId, setEditProdId] = useState<string | null>(null)
+  const [prodForm, setProdForm] = useState({ ...PRODUTO_INIT })
+
+  const fmtR = (v: string | number) => parseFloat(String(v) || '0').toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+
+  const totalImoveis = imoveis.reduce((s, i) => s + (parseFloat(i.valorAtual || i.valor || '0') || 0), 0)
+  const totalProdutos = produtos.reduce((s, p) => s + (parseFloat(p.valor || '0') || 0) * (parseInt(p.quantidade || '1') || 1), 0)
+  const totalGeral = totalImoveis + totalProdutos
+
+  const fi = (k: string, v: string) => setImovelForm(f => ({ ...f, [k]: v }))
+  const fp = (k: string, v: string) => setProdForm(f => ({ ...f, [k]: v }))
+
+  const saveImovel = () => {
+    if (!imovelForm.descricao.trim()) return
+    if (editImovelId) {
+      setImoveis(prev => prev.map(i => i.id === editImovelId ? { ...i, ...imovelForm } : i))
+      setEditImovelId(null)
+    } else {
+      const item: Imovel = { id: Date.now().toString(), ...imovelForm, createdAt: new Date().toISOString() }
+      setImoveis(prev => [item, ...prev])
+    }
+    setImovelForm({ ...IMOVEL_INIT })
+    setShowImovelForm(false)
+  }
+
+  const saveProduto = () => {
+    if (!prodForm.nome.trim()) return
+    if (editProdId) {
+      setProdutos(prev => prev.map(p => p.id === editProdId ? { ...p, ...prodForm } : p))
+      setEditProdId(null)
+    } else {
+      const item: Produto = { id: Date.now().toString(), ...prodForm, createdAt: new Date().toISOString() }
+      setProdutos(prev => [item, ...prev])
+    }
+    setProdForm({ ...PRODUTO_INIT })
+    setShowProdForm(false)
+  }
+
+  const startEditImovel = (i: Imovel) => {
+    setEditImovelId(i.id)
+    setImovelForm({ descricao: i.descricao, tipo: i.tipo, valor: i.valor, valorAtual: i.valorAtual, endereco: i.endereco, area: i.area })
+    setShowImovelForm(true)
+    setTab('imoveis')
+  }
+
+  const startEditProd = (p: Produto) => {
+    setEditProdId(p.id)
+    setProdForm({ nome: p.nome, categoria: p.categoria, valor: p.valor, quantidade: p.quantidade, fornecedor: p.fornecedor, descricao: p.descricao })
+    setShowProdForm(true)
+    setTab('produtos')
+  }
+
+  return (
+    <div className="patr-page">
+      {/* Summary */}
+      <div className="patr-summary">
+        <div className="patr-summary-card">
+          <div className="patr-summary-label">Imóveis</div>
+          <div className="patr-summary-val">{fmtR(totalImoveis)}</div>
+          <div className="patr-summary-sub">{imoveis.length} imóvel{imoveis.length !== 1 ? 's' : ''}</div>
+        </div>
+        <div className="patr-summary-card">
+          <div className="patr-summary-label">Bens / Produtos</div>
+          <div className="patr-summary-val">{fmtR(totalProdutos)}</div>
+          <div className="patr-summary-sub">{produtos.length} item{produtos.length !== 1 ? 's' : ''}</div>
+        </div>
+        <div className="patr-summary-card patr-summary-total">
+          <div className="patr-summary-label">Patrimônio Total</div>
+          <div className="patr-summary-val patr-summary-val-accent">{fmtR(totalGeral)}</div>
+          <div className="patr-summary-sub">{imoveis.length + produtos.length} ativos</div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="patr-tabs">
+        <button className={`patr-tab${tab === 'imoveis' ? ' patr-tab-active' : ''}`} onClick={() => setTab('imoveis')}>
+          <svg viewBox="0 0 16 16" fill="none"><path d="M2 7l6-5 6 5v7H2V7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 14V9h4v5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+          Imóveis ({imoveis.length})
+        </button>
+        <button className={`patr-tab${tab === 'produtos' ? ' patr-tab-active' : ''}`} onClick={() => setTab('produtos')}>
+          <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="7" width="12" height="8" rx="1" stroke="currentColor" strokeWidth="1.3"/><path d="M5 7V5a3 3 0 0 1 6 0v2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+          Bens / Produtos ({produtos.length})
+        </button>
+      </div>
+
+      {/* Imóveis */}
+      {tab === 'imoveis' && (
+        <div className="patr-section">
+          {showImovelForm ? (
+            <div className="patr-form">
+              <div className="patr-form-title">{editImovelId ? 'Editar Imóvel' : 'Novo Imóvel'}</div>
+              <div className="patr-fields">
+                <div className="patr-field patr-span2">
+                  <label>Descrição</label>
+                  <input placeholder="Ex: Apartamento Jardins" value={imovelForm.descricao} onChange={e => fi('descricao', e.target.value)} />
+                </div>
+                <div className="patr-field">
+                  <label>Tipo</label>
+                  <select value={imovelForm.tipo} onChange={e => fi('tipo', e.target.value)}>
+                    {IMOVEL_TIPOS.map(t => <option key={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div className="patr-field">
+                  <label>Área (m²)</label>
+                  <input type="number" placeholder="0" value={imovelForm.area} onChange={e => fi('area', e.target.value)} />
+                </div>
+                <div className="patr-field">
+                  <label>Valor de Compra (R$)</label>
+                  <input type="number" placeholder="0,00" value={imovelForm.valor} onChange={e => fi('valor', e.target.value)} />
+                </div>
+                <div className="patr-field">
+                  <label>Valor Atual (R$)</label>
+                  <input type="number" placeholder="0,00" value={imovelForm.valorAtual} onChange={e => fi('valorAtual', e.target.value)} />
+                </div>
+                <div className="patr-field patr-span2">
+                  <label>Endereço</label>
+                  <input placeholder="Rua, número, cidade" value={imovelForm.endereco} onChange={e => fi('endereco', e.target.value)} />
+                </div>
+              </div>
+              <div className="patr-form-actions">
+                <button className="btn-ghost" onClick={() => { setShowImovelForm(false); setEditImovelId(null); setImovelForm({ ...IMOVEL_INIT }) }}>Cancelar</button>
+                <button className="btn-accent" onClick={saveImovel}>{editImovelId ? 'Salvar' : 'Adicionar'}</button>
+              </div>
+            </div>
+          ) : (
+            <button className="patr-add-btn" onClick={() => setShowImovelForm(true)}>
+              <svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              Adicionar Imóvel
+            </button>
+          )}
+          {imoveis.length === 0 && !showImovelForm ? (
+            <div className="patr-empty">
+              <svg viewBox="0 0 48 48" fill="none"><path d="M6 22l18-16 18 16v22H6V22z" stroke="currentColor" strokeWidth="2" strokeLinejoin="round"/><path d="M18 44V30h12v14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              <span>Nenhum imóvel cadastrado</span>
+            </div>
+          ) : (
+            <div className="patr-list">
+              {imoveis.map(im => {
+                const gain = (parseFloat(im.valorAtual || '0') || 0) - (parseFloat(im.valor || '0') || 0)
+                return (
+                  <div key={im.id} className="patr-card">
+                    <div className="patr-card-icon patr-card-icon-blue">
+                      <svg viewBox="0 0 20 20" fill="none"><path d="M3 9l7-6 7 6v9H3V9z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M7 18V12h6v6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+                    </div>
+                    <div className="patr-card-body">
+                      <div className="patr-card-title">{im.descricao}</div>
+                      <div className="patr-card-meta">
+                        {im.tipo && <span className="patr-badge">{im.tipo}</span>}
+                        {im.area && <span>{im.area} m²</span>}
+                        {im.endereco && <span className="patr-card-addr">{im.endereco}</span>}
+                      </div>
+                      <div className="patr-card-values">
+                        <span>Compra: {fmtR(im.valor)}</span>
+                        {im.valorAtual && <span>Atual: {fmtR(im.valorAtual)}</span>}
+                        {gain !== 0 && <span className={gain > 0 ? 'patr-gain-pos' : 'patr-gain-neg'}>{gain > 0 ? '+' : ''}{fmtR(gain)}</span>}
+                      </div>
+                    </div>
+                    <div className="patr-card-actions">
+                      <button className="patr-icon-btn" onClick={() => startEditImovel(im)} title="Editar">
+                        <svg viewBox="0 0 14 14" fill="none"><path d="M2 10l7-7 2 2-7 7H2v-2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
+                      </button>
+                      <button className="patr-icon-btn patr-icon-btn-del" onClick={() => setImoveis(prev => prev.filter(x => x.id !== im.id))} title="Excluir">
+                        <svg viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Produtos */}
+      {tab === 'produtos' && (
+        <div className="patr-section">
+          {showProdForm ? (
+            <div className="patr-form">
+              <div className="patr-form-title">{editProdId ? 'Editar Bem' : 'Novo Bem / Produto'}</div>
+              <div className="patr-fields">
+                <div className="patr-field patr-span2">
+                  <label>Nome</label>
+                  <input placeholder="Ex: MacBook Pro 14" value={prodForm.nome} onChange={e => fp('nome', e.target.value)} />
+                </div>
+                <div className="patr-field">
+                  <label>Categoria</label>
+                  <select value={prodForm.categoria} onChange={e => fp('categoria', e.target.value)}>
+                    {PRODUTO_CATS.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="patr-field">
+                  <label>Quantidade</label>
+                  <input type="number" placeholder="1" value={prodForm.quantidade} onChange={e => fp('quantidade', e.target.value)} />
+                </div>
+                <div className="patr-field">
+                  <label>Valor Unitário (R$)</label>
+                  <input type="number" placeholder="0,00" value={prodForm.valor} onChange={e => fp('valor', e.target.value)} />
+                </div>
+                <div className="patr-field">
+                  <label>Fornecedor</label>
+                  <input placeholder="Nome do fornecedor" value={prodForm.fornecedor} onChange={e => fp('fornecedor', e.target.value)} />
+                </div>
+                <div className="patr-field patr-span2">
+                  <label>Descrição</label>
+                  <input placeholder="Detalhes adicionais" value={prodForm.descricao} onChange={e => fp('descricao', e.target.value)} />
+                </div>
+              </div>
+              <div className="patr-form-actions">
+                <button className="btn-ghost" onClick={() => { setShowProdForm(false); setEditProdId(null); setProdForm({ ...PRODUTO_INIT }) }}>Cancelar</button>
+                <button className="btn-accent" onClick={saveProduto}>{editProdId ? 'Salvar' : 'Adicionar'}</button>
+              </div>
+            </div>
+          ) : (
+            <button className="patr-add-btn" onClick={() => setShowProdForm(true)}>
+              <svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              Adicionar Bem / Produto
+            </button>
+          )}
+          {produtos.length === 0 && !showProdForm ? (
+            <div className="patr-empty">
+              <svg viewBox="0 0 48 48" fill="none"><rect x="8" y="20" width="32" height="22" rx="2" stroke="currentColor" strokeWidth="2"/><path d="M16 20V14a8 8 0 0 1 16 0v6" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg>
+              <span>Nenhum bem cadastrado</span>
+            </div>
+          ) : (
+            <div className="patr-list">
+              {produtos.map(p => {
+                const total = (parseFloat(p.valor || '0') || 0) * (parseInt(p.quantidade || '1') || 1)
+                return (
+                  <div key={p.id} className="patr-card">
+                    <div className="patr-card-icon patr-card-icon-green">
+                      <svg viewBox="0 0 20 20" fill="none"><rect x="4" y="10" width="12" height="9" rx="1" stroke="currentColor" strokeWidth="1.4"/><path d="M7 10V7a3 3 0 0 1 6 0v3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+                    </div>
+                    <div className="patr-card-body">
+                      <div className="patr-card-title">{p.nome}</div>
+                      <div className="patr-card-meta">
+                        {p.categoria && <span className="patr-badge">{p.categoria}</span>}
+                        {parseInt(p.quantidade || '1') > 1 && <span>Qtd: {p.quantidade}</span>}
+                        {p.fornecedor && <span>{p.fornecedor}</span>}
+                        {p.descricao && <span className="patr-card-addr">{p.descricao}</span>}
+                      </div>
+                      <div className="patr-card-values">
+                        <span>Unitário: {fmtR(p.valor)}</span>
+                        {parseInt(p.quantidade || '1') > 1 && <span>Total: {fmtR(total)}</span>}
+                      </div>
+                    </div>
+                    <div className="patr-card-actions">
+                      <button className="patr-icon-btn" onClick={() => startEditProd(p)} title="Editar">
+                        <svg viewBox="0 0 14 14" fill="none"><path d="M2 10l7-7 2 2-7 7H2v-2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
+                      </button>
+                      <button className="patr-icon-btn patr-icon-btn-del" onClick={() => setProdutos(prev => prev.filter(x => x.id !== p.id))} title="Excluir">
+                        <svg viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ─── Payment Hub ──────────────────────────────────────────────────────────────
 
 const BILL_STATUS_LABEL: Record<BillStatus, string> = {
@@ -4755,6 +5060,7 @@ export default function App() {
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="4" width="16" height="14" rx="2"/><path d="M6 2v4M14 2v4M2 9h16" strokeLinecap="round"/></svg>, label: 'Calendário', active: sidebarPage === 'calendar', action: () => { setSidebarPage('calendar'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 15l4-8 4 4 3-5 3 9H3z" strokeLinecap="round" strokeLinejoin="round"/><circle cx="14" cy="5" r="1.5"/></svg>, label: 'Próximas Viagens', active: sidebarPage === 'trips', action: () => { setSidebarPage('trips'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="8"/><circle cx="10" cy="10" r="4.5"/><circle cx="10" cy="10" r="1.5" fill="currentColor" stroke="none"/></svg>, label: 'Metas', active: sidebarPage === 'goals', action: () => { setSidebarPage('goals'); setShowSidebar(false) } },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l7-6 7 6v9H3V9z" strokeLinejoin="round"/><path d="M7 18V12h6v6" strokeLinecap="round"/><rect x="10" y="4" width="6" height="5" rx="1" fill="currentColor" opacity=".2" stroke="none"/></svg>, label: 'Patrimônio', active: sidebarPage === 'patrimonio', action: () => { setSidebarPage('patrimonio'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/><path d="M8 8h4M8 12h4" strokeLinecap="round"/></svg>, label: 'Documentos', action: () => { setShowSidebar(false); toggleDocs() } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" strokeLinecap="round"/></svg>, label: 'Simulador', action: () => { setShowSidebar(false); toggleSim() } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="5" width="16" height="11" rx="2"/><path d="M2 9h16" strokeLinecap="round"/><path d="M5 13h3M11 13h4" strokeLinecap="round"/></svg>, label: 'Hub de Pagamentos', active: sidebarPage === 'payment-hub', action: () => { setSidebarPage('payment-hub'); setShowSidebar(false) } },
@@ -4925,6 +5231,7 @@ export default function App() {
           {sidebarPage === 'calendar'   && <CalendarPage />}
           {sidebarPage === 'trips'        && <TripsPage />}
           {sidebarPage === 'goals'        && <GoalsPage />}
+          {sidebarPage === 'patrimonio'    && <PatrimonioPage />}
           {sidebarPage === 'payment-hub'  && <PaymentHubPage />}
           {sidebarPage === 'appearance'   && <AppearancePage themeId={themeId} setThemeId={setThemeId} fontSize={fontSize} setFontSize={setFontSize} accentId={accentId} setAccentId={setAccentId} animations={animations} setAnimations={setAnimations} sidebarFixed={sidebarFixed} setSidebarFixed={setSidebarFixed} />}
           {sidebarPage === 'settings'     && <SettingsPage user={user} />}
@@ -5204,7 +5511,7 @@ export default function App() {
       </div>
 
       {/* ── Modals ── */}
-      {modal && <NewItemModal type={modal} onClose={() => setModal(null)} />}
+      {modal && <NewItemModal type={modal} onClose={() => setModal(null)} onNavigate={(page) => { setSidebarPage(page); setShowSidebar(false) }} />}
 
     </div>
     </UserCtx.Provider>
