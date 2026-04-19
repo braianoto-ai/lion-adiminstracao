@@ -1,9 +1,75 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback, useContext, createContext } from 'react'
 import './App.css'
 import { supabase } from './lib/supabase'
 import LoginPage from './LoginPage'
 import type { User } from '@supabase/supabase-js'
 import emailjs from '@emailjs/browser'
+
+// ─── Cloud sync ───────────────────────────────────────────────────────────────
+
+const UserCtx = createContext<string | undefined>(undefined)
+
+const DATA_KEYS = [
+  'lion-txs','lion-goals','lion-rentals','lion-maintenance',
+  'lion-vehicles','lion-revisions','lion-calendar','lion-trips',
+  'lion-family','lion-collectors','lion-bills','np-folders',
+  'lion-docs-meta','lion-imoveis','lion-produtos',
+]
+
+function useCloudTable<T extends { id: string }>(
+  tableName: string,
+  lsKey: string,
+): [T[], React.Dispatch<React.SetStateAction<T[]>>] {
+  const userId = useContext(UserCtx)
+  const userIdRef = useRef(userId)
+  useEffect(() => { userIdRef.current = userId }, [userId])
+
+  const [data, _setData] = useState<T[]>(() => {
+    try { return JSON.parse(localStorage.getItem(lsKey) || '[]') } catch { return [] }
+  })
+
+  const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    if (!supabase) return
+    if (!userId) {
+      _setData([])
+      localStorage.removeItem(lsKey)
+      return
+    }
+    supabase.from(tableName).select('id, data').eq('user_id', userId)
+      .then(({ data: rows }) => {
+        if (rows) {
+          const items = rows.map(r => ({ ...(r.data as object), id: r.id })) as T[]
+          _setData(items)
+          localStorage.setItem(lsKey, JSON.stringify(items))
+        }
+      })
+  }, [userId, tableName, lsKey])
+
+  const setData: React.Dispatch<React.SetStateAction<T[]>> = useCallback((action) => {
+    _setData(prev => {
+      const next = typeof action === 'function' ? (action as (p: T[]) => T[])(prev) : action
+      localStorage.setItem(lsKey, JSON.stringify(next))
+      if (supabase && userIdRef.current) {
+        if (syncTimer.current) clearTimeout(syncTimer.current)
+        syncTimer.current = setTimeout(async () => {
+          const uid = userIdRef.current
+          if (!uid || !supabase) return
+          await supabase.from(tableName).delete().eq('user_id', uid)
+          if (next.length > 0) {
+            await supabase.from(tableName).insert(
+              next.map(item => ({ id: item.id, user_id: uid, data: item }))
+            )
+          }
+        }, 800)
+      }
+      return next
+    })
+  }, [tableName, lsKey])
+
+  return [data, setData]
+}
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -177,9 +243,11 @@ function Calculator({ onClose }: { onClose: () => void }) {
 const FOLDER_COLORS = ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16']
 
 function Notepad({ onClose, npTarget, onTargetHandled }: { onClose: () => void; npTarget?: { folderId: string; noteId: string } | null; onTargetHandled?: () => void }) {
-  const [folders, setFolders] = useState<Folder[]>(() => {
-    try { return JSON.parse(localStorage.getItem('np-folders') || 'null') || defaultFolders() } catch { return defaultFolders() }
-  })
+  const [folders, setFolders] = useCloudTable<Folder>('folders', 'np-folders')
+  useEffect(() => {
+    if (folders.length === 0) setFolders(defaultFolders())
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   const [folderId, setFolderId] = useState<string | null>(null)
   const [noteId, setNoteId] = useState<string | null>(null)
   const [draft, setDraft] = useState<{ title: string; content: string } | null>(null)
@@ -188,8 +256,6 @@ function Notepad({ onClose, npTarget, onTargetHandled }: { onClose: () => void; 
   const [nfName, setNfName] = useState('')
   const [nfColor, setNfColor] = useState(FOLDER_COLORS[0])
   const [editFolderId, setEditFolderId] = useState<string | null>(null)
-
-  useEffect(() => { localStorage.setItem('np-folders', JSON.stringify(folders)) }, [folders])
 
   useEffect(() => {
     if (!npTarget) return
@@ -586,9 +652,7 @@ const TX_CATEGORIES = {
 }
 
 function FinancePanel({ onClose }: { onClose: () => void }) {
-  const [txs, setTxs] = useState<Transaction[]>(() => {
-    try { return JSON.parse(localStorage.getItem('lion-txs') || '[]') } catch { return [] }
-  })
+  const [txs, setTxs] = useCloudTable<Transaction>('transactions', 'lion-txs')
   const [view, setView] = useState<'overview' | 'list' | 'add'>('overview')
   const [filter, setFilter] = useState<'all' | TxType>('all')
   const [form, setForm] = useState({
@@ -598,8 +662,6 @@ function FinancePanel({ onClose }: { onClose: () => void }) {
     amount: '',
     date: new Date().toISOString().slice(0, 7),
   })
-
-  useEffect(() => { localStorage.setItem('lion-txs', JSON.stringify(txs)) }, [txs])
 
   function addTx(e: React.FormEvent) {
     e.preventDefault()
@@ -1207,15 +1269,12 @@ interface Rental {
 const RENTAL_FORM_INIT = { property: '', tenant: '', phone: '', value: '', dueDay: '5', startDate: '', notes: '' }
 
 function RentalsSection() {
-  const [rentals, setRentals] = useState<Rental[]>(() => {
-    try { return JSON.parse(localStorage.getItem('lion-rentals') || '[]') } catch { return [] }
-  })
+  const [rentals, setRentals] = useCloudTable<Rental>('rentals', 'lion-rentals')
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(RENTAL_FORM_INIT)
   const [editId, setEditId] = useState<string | null>(null)
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  useEffect(() => { localStorage.setItem('lion-rentals', JSON.stringify(rentals)) }, [rentals])
 
   const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
 
@@ -1426,15 +1485,12 @@ const MAINT_TYPES = ['Revisão geral', 'Elétrica', 'Hidráulica', 'Pintura', 'T
 const MAINT_FORM_INIT = { asset: '', type: MAINT_TYPES[0], description: '', scheduledDate: '', doneDate: '', cost: '', notes: '' }
 
 function MaintenanceSection() {
-  const [items, setItems] = useState<Maintenance[]>(() => {
-    try { return JSON.parse(localStorage.getItem('lion-maintenance') || '[]') } catch { return [] }
-  })
+  const [items, setItems] = useCloudTable<Maintenance>('maintenance_items', 'lion-maintenance')
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState(MAINT_FORM_INIT)
   const [editId, setEditId] = useState<string | null>(null)
   const [filter, setFilter] = useState<'todos' | 'pendente' | 'atrasado' | 'feito'>('todos')
 
-  useEffect(() => { localStorage.setItem('lion-maintenance', JSON.stringify(items)) }, [items])
 
   const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
 
@@ -1635,9 +1691,7 @@ const DOC_CATEGORIES = ['Escritura', 'IPTU', 'Contrato', 'Seguro', 'Planta', 'Co
 const BUCKET = 'lion-docs'
 
 function DocumentsPanel({ onClose }: { onClose: () => void }) {
-  const [docs, setDocs] = useState<DocMeta[]>(() => {
-    try { return JSON.parse(localStorage.getItem('lion-docs-meta') || '[]') } catch { return [] }
-  })
+  const [docs, setDocs] = useCloudTable<DocMeta>('documents', 'lion-docs-meta')
   const [view, setView] = useState<'list' | 'upload'>('list')
   const [form, setForm] = useState({ name: '', category: DOC_CATEGORIES[0], asset: '', notes: '' })
   const [file, setFile] = useState<File | null>(null)
@@ -1645,7 +1699,6 @@ function DocumentsPanel({ onClose }: { onClose: () => void }) {
   const [error, setError] = useState('')
   const [filterCat, setFilterCat] = useState('Todos')
 
-  useEffect(() => { localStorage.setItem('lion-docs-meta', JSON.stringify(docs)) }, [docs])
 
   const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
 
@@ -1844,12 +1897,8 @@ const VEH_FORM_INIT = { name: '', plate: '', year: '', currentKm: '', nextRevisi
 const REV_FORM_INIT = { vehicleId: '', date: new Date().toISOString().slice(0, 10), km: '', type: REVISION_TYPES[0], description: '', cost: '', shop: '' }
 
 function VehicleHistorySection() {
-  const [vehicles, setVehicles] = useState<Vehicle[]>(() => {
-    try { return JSON.parse(localStorage.getItem('lion-vehicles') || '[]') } catch { return [] }
-  })
-  const [revisions, setRevisions] = useState<Revision[]>(() => {
-    try { return JSON.parse(localStorage.getItem('lion-revisions') || '[]') } catch { return [] }
-  })
+  const [vehicles, setVehicles] = useCloudTable<Vehicle>('vehicles', 'lion-vehicles')
+  const [revisions, setRevisions] = useCloudTable<Revision>('revisions', 'lion-revisions')
   const [showVehForm, setShowVehForm] = useState(false)
   const [showRevForm, setShowRevForm] = useState(false)
   const [vehForm, setVehForm] = useState(VEH_FORM_INIT)
@@ -1857,8 +1906,6 @@ function VehicleHistorySection() {
   const [editVehId, setEditVehId] = useState<string | null>(null)
   const [expandedVehId, setExpandedVehId] = useState<string | null>(null)
 
-  useEffect(() => { localStorage.setItem('lion-vehicles', JSON.stringify(vehicles)) }, [vehicles])
-  useEffect(() => { localStorage.setItem('lion-revisions', JSON.stringify(revisions)) }, [revisions])
 
   const fv = (k: string, v: string) => setVehForm(p => ({ ...p, [k]: v }))
   const fr = (k: string, v: string) => setRevForm(p => ({ ...p, [k]: v }))
@@ -2935,16 +2982,13 @@ function buildAutoEvents(): CalEvent[] {
 const CAL_FORM_INIT: Omit<CalEvent, 'id' | 'auto'> = { title: '', date: '', time: '', category: 'pessoal', notes: '' }
 
 function CalendarPage() {
-  const [userEvents, setUserEvents] = useState<CalEvent[]>(() => {
-    try { return JSON.parse(localStorage.getItem('lion-calendar') || '[]') } catch { return [] }
-  })
+  const [userEvents, setUserEvents] = useCloudTable<CalEvent>('calendar_events', 'lion-calendar')
   const [autoEvents] = useState<CalEvent[]>(() => buildAutoEvents())
   const [currentMonth, setCurrentMonth] = useState(() => { const d = new Date(); d.setDate(1); return d })
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ ...CAL_FORM_INIT })
 
-  useEffect(() => { localStorage.setItem('lion-calendar', JSON.stringify(userEvents)) }, [userEvents])
 
   const allEvents = [...userEvents, ...autoEvents]
   const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
@@ -3131,16 +3175,13 @@ const GOAL_COLORS: Record<string, string> = {
 const GOAL_FORM_INIT = { name: '', category: GOAL_CATS[0], target: '', current: '', deadline: '' }
 
 function GoalsPage() {
-  const [goals, setGoals] = useState<Goal[]>(() => {
-    try { return JSON.parse(localStorage.getItem('lion-goals') || '[]') } catch { return [] }
-  })
+  const [goals, setGoals] = useCloudTable<Goal>('goals', 'lion-goals')
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId]     = useState<string | null>(null)
   const [form, setForm]         = useState(GOAL_FORM_INIT)
   const [filterCat, setFilterCat] = useState('Todas')
   const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
 
-  useEffect(() => { localStorage.setItem('lion-goals', JSON.stringify(goals)) }, [goals])
 
   function saveGoal(e: React.FormEvent) {
     e.preventDefault()
@@ -3378,9 +3419,7 @@ const TRIP_STATUS_COLOR: Record<Trip['status'], string> = {
 const TRIP_FORM_INIT = { destination: '', country: '', departDate: '', returnDate: '', budget: '', spent: '0', status: 'planejando' as Trip['status'], notes: '' }
 
 function TripsPage() {
-  const [trips, setTrips] = useState<Trip[]>(() => {
-    try { return JSON.parse(localStorage.getItem('lion-trips') || '[]') } catch { return [] }
-  })
+  const [trips, setTrips] = useCloudTable<Trip>('trips', 'lion-trips')
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState(TRIP_FORM_INIT)
@@ -3388,7 +3427,6 @@ function TripsPage() {
   const [newItem, setNewItem] = useState('')
   const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
 
-  useEffect(() => { localStorage.setItem('lion-trips', JSON.stringify(trips)) }, [trips])
 
   function saveTrip(e: React.FormEvent) {
     e.preventDefault()
@@ -3626,15 +3664,12 @@ const MEMBER_ROLES  = ['Responsável','Cônjuge','Filho(a)','Dependente','Sócio
 const MEMBER_FORM_INIT = { name: '', role: MEMBER_ROLES[0], color: MEMBER_COLORS[0] }
 
 function FamilyPage() {
-  const [members, setMembers] = useState<FamilyMember[]>(() => {
-    try { return JSON.parse(localStorage.getItem('lion-family') || '[]') } catch { return [] }
-  })
+  const [members, setMembers] = useCloudTable<FamilyMember>('family_members', 'lion-family')
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState(MEMBER_FORM_INIT)
   const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
 
-  useEffect(() => { localStorage.setItem('lion-family', JSON.stringify(members)) }, [members])
 
   const initials = (name: string) => name.trim().split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2)
 
@@ -4151,12 +4186,8 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 }
 
 function PaymentHubPage() {
-  const [collectors, setCollectors] = useState<Collector[]>(() => {
-    try { return JSON.parse(localStorage.getItem('lion-collectors') || '[]') } catch { return [] }
-  })
-  const [bills, setBills] = useState<Bill[]>(() => {
-    try { return JSON.parse(localStorage.getItem('lion-bills') || '[]') } catch { return [] }
-  })
+  const [collectors, setCollectors] = useCloudTable<Collector>('collectors', 'lion-collectors')
+  const [bills, setBills] = useCloudTable<Bill>('bills', 'lion-bills')
   const [selCollector, setSelCollector] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<BillStatus | 'all'>('all')
   const [modal, setModal] = useState<'new-collector' | 'edit-collector' | 'new-bill' | 'edit-bill' | 'barcode' | null>(null)
@@ -4165,8 +4196,6 @@ function PaymentHubPage() {
   const [barcodeText, setBarcodeText] = useState('')
   const [copied, setCopied] = useState(false)
 
-  useEffect(() => { localStorage.setItem('lion-collectors', JSON.stringify(collectors)) }, [collectors])
-  useEffect(() => { localStorage.setItem('lion-bills', JSON.stringify(bills)) }, [bills])
 
   const saveCollector = (form: typeof COLL_INIT) => {
     if (editingCollector) {
@@ -4597,6 +4626,7 @@ export default function App() {
   }, [])
 
   const handleLogout = async () => {
+    DATA_KEYS.forEach(k => localStorage.removeItem(k))
     await supabase?.auth.signOut()
   }
 
@@ -4674,6 +4704,7 @@ export default function App() {
   if (supabase && !user) return <LoginPage />
 
   return (
+    <UserCtx.Provider value={user?.id}>
     <div className={`app${viewMode ? ' view-mode' : ''}${sidebarFixed ? ' sidebar-pinned' : ''}`}>
       {kbHint && <div className="kb-toast">{kbHint}</div>}
       {showOnboarding && <OnboardingWizard onDone={finishOnboarding} />}
@@ -5150,5 +5181,6 @@ export default function App() {
       {modal && <NewItemModal type={modal} onClose={() => setModal(null)} />}
 
     </div>
+    </UserCtx.Provider>
   )
 }
