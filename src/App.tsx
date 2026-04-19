@@ -2447,7 +2447,20 @@ function VehicleHistorySection() {
             return (
               <div key={v.id} className={`veh-card${isExpanded ? ' veh-expanded' : ''}`}>
                 <div className="veh-card-main" onClick={() => setExpandedVehId(isExpanded ? null : v.id)}>
-                  <div className="veh-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M13 3C9 3 5.5 6 4 9.5L2.5 13h5l1-2h7l1 2h5L20 9.5C18.5 6 15 3 13 3z" fill="currentColor" fillOpacity=".18" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><circle cx="13" cy="8" r="2" fill="currentColor" fillOpacity=".25" stroke="currentColor" strokeWidth="1.1"/><path d="M7.5 13l-2 3.5c-.3.5 0 1 .5 1H11v-4.5" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round"/><path d="M16.5 13l2 3.5c.3.5 0 1-.5 1H14v-4.5" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round"/><path d="M10 18.5v2M13 18.5v2M16 18.5v2" stroke="var(--amber)" strokeWidth="1.5" strokeLinecap="round" opacity=".8"/></svg></div>
+                  <div className="veh-icon"><svg viewBox="0 0 24 24" fill="none">
+  {/* body */}
+  <path d="M12 2C10 5 9 8 9 12h6c0-4-1-7-3-10z" fill="currentColor" fillOpacity=".25" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/>
+  {/* window */}
+  <circle cx="12" cy="9" r="1.5" fill="currentColor" fillOpacity=".5" stroke="currentColor" strokeWidth="1"/>
+  {/* fins */}
+  <path d="M9 12l-3 4h3" fill="currentColor" fillOpacity=".2" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+  <path d="M15 12l3 4h-3" fill="currentColor" fillOpacity=".2" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/>
+  {/* nozzle */}
+  <path d="M10 16h4v1.5h-4z" fill="currentColor" fillOpacity=".3" stroke="currentColor" strokeWidth="1"/>
+  {/* flame */}
+  <path d="M11 17.5c0 1.5-.8 2.5-.8 2.5s1-.5 1.8-.5 1.8.5 1.8.5-.8-1-.8-2.5" fill="var(--amber)" fillOpacity=".9" stroke="none"/>
+  <path d="M12 17.5v3" stroke="var(--amber)" strokeWidth="1.2" strokeLinecap="round" opacity=".6"/>
+</svg></div>
                   <div className="veh-info">
                     <div className="veh-name">{v.name}{v.plate && <span className="veh-plate">{v.plate}</span>}</div>
                     <div className="veh-meta">{v.year && `${v.year} · `}{fmtKm(v.currentKm)} · {vehRevisions.length} revisão{vehRevisions.length !== 1 ? 'ões' : ''}</div>
