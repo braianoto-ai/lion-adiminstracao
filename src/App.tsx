@@ -112,7 +112,7 @@ interface Folder {
 }
 
 type ModalType = 'imovel' | 'carro' | 'produto' | null
-type SidebarPage = 'dashboard' | 'family' | 'calendar' | 'trips' | 'goals' | 'payment-hub' | 'settings' | 'appearance' | 'patrimonio'
+type SidebarPage = 'dashboard' | 'family' | 'calendar' | 'trips' | 'goals' | 'payment-hub' | 'settings' | 'appearance' | 'patrimonio' | 'financas'
 
 interface Imovel {
   id: string
@@ -692,6 +692,8 @@ interface Transaction {
   description: string
   amount: number
   date: string
+  recurring?: boolean
+  recurringId?: string
 }
 
 const TX_CATEGORIES = {
@@ -774,6 +776,9 @@ function FinancePanel({ onClose }: { onClose: () => void }) {
   const [txs, setTxs] = useCloudTable<Transaction>('transactions', 'lion-txs')
   const [view, setView] = useState<'overview' | 'list' | 'add' | 'import'>('overview')
   const [filter, setFilter] = useState<'all' | TxType>('all')
+  const [editId, setEditId] = useState<string | null>(null)
+  const [recurring, setRecurring] = useState(false)
+  const [recurringMonths, setRecurringMonths] = useState(12)
   const [form, setForm] = useState({
     type: 'receita' as TxType,
     category: TX_CATEGORIES.receita[0],
@@ -782,23 +787,62 @@ function FinancePanel({ onClose }: { onClose: () => void }) {
     date: new Date().toISOString().slice(0, 7),
   })
 
+  function openAdd() { setEditId(null); setRecurring(false); setForm({ type: 'receita', category: TX_CATEGORIES.receita[0], description: '', amount: '', date: new Date().toISOString().slice(0, 7) }); setView('add') }
+
+  function openEdit(tx: Transaction) {
+    setEditId(tx.id)
+    setRecurring(false)
+    setForm({ type: tx.type, category: tx.category, description: tx.description, amount: String(tx.amount), date: tx.date })
+    setView('add')
+  }
+
   function addTx(e: React.FormEvent) {
     e.preventDefault()
     if (!form.amount || !form.description.trim()) return
-    const tx: Transaction = {
-      id: Date.now().toString(),
-      type: form.type,
-      category: form.category,
-      description: form.description,
-      amount: parseFloat(form.amount),
-      date: form.date,
+    const amt = parseFloat(form.amount)
+
+    if (editId) {
+      setTxs(prev => prev.map(t => t.id === editId ? { ...t, ...form, amount: amt } : t))
+      setEditId(null)
+      setView('list')
+      return
     }
-    setTxs([tx, ...txs])
+
+    if (recurring) {
+      const rid = `rec-${Date.now()}`
+      const newTxs: Transaction[] = []
+      const [y, m] = form.date.split('-').map(Number)
+      for (let i = 0; i < recurringMonths; i++) {
+        const d = new Date(y, m - 1 + i, 1)
+        newTxs.push({
+          id: `${Date.now()}-${i}`,
+          type: form.type,
+          category: form.category,
+          description: form.description,
+          amount: amt,
+          date: d.toISOString().slice(0, 7),
+          recurring: true,
+          recurringId: rid,
+        })
+      }
+      setTxs(prev => [...newTxs, ...prev])
+    } else {
+      setTxs(prev => [{ id: Date.now().toString(), type: form.type, category: form.category, description: form.description, amount: amt, date: form.date }, ...prev])
+    }
     setForm(f => ({ ...f, description: '', amount: '' }))
     setView('overview')
   }
 
-  function delTx(id: string) { setTxs(txs.filter(t => t.id !== id)) }
+  function delTx(tx: Transaction) {
+    if (tx.recurringId) {
+      const others = txs.filter(t => t.recurringId === tx.recurringId).length
+      if (others > 1 && window.confirm(`Excluir só este mês ou todas as ${others} ocorrências?`)) {
+        setTxs(prev => prev.filter(t => t.recurringId !== tx.recurringId))
+        return
+      }
+    }
+    setTxs(prev => prev.filter(t => t.id !== tx.id))
+  }
 
   const months = Array.from({ length: 6 }, (_, i) => {
     const d = new Date()
@@ -868,7 +912,7 @@ function FinancePanel({ onClose }: { onClose: () => void }) {
         <div className="fin-tabs">
           <button className={`fin-tab${view === 'overview' ? ' fin-tab-active' : ''}`} onClick={() => setView('overview')}>Resumo</button>
           <button className={`fin-tab${view === 'list' ? ' fin-tab-active' : ''}`} onClick={() => setView('list')}>Lançamentos</button>
-          <button className={`fin-tab fin-tab-add${view === 'add' ? ' fin-tab-active' : ''}`} onClick={() => setView('add')}>+ Novo</button>
+          <button className={`fin-tab fin-tab-add${view === 'add' ? ' fin-tab-active' : ''}`} onClick={openAdd}>+ Novo</button>
           <button className={`fin-tab${view === 'import' ? ' fin-tab-active' : ''}`} onClick={() => setView('import')}>
             <svg viewBox="0 0 14 14" fill="none" style={{width:12,height:12,marginRight:4,verticalAlign:'middle'}}><path d="M7 2v7M4 6l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 10v1a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
             Importar
@@ -963,13 +1007,21 @@ function FinancePanel({ onClose }: { onClose: () => void }) {
                   <div key={tx.id} className="fin-item">
                     <div className={`fin-dot ${tx.type === 'receita' ? 'fin-dot-green' : 'fin-dot-red'}`} />
                     <div className="fin-item-body">
-                      <span className="fin-item-desc">{tx.description}</span>
+                      <span className="fin-item-desc">
+                        {tx.description}
+                        {tx.recurring && <span className="fin-recurring-badge" title="Recorrente">
+                          <svg viewBox="0 0 12 12" fill="none"><path d="M2 6a4 4 0 0 1 7-2.6M10 6a4 4 0 0 1-7 2.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><path d="M8.5 2l.5 1.4-1.4.5M3.5 10l-.5-1.4 1.4-.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </span>}
+                      </span>
                       <span className="fin-item-meta">{tx.category} · {new Date(tx.date + '-02').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}</span>
                     </div>
                     <span className={`fin-item-amt ${tx.type === 'receita' ? 'fin-amt-green' : 'fin-amt-red'}`}>
                       {tx.type === 'receita' ? '+' : '-'}{fmtCurr(tx.amount)}
                     </span>
-                    <button className="fin-del" onClick={() => delTx(tx.id)}>
+                    <button className="fin-edit-btn" onClick={() => openEdit(tx)} title="Editar">
+                      <svg viewBox="0 0 14 14" fill="none"><path d="M2 10l7-7 2 2-7 7H2v-2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
+                    </button>
+                    <button className="fin-del" onClick={() => delTx(tx)}>
                       <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
                     </button>
                   </div>
@@ -982,6 +1034,7 @@ function FinancePanel({ onClose }: { onClose: () => void }) {
       {view === 'add' && (
         <div className="fin-body">
           <form className="fin-form" onSubmit={addTx}>
+            {editId && <div className="fin-edit-title">Editando lançamento</div>}
             <div className="fin-type-toggle">
               <button type="button" className={`fin-type-btn${form.type === 'receita' ? ' fin-type-green' : ''}`}
                 onClick={() => setForm(f => ({ ...f, type: 'receita', category: TX_CATEGORIES.receita[0] }))}>↑ Receita</button>
@@ -990,7 +1043,7 @@ function FinancePanel({ onClose }: { onClose: () => void }) {
             </div>
             <div className="fin-field">
               <label>Descrição</label>
-              <input type="text" placeholder="Ex: Salário julho" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} required />
+              <input type="text" placeholder="Ex: Salário, Aluguel, Netflix..." value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} required />
             </div>
             <div className="fin-row">
               <div className="fin-field">
@@ -998,7 +1051,7 @@ function FinancePanel({ onClose }: { onClose: () => void }) {
                 <input type="number" step="0.01" min="0.01" placeholder="0,00" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} required />
               </div>
               <div className="fin-field">
-                <label>Mês</label>
+                <label>Mês inicial</label>
                 <input type="month" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} required />
               </div>
             </div>
@@ -1008,9 +1061,31 @@ function FinancePanel({ onClose }: { onClose: () => void }) {
                 {TX_CATEGORIES[form.type].map(c => <option key={c}>{c}</option>)}
               </select>
             </div>
-            <button type="submit" className={`fin-submit ${form.type === 'receita' ? 'fin-submit-green' : 'fin-submit-red'}`}>
-              Adicionar {form.type === 'receita' ? 'Receita' : 'Despesa'}
-            </button>
+            {!editId && (
+              <div className="fin-recurring-row">
+                <label className="fin-recurring-toggle">
+                  <input type="checkbox" checked={recurring} onChange={e => setRecurring(e.target.checked)} />
+                  <span className="fin-recurring-label">
+                    <svg viewBox="0 0 14 14" fill="none"><path d="M2 7a5 5 0 0 1 8.7-3.3M12 7a5 5 0 0 1-8.7 3.3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/><path d="M10 2.5l1 2-2 .5M4 11.5l-1-2 2-.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Repetir todo mês
+                  </span>
+                </label>
+                {recurring && (
+                  <div className="fin-recurring-months">
+                    <label>por</label>
+                    <select value={recurringMonths} onChange={e => setRecurringMonths(Number(e.target.value))}>
+                      {[3,6,12,24,36].map(n => <option key={n} value={n}>{n} meses</option>)}
+                    </select>
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="fin-form-actions">
+              <button type="button" className="btn-ghost" onClick={() => { setView(editId ? 'list' : 'overview'); setEditId(null) }}>Cancelar</button>
+              <button type="submit" className={`fin-submit ${form.type === 'receita' ? 'fin-submit-green' : 'fin-submit-red'}`}>
+                {editId ? 'Salvar' : recurring ? `Criar ${recurringMonths}x` : `Adicionar ${form.type === 'receita' ? 'Receita' : 'Despesa'}`}
+              </button>
+            </div>
           </form>
         </div>
       )}
@@ -5314,6 +5389,7 @@ export default function App() {
         <nav className="sidebar-nav">
           {([
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="2" width="7" height="7" rx="1"/><rect x="2" y="11" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></svg>, label: 'Dashboard', action: () => { setSidebarPage('dashboard'); setShowSidebar(false) }, active: sidebarPage === 'dashboard' },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 2v16M6 6h5.5a2.5 2.5 0 0 1 0 5H6m0 0h6a2.5 2.5 0 0 1 0 5H6" strokeLinecap="round"/></svg>, label: 'Finanças', active: sidebarPage === 'financas', action: () => { setSidebarPage('financas'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M4 18a6 6 0 0 1 12 0"/></svg>, label: 'Família', active: sidebarPage === 'family', action: () => { setSidebarPage('family'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="4" width="16" height="14" rx="2"/><path d="M6 2v4M14 2v4M2 9h16" strokeLinecap="round"/></svg>, label: 'Calendário', active: sidebarPage === 'calendar', action: () => { setSidebarPage('calendar'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 15l4-8 4 4 3-5 3 9H3z" strokeLinecap="round" strokeLinejoin="round"/><circle cx="14" cy="5" r="1.5"/></svg>, label: 'Próximas Viagens', active: sidebarPage === 'trips', action: () => { setSidebarPage('trips'); setShowSidebar(false) } },
@@ -5489,6 +5565,7 @@ export default function App() {
           {sidebarPage === 'calendar'   && <CalendarPage />}
           {sidebarPage === 'trips'        && <TripsPage />}
           {sidebarPage === 'goals'        && <GoalsPage />}
+          {sidebarPage === 'financas'       && <div className="fin-page-wrap"><FinancePanel onClose={() => setSidebarPage('dashboard')} /></div>}
           {sidebarPage === 'patrimonio'    && <PatrimonioPage />}
           {sidebarPage === 'payment-hub'  && <PaymentHubPage />}
           {sidebarPage === 'appearance'   && <AppearancePage themeId={themeId} setThemeId={setThemeId} fontSize={fontSize} setFontSize={setFontSize} accentId={accentId} setAccentId={setAccentId} animations={animations} setAnimations={setAnimations} sidebarFixed={sidebarFixed} setSidebarFixed={setSidebarFixed} />}
@@ -5625,7 +5702,7 @@ export default function App() {
               <div className="bc">
                 <div className="bc-title">
                   Atividade Recente
-                  <button className="bc-title-btn" onClick={toggleFin}>+ Transação</button>
+                  <button className="bc-title-btn" onClick={() => setSidebarPage('financas')}>+ Transação</button>
                 </div>
                 {activity.length === 0 ? (
                   <div className="feed-empty">Nenhuma atividade. Adicione transações, metas ou imóveis.</div>
@@ -5669,7 +5746,7 @@ export default function App() {
                 <div className="bc-title">Ações Rápidas</div>
                 <div className="qa-bento-grid">
                   {[
-                    { label:'Transação', sub:'Receita ou gasto', color:'rgba(192,57,43,.12)', tc:'var(--red-l)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M8 2v12M4 6l4-4 4 4M4 10l4 4 4-4" strokeLinecap="round"/></svg>, action: toggleFin },
+                    { label:'Transação', sub:'Receita ou gasto', color:'rgba(192,57,43,.12)', tc:'var(--red-l)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M8 2v12M4 6l4-4 4 4M4 10l4 4 4-4" strokeLinecap="round"/></svg>, action: () => { setSidebarPage('financas'); setShowSidebar(false) } },
                     { label:'Novo Imóvel', sub:'Casas, aptos', color:'rgba(59,130,246,.12)', tc:'var(--blue-l)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M2 7l6-5 6 5v7H2V7z" strokeLinejoin="round"/><path d="M6 14V9h4v5" strokeLinecap="round"/></svg>, action:()=>setModal('imovel') },
                     { label:'Novo Carro', sub:'Veículos', color:'rgba(245,158,11,.12)', tc:'var(--amber-l)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1" y="6" width="14" height="7" rx="1.5"/><path d="M4 6V5a3 3 0 0 1 3-3h2a3 3 0 0 1 3 3v1"/><circle cx="4.5" cy="13" r="1.5"/><circle cx="11.5" cy="13" r="1.5"/></svg>, action:()=>setModal('carro') },
                     { label:'Nova Meta', sub:'Objetivos', color:'rgba(139,92,246,.12)', tc:'var(--purple-l,#a78bfa)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="3"/><circle cx="8" cy="8" r="1" fill="currentColor" stroke="none"/></svg>, action:()=>{ setSidebarPage('goals'); setShowSidebar(false) } },
@@ -5718,11 +5795,6 @@ export default function App() {
             <path d="M9 22V12h6v10"/>
           </svg>
         </button>
-        <button className={`float-btn float-fin${showFin ? ' float-active' : ''}`} onClick={toggleFin} title="Finanças (F)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" strokeLinecap="round"/>
-          </svg>
-        </button>
         <button className={`float-btn float-np${showNp ? ' float-active' : ''}`} onClick={toggleNp} title="Notas (N)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M4 4h16v16H4z" rx="2"/>
@@ -5757,9 +5829,6 @@ export default function App() {
       </div>
       <div className={`float-panel panel-sim${showSim ? ' panel-open' : ''}`}>
         <FinancingSimulator onClose={() => setShowSim(false)} />
-      </div>
-      <div className={`float-panel panel-fin${showFin ? ' panel-open' : ''}`}>
-        <FinancePanel onClose={() => setShowFin(false)} />
       </div>
       <div className={`float-panel panel-np${showNp ? ' panel-open' : ''}`}>
         <Notepad onClose={() => setShowNp(false)} npTarget={npTarget} onTargetHandled={() => setNpTarget(null)} />
