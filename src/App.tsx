@@ -42,9 +42,14 @@ function useCloudTable<T extends { id: string }>(
     supabase.from(tableName).select('id, data').eq('user_id', userId)
       .then(({ data: rows }) => {
         if (rows) {
-          const items = rows.map(r => ({ ...(r.data as object), id: r.id })) as T[]
-          _setData(items)
-          localStorage.setItem(lsKey, JSON.stringify(items))
+          const remote = rows.map(r => ({ ...(r.data as object), id: r.id })) as T[]
+          // Merge: keep local items not yet synced to Supabase (pending writes)
+          const local: T[] = (() => { try { return JSON.parse(localStorage.getItem(lsKey) || '[]') } catch { return [] } })()
+          const remoteIds = new Set(remote.map(i => i.id))
+          const pending = local.filter(i => !remoteIds.has(i.id))
+          const merged = [...remote, ...pending]
+          _setData(merged)
+          localStorage.setItem(lsKey, JSON.stringify(merged))
         }
       })
   }, [userId, tableName, lsKey])
@@ -628,12 +633,7 @@ function NewItemModal({ type, onClose, onNavigate }: { type: ModalType; onClose:
     }
 
     onClose()
-    if (type === 'carro') {
-      setTimeout(() => {
-        document.getElementById('veh-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-      }, 200)
-    }
-    if (type === 'imovel' || type === 'produto') {
+    if (type === 'carro' || type === 'imovel' || type === 'produto') {
       onNavigate?.('patrimonio')
     }
   }
