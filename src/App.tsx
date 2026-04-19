@@ -552,6 +552,7 @@ const MODAL_CONFIG: Record<string, { title: string; icon: React.ReactNode; color
 function NewItemModal({ type, onClose }: { type: ModalType; onClose: () => void }) {
   const [form, setForm] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
+  const [, setVehicles] = useCloudTable<Vehicle>('vehicles', 'lion-vehicles')
   if (!type) return null
   const cfg = MODAL_CONFIG[type]
 
@@ -560,7 +561,6 @@ function NewItemModal({ type, onClose }: { type: ModalType; onClose: () => void 
 
     if (type === 'carro') {
       if (!form.marca?.trim() || !form.modelo?.trim()) { setError('Marca e modelo são obrigatórios.'); return }
-      const vehicles: Vehicle[] = (() => { try { return JSON.parse(localStorage.getItem('lion-vehicles') || '[]') } catch { return [] } })()
       const v: Vehicle = {
         id,
         name: `${form.marca.trim()} ${form.modelo.trim()}`,
@@ -573,7 +573,7 @@ function NewItemModal({ type, onClose }: { type: ModalType; onClose: () => void 
         ipvaExpiry: '',
         insuranceExpiry: '',
       }
-      localStorage.setItem('lion-vehicles', JSON.stringify([v, ...vehicles]))
+      setVehicles(prev => [v, ...prev])
     }
 
     if (type === 'imovel') {
@@ -1752,9 +1752,15 @@ function DocumentsPanel({ onClose }: { onClose: () => void }) {
   const filtered = filterCat === 'Todos' ? docs : docs.filter(d => d.category === filterCat)
   const fmtDate = (s: string) => new Date(s).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })
 
-  const iconForCat: Record<string, string> = {
-    Escritura: '📜', IPTU: '🏛️', Contrato: '📋', Seguro: '🛡️',
-    Planta: '📐', Comprovante: '🧾', Laudo: '🔍', Outros: '📄',
+  const iconForCat: Record<string, JSX.Element> = {
+    Escritura: <svg viewBox="0 0 16 16" fill="none"><path d="M4 2a1 1 0 0 1 1-1h5l3 3v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2z" stroke="currentColor" strokeWidth="1.3"/><path d="M10 1v3h3" stroke="currentColor" strokeWidth="1.3"/><path d="M6 8h4M6 11h2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
+    IPTU:      <svg viewBox="0 0 16 16" fill="none"><path d="M2 7l6-5 6 5v7H2V7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 14V9h4v5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
+    Contrato:  <svg viewBox="0 0 16 16" fill="none"><path d="M4 2a1 1 0 0 1 1-1h5l3 3v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2z" stroke="currentColor" strokeWidth="1.3"/><path d="M10 1v3h3" stroke="currentColor" strokeWidth="1.3"/><path d="M6 6h4M6 8.5h4M6 11h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
+    Seguro:    <svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5L2 4v4c0 3.5 2.5 5.8 6 6.5 3.5-.7 6-3 6-6.5V4L8 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M5.5 8l2 2 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+    Planta:    <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1" stroke="currentColor" strokeWidth="1.3"/><path d="M2 6h12M6 6v8M6 2v4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
+    Comprovante:<svg viewBox="0 0 16 16" fill="none"><path d="M3 1h10v14l-2-1.5-2 1.5-2-1.5-2 1.5L3 15V1z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 6h4M6 8.5h3M6 11h4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
+    Laudo:     <svg viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.3"/><path d="M10.5 10.5l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+    Outros:    <svg viewBox="0 0 16 16" fill="none"><path d="M4 2a1 1 0 0 1 1-1h5l3 3v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2z" stroke="currentColor" strokeWidth="1.3"/><path d="M10 1v3h3" stroke="currentColor" strokeWidth="1.3"/></svg>,
   }
 
   return (
@@ -1798,7 +1804,7 @@ function DocumentsPanel({ onClose }: { onClose: () => void }) {
             : <div className="docs-list">
                 {filtered.map(doc => (
                   <div key={doc.id} className="doc-item">
-                    <div className="doc-icon-emoji">{iconForCat[doc.category] || '📄'}</div>
+                    <div className="doc-icon-emoji">{iconForCat[doc.category] || <svg viewBox="0 0 16 16" fill="none"><path d="M4 2a1 1 0 0 1 1-1h5l3 3v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2z" stroke="currentColor" strokeWidth="1.3"/><path d="M10 1v3h3" stroke="currentColor" strokeWidth="1.3"/></svg>}</div>
                     <div className="doc-item-body">
                       <span className="doc-item-name">{doc.name}</span>
                       <div className="doc-item-meta">
@@ -2125,7 +2131,7 @@ function VehicleHistorySection() {
             return (
               <div key={v.id} className={`veh-card${isExpanded ? ' veh-expanded' : ''}`}>
                 <div className="veh-card-main" onClick={() => setExpandedVehId(isExpanded ? null : v.id)}>
-                  <div className="veh-icon">🚗</div>
+                  <div className="veh-icon"><svg viewBox="0 0 20 20" fill="none"><rect x="1" y="8" width="18" height="8" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M4 8V7a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1" stroke="currentColor" strokeWidth="1.4"/><circle cx="5" cy="16" r="2" fill="currentColor"/><circle cx="15" cy="16" r="2" fill="currentColor"/><path d="M7 16h6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg></div>
                   <div className="veh-info">
                     <div className="veh-name">{v.name}{v.plate && <span className="veh-plate">{v.plate}</span>}</div>
                     <div className="veh-meta">{v.year && `${v.year} · `}{fmtKm(v.currentKm)} · {vehRevisions.length} revisão{vehRevisions.length !== 1 ? 'ões' : ''}</div>
@@ -2182,7 +2188,7 @@ function VehicleHistorySection() {
                                 <span className="veh-rev-type">{r.type}</span>
                                 <span className="veh-rev-date">{fmtDate(r.date)} · {fmtKm(r.km)}</span>
                                 {r.description && <span className="veh-rev-desc">{r.description}</span>}
-                                {r.shop && <span className="veh-rev-shop">🔧 {r.shop}</span>}
+                                {r.shop && <span className="veh-rev-shop"><svg viewBox="0 0 14 14" fill="none" style={{width:11,height:11,marginRight:3,verticalAlign:'middle'}}><path d="M8.5 2a3 3 0 0 1 .7 3.3L12 8.1a1.4 1.4 0 0 1-2 2L7.2 7.3A3 3 0 0 1 4 6.5l1.5 1.5 1.5-1.5L5.5 5A3 3 0 0 1 8.5 2z" stroke="currentColor" strokeWidth="1.1" strokeLinejoin="round"/></svg>{r.shop}</span>}
                               </div>
                               <div className="veh-rev-right">
                                 {r.cost && <span className="veh-rev-cost">{fmtCurr(r.cost)}</span>}
@@ -3560,7 +3566,7 @@ function TripsPage() {
                 <div key={t.id} className="trip-card">
                   <div className="trip-card-top">
                     <div className="trip-dest-wrap">
-                      <span className="trip-flag">✈️</span>
+                      <span className="trip-flag"><svg viewBox="0 0 20 20" fill="none"><path d="M3 13l2-5 3 2 3-8 3 2-2 5 3 1-1 3-4-1-1 3-2-1 1-3-4-1-.5 1.5-1.5-1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg></span>
                       <div>
                         <div className="trip-destination">{t.destination}</div>
                         {t.country && <div className="trip-country">{t.country}</div>}

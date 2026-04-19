@@ -1966,7 +1966,8 @@
 }
 .doc-item:hover { background: var(--bg3); border-color: var(--border) }
 
-.doc-icon-emoji { font-size: calc(18px * var(--fs, 1)); flex-shrink: 0; width: 28px; text-align: center }
+.doc-icon-emoji { flex-shrink: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; color: var(--purple-l) }
+.doc-icon-emoji svg { width: calc(16px * var(--fs, 1)); height: calc(16px * var(--fs, 1)) }
 
 .doc-item-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px }
 .doc-item-name { font-size: calc(12px * var(--fs, 1)); font-weight: 600; color: var(--text3); overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
@@ -2734,7 +2735,8 @@
   cursor: pointer;
 }
 
-.veh-icon { font-size: calc(22px * var(--fs, 1)); flex-shrink: 0 }
+.veh-icon { flex-shrink: 0; width: calc(32px * var(--fs, 1)); height: calc(32px * var(--fs, 1)); display: flex; align-items: center; justify-content: center; color: var(--amber) }
+.veh-icon svg { width: 100%; height: 100% }
 
 .veh-info { flex: 1; min-width: 0 }
 .veh-name { font-size: calc(13px * var(--fs, 1)); font-weight: 600; color: var(--text3); display: flex; align-items: center; gap: 8px }
@@ -4255,7 +4257,8 @@ html[data-theme="light"] .goals-filter-btn { background: var(--bg3) }
   gap: 10px;
 }
 
-.trip-flag { font-size: 22px; line-height: 1; margin-top: 1px }
+.trip-flag { display: flex; align-items: center; justify-content: center; width: 28px; height: 28px; color: var(--blue-l); flex-shrink: 0 }
+.trip-flag svg { width: 20px; height: 20px }
 
 .trip-destination {
   font-size: calc(15px * var(--fs, 1));
