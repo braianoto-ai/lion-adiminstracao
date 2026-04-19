@@ -699,9 +699,80 @@ const TX_CATEGORIES = {
   despesa: ['Moradia', 'Alimentação', 'Transporte', 'Saúde', 'Educação', 'Lazer', 'Impostos', 'Outros'],
 }
 
+// ─── Bank import parsers ──────────────────────────────────────────────────────
+
+function parseNubankCSV(text: string): Omit<Transaction, 'id'>[] {
+  const lines = text.trim().split('\n').map(l => l.trim()).filter(Boolean)
+  if (lines.length < 2) return []
+  // Detect header row
+  const header = lines[0].toLowerCase()
+  const startIdx = (header.includes('data') || header.includes('date') || header.includes('title')) ? 1 : 0
+  const results: Omit<Transaction, 'id'>[] = []
+  for (let i = startIdx; i < lines.length; i++) {
+    const cols = lines[i].split(',').map(c => c.replace(/^"|"$/g, '').trim())
+    if (cols.length < 3) continue
+    const [rawDate, title, rawAmount] = cols
+    const dateMatch = rawDate.match(/(\d{4})[\/\-](\d{2})[\/\-](\d{2})/)
+      || rawDate.match(/(\d{2})[\/\-](\d{2})[\/\-](\d{4})/)
+    if (!dateMatch) continue
+    let yyyy: string, mm: string
+    if (rawDate.match(/^\d{4}/)) { yyyy = dateMatch[1]; mm = dateMatch[2] }
+    else { yyyy = dateMatch[3]; mm = dateMatch[2] }
+    const amount = parseFloat(rawAmount.replace(',', '.').replace(/[^\d.\-]/g, ''))
+    if (isNaN(amount) || amount === 0) continue
+    results.push({
+      type: amount < 0 ? 'despesa' : 'receita',
+      category: 'Outros',
+      description: title,
+      amount: Math.abs(amount),
+      date: `${yyyy}-${mm}`,
+    })
+  }
+  return results
+}
+
+function parseBBOFX(text: string): Omit<Transaction, 'id'>[] {
+  const results: Omit<Transaction, 'id'>[] = []
+  const blocks = text.match(/<STMTTRN>[\s\S]*?<\/STMTTRN>/gi) || []
+  // Also handle OFX without closing tags (SGML style)
+  const sgmlBlocks = text.split(/<STMTTRN>/i).slice(1)
+  const toProcess = blocks.length > 0 ? blocks : sgmlBlocks
+  for (const block of toProcess) {
+    const getVal = (tag: string) => {
+      const m = block.match(new RegExp(`<${tag}>[\\s]*([^<\\n\\r]+)`, 'i'))
+      return m ? m[1].trim() : ''
+    }
+    const rawDate = getVal('DTPOSTED') || getVal('DTUSER')
+    const rawAmount = getVal('TRNAMT')
+    const memo = getVal('MEMO') || getVal('NAME') || getVal('FITID')
+    if (!rawDate || !rawAmount) continue
+    const yyyy = rawDate.slice(0, 4)
+    const mm = rawDate.slice(4, 6)
+    if (!yyyy || !mm || yyyy.length !== 4) continue
+    const amount = parseFloat(rawAmount.replace(',', '.'))
+    if (isNaN(amount) || amount === 0) continue
+    results.push({
+      type: amount < 0 ? 'despesa' : 'receita',
+      category: 'Outros',
+      description: memo,
+      amount: Math.abs(amount),
+      date: `${yyyy}-${mm}`,
+    })
+  }
+  return results
+}
+
+function detectAndParse(text: string, fileName: string): Omit<Transaction, 'id'>[] {
+  const lower = fileName.toLowerCase()
+  if (lower.endsWith('.ofx') || lower.endsWith('.qfx') || text.includes('<OFX') || text.includes('<ofx')) {
+    return parseBBOFX(text)
+  }
+  return parseNubankCSV(text)
+}
+
 function FinancePanel({ onClose }: { onClose: () => void }) {
   const [txs, setTxs] = useCloudTable<Transaction>('transactions', 'lion-txs')
-  const [view, setView] = useState<'overview' | 'list' | 'add'>('overview')
+  const [view, setView] = useState<'overview' | 'list' | 'add' | 'import'>('overview')
   const [filter, setFilter] = useState<'all' | TxType>('all')
   const [form, setForm] = useState({
     type: 'receita' as TxType,
@@ -798,6 +869,10 @@ function FinancePanel({ onClose }: { onClose: () => void }) {
           <button className={`fin-tab${view === 'overview' ? ' fin-tab-active' : ''}`} onClick={() => setView('overview')}>Resumo</button>
           <button className={`fin-tab${view === 'list' ? ' fin-tab-active' : ''}`} onClick={() => setView('list')}>Lançamentos</button>
           <button className={`fin-tab fin-tab-add${view === 'add' ? ' fin-tab-active' : ''}`} onClick={() => setView('add')}>+ Novo</button>
+          <button className={`fin-tab${view === 'import' ? ' fin-tab-active' : ''}`} onClick={() => setView('import')}>
+            <svg viewBox="0 0 14 14" fill="none" style={{width:12,height:12,marginRight:4,verticalAlign:'middle'}}><path d="M7 2v7M4 6l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 10v1a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+            Importar
+          </button>
         </div>
         <button className="panel-close" onClick={onClose}>
           <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
@@ -939,6 +1014,124 @@ function FinancePanel({ onClose }: { onClose: () => void }) {
           </form>
         </div>
       )}
+
+      {view === 'import' && <ImportView txs={txs} setTxs={setTxs} onDone={() => setView('list')} />}
+    </div>
+  )
+}
+
+function ImportView({ txs, setTxs, onDone }: { txs: Transaction[]; setTxs: React.Dispatch<React.SetStateAction<Transaction[]>>; onDone: () => void }) {
+  const [parsed, setParsed] = useState<Omit<Transaction, 'id'>[]>([])
+  const [fileName, setFileName] = useState('')
+  const [selected, setSelected] = useState<Set<number>>(new Set())
+  const [done, setDone] = useState(false)
+  const fmtCurr = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+  const onFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0]
+    if (!f) return
+    setFileName(f.name)
+    setDone(false)
+    const reader = new FileReader()
+    reader.onload = ev => {
+      const text = ev.target?.result as string
+      const rows = detectAndParse(text, f.name)
+      // mark duplicates: same date+description+amount already in txs
+      const existingKeys = new Set(txs.map(t => `${t.date}|${t.description}|${t.amount}`))
+      const newRows = rows.filter(r => !existingKeys.has(`${r.date}|${r.description}|${r.amount}`))
+      setParsed(newRows)
+      setSelected(new Set(newRows.map((_, i) => i)))
+    }
+    reader.readAsText(f, 'UTF-8')
+  }
+
+  const toggleAll = () => {
+    if (selected.size === parsed.length) setSelected(new Set())
+    else setSelected(new Set(parsed.map((_, i) => i)))
+  }
+
+  const doImport = () => {
+    const toImport = parsed
+      .filter((_, i) => selected.has(i))
+      .map(r => ({ ...r, id: `imp-${Date.now()}-${Math.random().toString(36).slice(2)}` }))
+    setTxs(prev => [...toImport, ...prev])
+    setDone(true)
+    setTimeout(onDone, 1200)
+  }
+
+  if (done) return (
+    <div className="fin-body">
+      <div className="import-success">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="1.5"/><path d="M8 12l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        Importado com sucesso!
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="fin-body">
+      <div className="import-wrap">
+        <div className="import-instructions">
+          <div className="import-bank">
+            <div className="import-bank-name">
+              <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="6" width="14" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M8 1l7 5H1l7-5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>
+              Nubank
+            </div>
+            <div className="import-bank-steps">App → Perfil → Exportar transações → CSV</div>
+          </div>
+          <div className="import-bank">
+            <div className="import-bank-name">
+              <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="6" width="14" height="9" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M8 1l7 5H1l7-5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>
+              Banco do Brasil
+            </div>
+            <div className="import-bank-steps">Internet Banking → Extrato → Exportar → OFX</div>
+          </div>
+        </div>
+
+        <label className="import-drop">
+          <input type="file" accept=".csv,.ofx,.qfx" onChange={onFile} style={{ display: 'none' }} />
+          <svg viewBox="0 0 24 24" fill="none"><path d="M12 3v12M8 7l4-4 4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          <span>{fileName ? fileName : 'Clique para selecionar arquivo (.csv ou .ofx)'}</span>
+        </label>
+
+        {parsed.length > 0 && (
+          <>
+            <div className="import-preview-header">
+              <span>{parsed.length} transação{parsed.length !== 1 ? 'ões' : ''} encontrada{parsed.length !== 1 ? 's' : ''} (duplicatas já removidas)</span>
+              <button className="import-sel-all" onClick={toggleAll}>
+                {selected.size === parsed.length ? 'Desmarcar todos' : 'Selecionar todos'}
+              </button>
+            </div>
+            <div className="import-table-wrap">
+              <table className="import-table">
+                <thead><tr><th></th><th>Data</th><th>Descrição</th><th>Tipo</th><th>Valor</th></tr></thead>
+                <tbody>
+                  {parsed.map((r, i) => (
+                    <tr key={i} className={selected.has(i) ? 'import-row-sel' : 'import-row-skip'}>
+                      <td><input type="checkbox" checked={selected.has(i)} onChange={() => {
+                        const s = new Set(selected)
+                        s.has(i) ? s.delete(i) : s.add(i)
+                        setSelected(s)
+                      }} /></td>
+                      <td>{r.date}</td>
+                      <td className="import-desc">{r.description}</td>
+                      <td><span className={`import-type-badge ${r.type === 'receita' ? 'import-type-green' : 'import-type-red'}`}>{r.type === 'receita' ? '↑' : '↓'}</span></td>
+                      <td className={r.type === 'receita' ? 'import-val-green' : 'import-val-red'}>{fmtCurr(r.amount)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <button className="btn-accent import-confirm-btn" onClick={doImport} disabled={selected.size === 0}>
+              Importar {selected.size} transaç{selected.size === 1 ? 'ão' : 'ões'}
+            </button>
+          </>
+        )}
+
+        {fileName && parsed.length === 0 && (
+          <div className="import-empty">Nenhuma transação nova encontrada. O arquivo pode estar vazio ou todas já foram importadas.</div>
+        )}
+      </div>
     </div>
   )
 }

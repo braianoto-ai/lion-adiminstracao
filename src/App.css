@@ -5398,6 +5398,43 @@ html[data-theme="light"] .ph-field select { background: var(--bg2) }
 html[data-theme="light"] .ph-icon-btn { background: var(--bg2) }
 html[data-theme="light"] .ph-barcode-text { background: var(--bg2) }
 
+/* ─── Import View ─────────────────────────────────────────── */
+.import-wrap { display: flex; flex-direction: column; gap: 14px; padding: 4px 0 }
+.import-instructions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+.import-bank { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; display: flex; flex-direction: column; gap: 4px }
+.import-bank-name { display: flex; align-items: center; gap: 6px; font-size: calc(.82rem * var(--fs)); font-weight: 600; color: var(--text3) }
+.import-bank-name svg { width: 14px; height: 14px; color: var(--purple-l) }
+.import-bank-steps { font-size: calc(.72rem * var(--fs)); color: var(--text); line-height: 1.5 }
+
+.import-drop { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 24px; border: 2px dashed var(--border2); border-radius: var(--radius-lg); cursor: pointer; transition: all .15s; color: var(--text) }
+.import-drop:hover { border-color: var(--purple); color: var(--purple-l); background: rgba(192,57,43,.04) }
+.import-drop svg { width: 28px; height: 28px }
+.import-drop span { font-size: calc(.8rem * var(--fs)); text-align: center }
+
+.import-preview-header { display: flex; align-items: center; justify-content: space-between; font-size: calc(.78rem * var(--fs)); color: var(--text2) }
+.import-sel-all { font-size: calc(.75rem * var(--fs)); color: var(--purple-l); background: none; border: none; cursor: pointer; text-decoration: underline }
+
+.import-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); max-height: 280px; overflow-y: auto }
+.import-table { width: 100%; border-collapse: collapse; font-size: calc(.78rem * var(--fs)) }
+.import-table thead th { background: var(--bg3); color: var(--text); font-weight: 600; padding: 7px 10px; text-align: left; position: sticky; top: 0; font-size: calc(.72rem * var(--fs)); text-transform: uppercase; letter-spacing: .04em }
+.import-table td { padding: 6px 10px; border-top: 1px solid var(--border); color: var(--text2) }
+.import-table input[type=checkbox] { cursor: pointer }
+.import-row-sel td { background: rgba(192,57,43,.04) }
+.import-row-skip td { opacity: .45 }
+.import-desc { max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.import-type-badge { font-size: 11px; font-weight: 700 }
+.import-type-green { color: var(--green) }
+.import-type-red { color: var(--red) }
+.import-val-green { color: var(--green); font-weight: 600 }
+.import-val-red { color: var(--red); font-weight: 600 }
+.import-confirm-btn { width: 100%; justify-content: center; margin-top: 4px }
+.import-confirm-btn:disabled { opacity: .4; cursor: not-allowed }
+.import-empty { font-size: calc(.8rem * var(--fs)); color: var(--text); text-align: center; padding: 20px 0 }
+.import-success { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 40px 0; color: var(--green); font-size: calc(.9rem * var(--fs)); font-weight: 600 }
+.import-success svg { width: 28px; height: 28px }
+
+@media (max-width: 500px) { .import-instructions { grid-template-columns: 1fr } }
+
 /* ─── Patrimônio Page ──────────────────────────────────────── */
 .patr-page { display: flex; flex-direction: column; gap: 20px; padding: 20px; max-width: 900px; margin: 0 auto; width: 100% }
 
