@@ -23,7 +23,7 @@ interface Folder {
 }
 
 type ModalType = 'imovel' | 'carro' | 'produto' | null
-type SidebarPage = 'dashboard' | 'family' | 'calendar' | 'trips' | 'goals' | 'settings'
+type SidebarPage = 'dashboard' | 'family' | 'calendar' | 'trips' | 'goals' | 'settings' | 'appearance'
 
 interface FamilyMember {
   id: string
@@ -2639,20 +2639,31 @@ function computeDashData() {
   return { balance, totalGoals, targetGoals, goalsProgress, monthlyRent, dangerCount, warnCount, totalAlerts: alerts.length, txCount: txs.length, rentCount: rentals.length, goalsCount: goals.length, thisMonthNet, lastMonthNet }
 }
 
-// ─── Theme Footer ─────────────────────────────────────────────────────────────
+// ─── Appearance constants ──────────────────────────────────────────────────────
 
 const THEMES = [
-  { id: 'dark',     label: 'Noite',    swatch: '#0c0e14' },
-  { id: 'charcoal', label: 'Carvão',   swatch: '#1f1f1f' },
-  { id: 'slate',    label: 'Ardósia',  swatch: '#15202e' },
-  { id: 'light',    label: 'Claro',    swatch: '#e8eaed' },
+  { id: 'dark',     label: 'Noite',    swatch: '#0c0e14', bg: '#13151e' },
+  { id: 'charcoal', label: 'Carvão',   swatch: '#171717', bg: '#1f1f1f' },
+  { id: 'slate',    label: 'Ardósia',  swatch: '#0e1520', bg: '#15202e' },
+  { id: 'light',    label: 'Claro',    swatch: '#f0f2f5', bg: '#e8eaed' },
 ]
 
 const FONT_SIZES = [
-  { id: 'compact',     label: 'A',  size: '13px', title: 'Compacto' },
-  { id: 'normal',      label: 'A',  size: '14px', title: 'Normal' },
-  { id: 'comfortable', label: 'A',  size: '15px', title: 'Confortável' },
-  { id: 'large',       label: 'A',  size: '16px', title: 'Grande' },
+  { id: 'compact',     label: 'A−',  size: '13px', title: 'Compacto' },
+  { id: 'normal',      label: 'A',   size: '14px', title: 'Normal' },
+  { id: 'comfortable', label: 'A+',  size: '15px', title: 'Confortável' },
+  { id: 'large',       label: 'A++', size: '16px', title: 'Grande' },
+]
+
+const ACCENT_COLORS = [
+  { id: 'red',    label: 'Vermelho', color: '#c0392b', light: '#e74c3c' },
+  { id: 'blue',   label: 'Azul',    color: '#1d4ed8', light: '#60a5fa' },
+  { id: 'green',  label: 'Verde',   color: '#059669', light: '#34d399' },
+  { id: 'purple', label: 'Roxo',    color: '#7c3aed', light: '#a78bfa' },
+  { id: 'pink',   label: 'Rosa',    color: '#be185d', light: '#f472b6' },
+  { id: 'amber',  label: 'Âmbar',   color: '#b45309', light: '#fbbf24' },
+  { id: 'cyan',   label: 'Ciano',   color: '#0e7490', light: '#22d3ee' },
+  { id: 'indigo', label: 'Índigo',  color: '#4338ca', light: '#818cf8' },
 ]
 
 
@@ -3717,6 +3728,115 @@ function FamilyPage() {
   )
 }
 
+// ─── Appearance Page ──────────────────────────────────────────────────────────
+
+interface AppearancePageProps {
+  themeId: string; setThemeId: (v: string) => void
+  fontSize: string; setFontSize: (v: string) => void
+  accentId: string; setAccentId: (v: string) => void
+  animations: boolean; setAnimations: (v: boolean) => void
+  sidebarFixed: boolean; setSidebarFixed: (v: boolean) => void
+}
+
+function AppearancePage({ themeId, setThemeId, fontSize, setFontSize, accentId, setAccentId, animations, setAnimations, sidebarFixed, setSidebarFixed }: AppearancePageProps) {
+  const currentAccent = ACCENT_COLORS.find(a => a.id === accentId) ?? ACCENT_COLORS[0]
+
+  return (
+    <div className="settings-page">
+      <h2 className="settings-title">Aparência</h2>
+
+      {/* Tema */}
+      <section className="settings-card">
+        <div className="settings-card-title">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.93 4.93l1.41 1.41M13.66 13.66l1.41 1.41M4.93 15.07l1.41-1.41M13.66 6.34l1.41-1.41" strokeLinecap="round"/></svg>
+          Tema
+        </div>
+        <div className="ap-theme-grid">
+          {THEMES.map(t => (
+            <button key={t.id} className={`ap-theme-card${themeId === t.id ? ' ap-theme-active' : ''}`} onClick={() => setThemeId(t.id)}>
+              <div className="ap-theme-preview" style={{ background: t.swatch }}>
+                <div className="ap-theme-sidebar" style={{ background: t.bg }} />
+                <div className="ap-theme-content">
+                  <div className="ap-theme-bar" style={{ background: currentAccent.color }} />
+                  <div className="ap-theme-line" style={{ background: t.id === 'light' ? 'rgba(0,0,0,.12)' : 'rgba(255,255,255,.12)' }} />
+                  <div className="ap-theme-line ap-theme-line-short" style={{ background: t.id === 'light' ? 'rgba(0,0,0,.08)' : 'rgba(255,255,255,.08)' }} />
+                </div>
+              </div>
+              <div className="ap-theme-label">
+                {t.label}
+                {themeId === t.id && <svg viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>}
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Cor de destaque */}
+      <section className="settings-card">
+        <div className="settings-card-title">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="7"/><path d="M10 3v2M10 15v2M3 10h2M15 10h2" strokeLinecap="round"/></svg>
+          Cor de Destaque
+        </div>
+        <p className="settings-hint">Afeta botões, destaques e elementos interativos em todo o app.</p>
+        <div className="ap-accent-grid">
+          {ACCENT_COLORS.map(a => (
+            <button key={a.id} className={`ap-accent-btn${accentId === a.id ? ' ap-accent-active' : ''}`}
+              style={{ '--accent-col': a.color } as React.CSSProperties}
+              onClick={() => setAccentId(a.id)} title={a.label}>
+              <div className="ap-accent-swatch" style={{ background: `linear-gradient(135deg, ${a.color}, ${a.light})` }} />
+              <span className="ap-accent-label">{a.label}</span>
+              {accentId === a.id && <svg className="ap-accent-check" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="white" strokeWidth="1.5" strokeLinecap="round"/></svg>}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Tamanho da fonte */}
+      <section className="settings-card">
+        <div className="settings-card-title">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 16l5-12 5 12M5.5 11h5M13 7h4M15 5v10" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          Tamanho da Fonte
+        </div>
+        <div className="ap-font-grid">
+          {FONT_SIZES.map(f => (
+            <button key={f.id} className={`ap-font-card${fontSize === f.id ? ' ap-font-active' : ''}`} onClick={() => setFontSize(f.id)}>
+              <span className="ap-font-sample" style={{ fontSize: f.size }}>Aa</span>
+              <span className="ap-font-label">{f.title}</span>
+              {fontSize === f.id && <svg className="ap-font-check" viewBox="0 0 12 12" fill="none"><path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* Toggles */}
+      <section className="settings-card">
+        <div className="settings-card-title">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="6" width="16" height="8" rx="4"/><circle cx={animations ? '14' : '6'} cy="10" r="3" fill="currentColor" stroke="none"/></svg>
+          Preferências
+        </div>
+        <div className="ap-toggle-row" onClick={() => setAnimations(!animations)}>
+          <div className="ap-toggle-info">
+            <span className="ap-toggle-name">Animações</span>
+            <span className="ap-toggle-desc">Transições e efeitos visuais ao interagir com o app</span>
+          </div>
+          <div className={`ap-toggle${animations ? ' ap-toggle-on' : ''}`}>
+            <div className="ap-toggle-thumb" />
+          </div>
+        </div>
+        <div className="ap-toggle-row" onClick={() => setSidebarFixed(!sidebarFixed)}>
+          <div className="ap-toggle-info">
+            <span className="ap-toggle-name">Barra lateral sempre visível</span>
+            <span className="ap-toggle-desc">Mantém o menu lateral aberto no desktop sem precisar clicar</span>
+          </div>
+          <div className={`ap-toggle${sidebarFixed ? ' ap-toggle-on' : ''}`}>
+            <div className="ap-toggle-thumb" />
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
 // ─── Settings Page ────────────────────────────────────────────────────────────
 
 function SettingsPage({ user }: { user: User | null }) {
@@ -3907,6 +4027,9 @@ export default function App() {
   const [activity, setActivity] = useState(() => buildActivity())
   const [themeId, setThemeId] = useState(() => localStorage.getItem('lion-theme') || 'dark')
   const [fontSize, setFontSize] = useState(() => localStorage.getItem('lion-font') || 'normal')
+  const [accentId, setAccentId] = useState(() => localStorage.getItem('lion-accent') || 'red')
+  const [animations, setAnimations] = useState(() => localStorage.getItem('lion-animations') !== 'off')
+  const [sidebarFixed, setSidebarFixed] = useState(() => localStorage.getItem('lion-sidebar-fixed') === 'on')
   const [modal, setModal] = useState<ModalType>(null)
   const [showSidebar, setShowSidebar] = useState(false)
   const [sidebarPage, setSidebarPage] = useState<SidebarPage>('dashboard')
@@ -3946,6 +4069,23 @@ export default function App() {
     if (fontSize !== 'normal') el.setAttribute('data-fs', fontSize)
     localStorage.setItem('lion-font', fontSize)
   }, [fontSize])
+
+  useEffect(() => {
+    const accent = ACCENT_COLORS.find(a => a.id === accentId) ?? ACCENT_COLORS[0]
+    document.documentElement.style.setProperty('--purple', accent.color)
+    document.documentElement.style.setProperty('--purple-l', accent.light)
+    localStorage.setItem('lion-accent', accentId)
+  }, [accentId])
+
+  useEffect(() => {
+    if (animations) document.documentElement.removeAttribute('data-no-anim')
+    else document.documentElement.setAttribute('data-no-anim', '')
+    localStorage.setItem('lion-animations', animations ? 'on' : 'off')
+  }, [animations])
+
+  useEffect(() => {
+    localStorage.setItem('lion-sidebar-fixed', sidebarFixed ? 'on' : 'off')
+  }, [sidebarFixed])
 
   useEffect(() => {
     const refresh = () => { setDashData(computeDashData()); setActivity(buildActivity()) }
@@ -4046,7 +4186,7 @@ export default function App() {
   if (supabase && !user) return <LoginPage />
 
   return (
-    <div className={`app${viewMode ? ' view-mode' : ''}`}>
+    <div className={`app${viewMode ? ' view-mode' : ''}${sidebarFixed ? ' sidebar-pinned' : ''}`}>
       {kbHint && <div className="kb-toast">{kbHint}</div>}
       {showOnboarding && <OnboardingWizard onDone={finishOnboarding} />}
 
@@ -4072,7 +4212,8 @@ export default function App() {
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="8"/><circle cx="10" cy="10" r="4.5"/><circle cx="10" cy="10" r="1.5" fill="currentColor" stroke="none"/></svg>, label: 'Metas', active: sidebarPage === 'goals', action: () => { setSidebarPage('goals'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/><path d="M8 8h4M8 12h4" strokeLinecap="round"/></svg>, label: 'Documentos', action: () => { setShowSidebar(false); toggleDocs() } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" strokeLinecap="round"/></svg>, label: 'Simulador', action: () => { setShowSidebar(false); toggleSim() } },
-            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="3"/><path d="M10 1.5v2M10 16.5v2M1.5 10h2M16.5 10h2M4.1 4.1l1.4 1.4M14.5 14.5l1.4 1.4M4.1 15.9l1.4-1.4M14.5 5.5l1.4-1.4" strokeLinecap="round"/><circle cx="10" cy="10" r="6" strokeDasharray="2 3"/></svg>, label: 'Configurações', active: sidebarPage === 'settings', action: () => { setSidebarPage('settings'); setShowSidebar(false) } },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="7"/><path d="M10 7v3l2 2" strokeLinecap="round"/><circle cx="10" cy="3" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="17" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="17" cy="10" r="1" fill="currentColor" stroke="none"/></svg>, label: 'Aparência', active: sidebarPage === 'appearance', action: () => { setSidebarPage('appearance'); setShowSidebar(false) } },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2h4M10 2v3M7 5h6a1 1 0 0 1 1 1v1H6V6a1 1 0 0 1 1-1zM5 7h10l-1 10H6L5 7z" strokeLinejoin="round"/></svg>, label: 'Configurações', active: sidebarPage === 'settings', action: () => { setSidebarPage('settings'); setShowSidebar(false) } },
           ] as { icon: React.ReactNode; label: string; active?: boolean; badge?: string; action: () => void }[]).map(item => (
             <button key={item.label} className={`sidebar-nav-item${item.active ? ' sidebar-nav-active' : ''}`} onClick={item.action}>
               <span className="sidebar-nav-icon">{item.icon}</span>
@@ -4082,29 +4223,6 @@ export default function App() {
           ))}
         </nav>
         <div className="sidebar-footer">
-          {/* Theme swatches */}
-          <div className="sidebar-theme-section">
-            <span className="sidebar-theme-label">Tema</span>
-            <div className="sidebar-theme-swatches">
-              {THEMES.map(t => (
-                <button key={t.id} className={`sidebar-swatch${themeId === t.id ? ' sidebar-swatch-active' : ''}`}
-                  style={{ background: t.swatch, border: t.id === 'light' ? '1px solid #aaa' : 'none' }}
-                  onClick={() => setThemeId(t.id)} title={t.label} />
-              ))}
-            </div>
-          </div>
-          {/* Font size */}
-          <div className="sidebar-theme-section">
-            <span className="sidebar-theme-label">Fonte</span>
-            <div className="sidebar-font-btns">
-              {FONT_SIZES.map((f, i) => (
-                <button key={f.id} className={`sidebar-font-btn${fontSize === f.id ? ' sidebar-font-active' : ''}`}
-                  style={{ fontSize: f.size }} onClick={() => setFontSize(f.id)} title={f.title}>
-                  {['A−', 'A', 'A+', 'A++'][i]}
-                </button>
-              ))}
-            </div>
-          </div>
           <button className="sidebar-nav-item" onClick={handleLogout}>
             <span className="sidebar-nav-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M13 15l3-5-3-5" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 10H7" strokeLinecap="round"/><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" strokeLinecap="round"/></svg></span>
             <span className="sidebar-nav-label">Sair</span>
@@ -4257,11 +4375,12 @@ export default function App() {
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M10 4L6 8l4 4"/></svg>
             Voltar ao Dashboard
           </button>
-          {sidebarPage === 'family'   && <FamilyPage />}
-          {sidebarPage === 'calendar' && <CalendarPage />}
-          {sidebarPage === 'trips'    && <TripsPage />}
-          {sidebarPage === 'goals'    && <GoalsPage />}
-          {sidebarPage === 'settings' && <SettingsPage user={user} />}
+          {sidebarPage === 'family'     && <FamilyPage />}
+          {sidebarPage === 'calendar'   && <CalendarPage />}
+          {sidebarPage === 'trips'      && <TripsPage />}
+          {sidebarPage === 'goals'      && <GoalsPage />}
+          {sidebarPage === 'appearance' && <AppearancePage themeId={themeId} setThemeId={setThemeId} fontSize={fontSize} setFontSize={setFontSize} accentId={accentId} setAccentId={setAccentId} animations={animations} setAnimations={setAnimations} sidebarFixed={sidebarFixed} setSidebarFixed={setSidebarFixed} />}
+          {sidebarPage === 'settings'   && <SettingsPage user={user} />}
         </div>
       )}
 
