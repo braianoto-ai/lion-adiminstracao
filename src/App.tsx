@@ -4111,8 +4111,9 @@ const PRODUTO_INIT = { nome: '', categoria: 'Eletrônico', valor: '', quantidade
 function PatrimonioPage() {
   const [imoveis, setImoveis] = useCloudTable<Imovel>('imoveis', 'lion-imoveis')
   const [produtos, setProdutos] = useCloudTable<Produto>('produtos', 'lion-produtos')
+  const [vehicles, setVehicles] = useCloudTable<Vehicle>('vehicles', 'lion-vehicles')
 
-  const [tab, setTab] = useState<'imoveis' | 'produtos'>('imoveis')
+  const [tab, setTab] = useState<'imoveis' | 'veiculos' | 'produtos'>('imoveis')
   const [showImovelForm, setShowImovelForm] = useState(false)
   const [editImovelId, setEditImovelId] = useState<string | null>(null)
   const [imovelForm, setImovelForm] = useState({ ...IMOVEL_INIT })
@@ -4121,10 +4122,16 @@ function PatrimonioPage() {
   const [prodForm, setProdForm] = useState({ ...PRODUTO_INIT })
 
   const fmtR = (v: string | number) => parseFloat(String(v) || '0').toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
+  const fmtKm = (k: number) => k > 0 ? `${k.toLocaleString('pt-BR')} km` : ''
 
   const totalImoveis = imoveis.reduce((s, i) => s + (parseFloat(i.valorAtual || i.valor || '0') || 0), 0)
   const totalProdutos = produtos.reduce((s, p) => s + (parseFloat(p.valor || '0') || 0) * (parseInt(p.quantidade || '1') || 1), 0)
-  const totalGeral = totalImoveis + totalProdutos
+  const totalVeiculos = vehicles.reduce((s, v) => {
+    const notesVal = v.notes?.match(/Atual:\s*R\$\s*([\d.,]+)/)
+    if (notesVal) return s + parseFloat(notesVal[1].replace(/\./g, '').replace(',', '.')) || 0
+    return s
+  }, 0)
+  const totalGeral = totalImoveis + totalProdutos + totalVeiculos
 
   const fi = (k: string, v: string) => setImovelForm(f => ({ ...f, [k]: v }))
   const fp = (k: string, v: string) => setProdForm(f => ({ ...f, [k]: v }))
@@ -4179,6 +4186,11 @@ function PatrimonioPage() {
           <div className="patr-summary-sub">{imoveis.length} imóvel{imoveis.length !== 1 ? 's' : ''}</div>
         </div>
         <div className="patr-summary-card">
+          <div className="patr-summary-label">Veículos</div>
+          <div className="patr-summary-val">{fmtR(totalVeiculos)}</div>
+          <div className="patr-summary-sub">{vehicles.length} veículo{vehicles.length !== 1 ? 's' : ''}</div>
+        </div>
+        <div className="patr-summary-card">
           <div className="patr-summary-label">Bens / Produtos</div>
           <div className="patr-summary-val">{fmtR(totalProdutos)}</div>
           <div className="patr-summary-sub">{produtos.length} item{produtos.length !== 1 ? 's' : ''}</div>
@@ -4186,7 +4198,7 @@ function PatrimonioPage() {
         <div className="patr-summary-card patr-summary-total">
           <div className="patr-summary-label">Patrimônio Total</div>
           <div className="patr-summary-val patr-summary-val-accent">{fmtR(totalGeral)}</div>
-          <div className="patr-summary-sub">{imoveis.length + produtos.length} ativos</div>
+          <div className="patr-summary-sub">{imoveis.length + vehicles.length + produtos.length} ativos</div>
         </div>
       </div>
 
@@ -4195,6 +4207,10 @@ function PatrimonioPage() {
         <button className={`patr-tab${tab === 'imoveis' ? ' patr-tab-active' : ''}`} onClick={() => setTab('imoveis')}>
           <svg viewBox="0 0 16 16" fill="none"><path d="M2 7l6-5 6 5v7H2V7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 14V9h4v5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
           Imóveis ({imoveis.length})
+        </button>
+        <button className={`patr-tab${tab === 'veiculos' ? ' patr-tab-active' : ''}`} onClick={() => setTab('veiculos')}>
+          <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="6" width="14" height="7" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><path d="M4 6V5a3 3 0 0 1 3-3h2a3 3 0 0 1 3 3v1" stroke="currentColor" strokeWidth="1.3"/><circle cx="4.5" cy="13" r="1.2" fill="currentColor" stroke="none"/><circle cx="11.5" cy="13" r="1.2" fill="currentColor" stroke="none"/></svg>
+          Veículos ({vehicles.length})
         </button>
         <button className={`patr-tab${tab === 'produtos' ? ' patr-tab-active' : ''}`} onClick={() => setTab('produtos')}>
           <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="7" width="12" height="8" rx="1" stroke="currentColor" strokeWidth="1.3"/><path d="M5 7V5a3 3 0 0 1 6 0v2" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
@@ -4279,6 +4295,52 @@ function PatrimonioPage() {
                         <svg viewBox="0 0 14 14" fill="none"><path d="M2 10l7-7 2 2-7 7H2v-2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
                       </button>
                       <button className="patr-icon-btn patr-icon-btn-del" onClick={() => setImoveis(prev => prev.filter(x => x.id !== im.id))} title="Excluir">
+                        <svg viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Veículos */}
+      {tab === 'veiculos' && (
+        <div className="patr-section">
+          {vehicles.length === 0 ? (
+            <div className="patr-empty">
+              <svg viewBox="0 0 48 48" fill="none"><rect x="3" y="18" width="42" height="21" rx="4" stroke="currentColor" strokeWidth="2"/><path d="M12 18V15a9 9 0 0 1 9-9h6a9 9 0 0 1 9 9v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="13" cy="39" r="4" fill="currentColor" opacity=".3" stroke="none"/><circle cx="35" cy="39" r="4" fill="currentColor" opacity=".3" stroke="none"/></svg>
+              <span>Nenhum veículo. Adicione via Ações Rápidas no dashboard.</span>
+            </div>
+          ) : (
+            <div className="patr-list">
+              {vehicles.map(v => {
+                const notesVal = v.notes?.match(/Atual:\s*R\$\s*([\d.,]+)/)
+                const valorAtual = notesVal ? parseFloat(notesVal[1].replace(/\./g, '').replace(',', '.')) : 0
+                const notesCompra = v.notes?.match(/Compra:\s*R\$\s*([\d.,]+)/)
+                const valorCompra = notesCompra ? parseFloat(notesCompra[1].replace(/\./g, '').replace(',', '.')) : 0
+                const gain = valorAtual > 0 && valorCompra > 0 ? valorAtual - valorCompra : 0
+                return (
+                  <div key={v.id} className="patr-card">
+                    <div className="patr-card-icon" style={{ background: 'rgba(245,158,11,.15)', color: 'var(--amber)' }}>
+                      <svg viewBox="0 0 20 20" fill="none"><rect x="1" y="8" width="18" height="8" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M4 8V7a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1" stroke="currentColor" strokeWidth="1.4"/><circle cx="5" cy="16" r="2" fill="currentColor"/><circle cx="15" cy="16" r="2" fill="currentColor"/></svg>
+                    </div>
+                    <div className="patr-card-body">
+                      <div className="patr-card-title">{v.name}{v.plate && <span className="patr-badge" style={{ marginLeft: 8 }}>{v.plate}</span>}</div>
+                      <div className="patr-card-meta">
+                        {v.year && <span>{v.year}</span>}
+                        {fmtKm(v.currentKm) && <span>{fmtKm(v.currentKm)}</span>}
+                      </div>
+                      <div className="patr-card-values">
+                        {valorCompra > 0 && <span>Compra: {fmtR(valorCompra)}</span>}
+                        {valorAtual > 0 && <span>Atual: {fmtR(valorAtual)}</span>}
+                        {gain !== 0 && <span className={gain > 0 ? 'patr-gain-pos' : 'patr-gain-neg'}>{gain > 0 ? '+' : ''}{fmtR(gain)}</span>}
+                      </div>
+                    </div>
+                    <div className="patr-card-actions">
+                      <button className="patr-icon-btn patr-icon-btn-del" onClick={() => setVehicles(prev => prev.filter(x => x.id !== v.id))} title="Excluir">
                         <svg viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
                       </button>
                     </div>

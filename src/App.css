@@ -5401,7 +5401,7 @@ html[data-theme="light"] .ph-barcode-text { background: var(--bg2) }
 /* ─── Patrimônio Page ──────────────────────────────────────── */
 .patr-page { display: flex; flex-direction: column; gap: 20px; padding: 20px; max-width: 900px; margin: 0 auto; width: 100% }
 
-.patr-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px }
+.patr-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px }
 .patr-summary-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; display: flex; flex-direction: column; gap: 4px }
 .patr-summary-total { border-color: var(--purple); background: rgba(192,57,43,.06) }
 .patr-summary-label { font-size: calc(.72rem * var(--fs)); color: var(--text); text-transform: uppercase; letter-spacing: .04em }
@@ -5456,7 +5456,7 @@ html[data-theme="light"] .ph-barcode-text { background: var(--bg2) }
 .patr-icon-btn:hover { background: var(--bg4); color: var(--text3) }
 .patr-icon-btn-del:hover { background: rgba(239,68,68,.15); border-color: var(--red); color: var(--red) }
 
-@media (max-width: 600px) {
+@media (max-width: 700px) {
   .patr-summary { grid-template-columns: 1fr 1fr }
   .patr-summary-total { grid-column: span 2 }
   .patr-fields { grid-template-columns: 1fr }
