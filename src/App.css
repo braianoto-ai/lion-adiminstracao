@@ -2412,6 +2412,13 @@
 .cal-day-count { font-size: 11px; color: var(--text); margin-top: 2px }
 .cal-empty-day { font-size: 12px; color: var(--text); text-align: center; padding: 16px 0 }
 
+.cal-form-date-label {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 12px; font-weight: 600; color: var(--purple-l);
+  text-transform: capitalize; padding-bottom: 2px;
+}
+.cal-form-date-label svg { width: 13px; height: 13px; flex-shrink: 0 }
+
 .cal-form {
   background: var(--bg3); border: 1px solid var(--border);
   border-radius: var(--radius); padding: 12px;

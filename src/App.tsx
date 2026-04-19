@@ -2910,9 +2910,14 @@ function CalendarPage() {
 
   function saveEvent(e: React.FormEvent) {
     e.preventDefault()
-    if (!form.title.trim() || !form.date) return
-    setUserEvents(prev => [...prev, { ...form, id: Date.now().toString() }])
-    setForm({ ...CAL_FORM_INIT, date: form.date }); setShowForm(false)
+    if (!form.title.trim() || !selectedDate) return
+    const event: CalEvent = { ...form, date: selectedDate, id: Date.now().toString() }
+    setUserEvents(prev => {
+      const next = [...prev, event]
+      localStorage.setItem('lion-calendar', JSON.stringify(next))
+      return next
+    })
+    setForm({ ...CAL_FORM_INIT }); setShowForm(false)
   }
 
   function delEvent(id: string) { setUserEvents(prev => prev.filter(e => e.id !== id)) }
@@ -3010,9 +3015,13 @@ function CalendarPage() {
 
               {showForm && (
                 <form className="cal-form" onSubmit={saveEvent}>
+                  <div className="cal-form-date-label">
+                    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1" y="3" width="14" height="11" rx="2"/><path d="M5 1v3M11 1v3M1 7h14" strokeLinecap="round"/></svg>
+                    {selectedDate ? new Date(selectedDate + 'T12:00:00').toLocaleDateString('pt-BR', { weekday: 'long', day: 'numeric', month: 'long' }) : ''}
+                  </div>
                   <div className="fin-field">
                     <label>Título *</label>
-                    <input type="text" value={form.title} onChange={e => f('title', e.target.value)} placeholder="Ex: Reunião de negócios" required />
+                    <input type="text" value={form.title} onChange={e => f('title', e.target.value)} placeholder="Ex: Reunião de negócios" required autoFocus />
                   </div>
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
                     <div className="fin-field">
