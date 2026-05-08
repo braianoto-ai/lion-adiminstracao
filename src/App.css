@@ -5792,11 +5792,21 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 .terra-map-drawn-badge { color: #22c55e; font-size: 14px; flex-shrink: 0 }
 .terra-btn-overlay { background: none; border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 10px; font-size: calc(.72rem * var(--fs)); cursor: pointer; color: var(--text); transition: all .15s; display: flex; align-items: center; gap: 5px }
 .terra-btn-overlay:hover { background: var(--bg3); color: var(--text3); border-color: var(--text) }
-.terra-overlay-controls { display: flex; align-items: center; gap: 10px; padding: 8px 14px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: 8px }
-.terra-overlay-label { font-size: calc(.72rem * var(--fs)); color: var(--text); white-space: nowrap }
-.terra-overlay-slider { flex: 0 0 120px; accent-color: #8b5cf6; cursor: pointer }
-.terra-overlay-pct { font-size: calc(.72rem * var(--fs)); color: var(--text3); font-weight: 600; min-width: 32px }
-.terra-overlay-hint { font-size: calc(.62rem * var(--fs)); color: var(--text); margin-left: auto; font-style: italic }
+.terra-overlay-panel { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px 16px; margin-bottom: 8px; display: flex; flex-direction: column; gap: 8px }
+.terra-overlay-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap }
+.terra-overlay-label { font-size: calc(.72rem * var(--fs)); color: var(--text); white-space: nowrap; min-width: 70px }
+.terra-overlay-slider { flex: 1; min-width: 80px; max-width: 160px; accent-color: #8b5cf6; cursor: pointer }
+.terra-overlay-pct { font-size: calc(.72rem * var(--fs)); color: var(--text3); font-weight: 600; min-width: 36px; text-align: right }
+.terra-overlay-arrows { display: flex; flex-direction: column; align-items: center; gap: 1px }
+.terra-ov-arrow-row { display: flex; gap: 1px }
+.terra-ov-arrow { background: var(--bg3); border: 1px solid var(--border); border-radius: 4px; width: 26px; height: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 10px; color: var(--text); transition: all .15s; padding: 0 }
+.terra-ov-arrow:hover { background: var(--purple); color: #fff; border-color: var(--purple) }
+.terra-ov-center { font-size: 8px; opacity: .6 }
+.terra-ov-btn { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 3px 10px; font-size: calc(.72rem * var(--fs)); cursor: pointer; color: var(--text); transition: all .15s }
+.terra-ov-btn:hover { background: var(--purple); color: #fff; border-color: var(--purple) }
+.terra-ov-drag-btn { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 12px; font-size: calc(.72rem * var(--fs)); cursor: pointer; color: var(--text); transition: all .15s; margin-left: auto }
+.terra-ov-drag-btn.active { background: var(--purple); color: #fff; border-color: var(--purple) }
+.terra-ov-drag-btn:hover { border-color: var(--purple) }
 .terra-map-legend-section { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 8px; border-top: 1px solid var(--border); margin-top: auto }
 .terra-map-legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 8px 0 }
 

@@ -5010,6 +5010,13 @@ function TerraPage() {
   const [overlayUrl, setOverlayUrl] = useState<string | null>(null)
   const [overlayOpacity, setOverlayOpacity] = useState(0.5)
   const overlayFileRef = useRef<HTMLInputElement>(null)
+  const [overlayOffsetLat, setOverlayOffsetLat] = useState(0)
+  const [overlayOffsetLng, setOverlayOffsetLng] = useState(0)
+  const [overlayScaleX, setOverlayScaleX] = useState(1)
+  const [overlayScaleY, setOverlayScaleY] = useState(1)
+  const [overlayRotation, setOverlayRotation] = useState(0)
+  const [overlayDrag, setOverlayDrag] = useState(false)
+  const overlayDragStart = useRef<{ lat: number; lng: number } | null>(null)
 
   const emptyFazenda: Omit<TerraFazenda, 'id' | 'createdAt'> = {
     nome: '', municipio: '', uf: 'PR', matricula: '', carNumero: '', itrNumero: '', ccir: '',
@@ -5119,14 +5126,38 @@ function TerraPage() {
     if (!leafletMap.current) return
     if (overlayRef.current) { leafletMap.current.removeLayer(overlayRef.current); overlayRef.current = null }
     if (overlayUrl && fazenda) {
-      const lat = fazenda.latitude
-      const lng = fazenda.longitude
-      const dLat = 0.012
-      const dLng = 0.016
+      const lat = fazenda.latitude + overlayOffsetLat
+      const lng = fazenda.longitude + overlayOffsetLng
+      const dLat = 0.012 * overlayScaleY
+      const dLng = 0.016 * overlayScaleX
       const bounds = L.latLngBounds([[lat - dLat, lng - dLng], [lat + dLat, lng + dLng]])
-      overlayRef.current = L.imageOverlay(overlayUrl, bounds, { opacity: overlayOpacity, interactive: false }).addTo(leafletMap.current)
+      overlayRef.current = L.imageOverlay(overlayUrl, bounds, { opacity: overlayOpacity, interactive: overlayDrag }).addTo(leafletMap.current)
+      if (overlayRotation !== 0 && overlayRef.current) {
+        const el = (overlayRef.current as any).getElement()
+        if (el) el.style.transform = (el.style.transform || '') + ` rotate(${overlayRotation}deg)`
+      }
     }
-  }, [overlayUrl, overlayOpacity, fazenda])
+  }, [overlayUrl, overlayOpacity, fazenda, overlayOffsetLat, overlayOffsetLng, overlayScaleX, overlayScaleY, overlayRotation, overlayDrag])
+
+  useEffect(() => {
+    const map = leafletMap.current
+    if (!map || !overlayDrag) return
+    map.dragging.disable()
+    const onDown = (e: L.LeafletMouseEvent) => { overlayDragStart.current = { lat: e.latlng.lat, lng: e.latlng.lng } }
+    const onMove = (e: L.LeafletMouseEvent) => {
+      if (!overlayDragStart.current) return
+      const dLat = e.latlng.lat - overlayDragStart.current.lat
+      const dLng = e.latlng.lng - overlayDragStart.current.lng
+      overlayDragStart.current = { lat: e.latlng.lat, lng: e.latlng.lng }
+      setOverlayOffsetLat(p => p + dLat)
+      setOverlayOffsetLng(p => p + dLng)
+    }
+    const onUp = () => { overlayDragStart.current = null }
+    map.on('mousedown', onDown)
+    map.on('mousemove', onMove)
+    map.on('mouseup', onUp)
+    return () => { map.off('mousedown', onDown); map.off('mousemove', onMove); map.off('mouseup', onUp); map.dragging.enable() }
+  }, [overlayDrag])
 
   useEffect(() => {
     if (!leafletMap.current || !layerGroup.current) return
@@ -5366,12 +5397,51 @@ function TerraPage() {
         )}
       </div>
       {overlayUrl && (
-        <div className="terra-overlay-controls">
-          <span className="terra-overlay-label">Opacidade da imagem:</span>
-          <input type="range" min="0" max="100" value={Math.round(overlayOpacity * 100)} onChange={e => setOverlayOpacity(parseInt(e.target.value) / 100)} className="terra-overlay-slider" />
-          <span className="terra-overlay-pct">{Math.round(overlayOpacity * 100)}%</span>
-          <button className="terra-btn-secondary" onClick={() => { if (overlayRef.current && leafletMap.current) leafletMap.current.removeLayer(overlayRef.current); overlayRef.current = null; setOverlayUrl(null) }} style={{ marginLeft: 8, padding: '2px 10px', fontSize: 'calc(.7rem * var(--fs))' }}>Remover</button>
-          <span className="terra-overlay-hint">Arraste os cantos para ajustar posição</span>
+        <div className="terra-overlay-panel">
+          <div className="terra-overlay-row">
+            <span className="terra-overlay-label">Opacidade:</span>
+            <input type="range" min="0" max="100" value={Math.round(overlayOpacity * 100)} onChange={e => setOverlayOpacity(parseInt(e.target.value) / 100)} className="terra-overlay-slider" />
+            <span className="terra-overlay-pct">{Math.round(overlayOpacity * 100)}%</span>
+          </div>
+          <div className="terra-overlay-row">
+            <span className="terra-overlay-label">Posição:</span>
+            <div className="terra-overlay-arrows">
+              <button className="terra-ov-arrow" onClick={() => setOverlayOffsetLat(p => p + 0.001)} title="Mover Norte">▲</button>
+              <div className="terra-ov-arrow-row">
+                <button className="terra-ov-arrow" onClick={() => setOverlayOffsetLng(p => p - 0.001)} title="Mover Oeste">◄</button>
+                <button className="terra-ov-arrow terra-ov-center" onClick={() => { setOverlayOffsetLat(0); setOverlayOffsetLng(0) }} title="Centralizar">●</button>
+                <button className="terra-ov-arrow" onClick={() => setOverlayOffsetLng(p => p + 0.001)} title="Mover Leste">►</button>
+              </div>
+              <button className="terra-ov-arrow" onClick={() => setOverlayOffsetLat(p => p - 0.001)} title="Mover Sul">▼</button>
+            </div>
+            <button className={`terra-ov-drag-btn ${overlayDrag ? 'active' : ''}`} onClick={() => setOverlayDrag(p => !p)} title="Arrastar imagem com o mouse">
+              {overlayDrag ? '🔒 Arrastando' : '✋ Arrastar'}
+            </button>
+          </div>
+          <div className="terra-overlay-row">
+            <span className="terra-overlay-label">Largura:</span>
+            <button className="terra-ov-btn" onClick={() => setOverlayScaleX(p => Math.max(0.3, p - 0.05))}>−</button>
+            <input type="range" min="30" max="300" value={Math.round(overlayScaleX * 100)} onChange={e => setOverlayScaleX(parseInt(e.target.value) / 100)} className="terra-overlay-slider" />
+            <button className="terra-ov-btn" onClick={() => setOverlayScaleX(p => Math.min(3, p + 0.05))}>+</button>
+            <span className="terra-overlay-pct">{Math.round(overlayScaleX * 100)}%</span>
+          </div>
+          <div className="terra-overlay-row">
+            <span className="terra-overlay-label">Altura:</span>
+            <button className="terra-ov-btn" onClick={() => setOverlayScaleY(p => Math.max(0.3, p - 0.05))}>−</button>
+            <input type="range" min="30" max="300" value={Math.round(overlayScaleY * 100)} onChange={e => setOverlayScaleY(parseInt(e.target.value) / 100)} className="terra-overlay-slider" />
+            <button className="terra-ov-btn" onClick={() => setOverlayScaleY(p => Math.min(3, p + 0.05))}>+</button>
+            <span className="terra-overlay-pct">{Math.round(overlayScaleY * 100)}%</span>
+          </div>
+          <div className="terra-overlay-row">
+            <span className="terra-overlay-label">Rotação:</span>
+            <input type="range" min="-180" max="180" value={overlayRotation} onChange={e => setOverlayRotation(parseInt(e.target.value))} className="terra-overlay-slider" />
+            <span className="terra-overlay-pct">{overlayRotation}°</span>
+            <button className="terra-ov-btn" onClick={() => setOverlayRotation(0)}>0°</button>
+          </div>
+          <div className="terra-overlay-row">
+            <button className="terra-ov-btn" onClick={() => { setOverlayScaleX(1); setOverlayScaleY(1); setOverlayOffsetLat(0); setOverlayOffsetLng(0); setOverlayRotation(0) }}>Resetar</button>
+            <button className="terra-btn-secondary" onClick={() => { if (overlayRef.current && leafletMap.current) leafletMap.current.removeLayer(overlayRef.current); overlayRef.current = null; setOverlayUrl(null); setOverlayDrag(false) }} style={{ padding: '4px 12px', fontSize: 'calc(.7rem * var(--fs))' }}>Remover Overlay</button>
+          </div>
         </div>
       )}
       <div className="terra-map-layout">
