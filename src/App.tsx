@@ -5454,6 +5454,7 @@ export default function App() {
   const [showSim, setShowSim] = useState(false)
   const [showDocs, setShowDocs] = useState(false)
   const [showAlerts, setShowAlerts] = useState(false)
+  const [activityOpen, setActivityOpen] = useState(true)
   const [alertCount, setAlertCount] = useState(() => buildAlerts().length)
   const [showShare, setShowShare] = useState(false)
   const [viewMode, setViewMode] = useState(false)
@@ -5912,11 +5913,14 @@ export default function App() {
 
               {/* Activity feed */}
               <div className="bc">
-                <div className="bc-title">
-                  Atividade Recente
-                  <button className="bc-title-btn" onClick={() => setSidebarPage('financas')}>+ Transação</button>
+                <div className="bc-title" style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => setActivityOpen(v => !v)}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <svg viewBox="0 0 12 12" fill="none" style={{ width: '10px', height: '10px', transition: 'transform .2s', transform: activityOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}><path d="M4 2l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                    Atividade Recente
+                  </span>
+                  <button className="bc-title-btn" onClick={e => { e.stopPropagation(); setSidebarPage('financas') }}>+ Transação</button>
                 </div>
-                {activity.length === 0 ? (
+                {activityOpen && (activity.length === 0 ? (
                   <div className="feed-empty">Nenhuma atividade. Adicione transações, metas ou imóveis.</div>
                 ) : activity.slice(0,6).map(a => (
                   <div key={a.id} className="feed-row">
@@ -5927,7 +5931,7 @@ export default function App() {
                     </div>
                     <div className="feed-amt" style={{ color: a.color === 'green' ? 'var(--green-l)' : a.color === 'red' ? '#f87171' : a.color === 'amber' ? 'var(--amber-l)' : 'var(--blue-l)' }}>{a.sub}</div>
                   </div>
-                ))}
+                )))}
               </div>
 
               {/* Hub de Pagamentos summary */}
