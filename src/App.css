@@ -5807,6 +5807,13 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 .terra-ov-drag-btn { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 12px; font-size: calc(.72rem * var(--fs)); cursor: pointer; color: var(--text); transition: all .15s; margin-left: auto }
 .terra-ov-drag-btn.active { background: var(--purple); color: #fff; border-color: var(--purple) }
 .terra-ov-drag-btn:hover { border-color: var(--purple) }
+.terra-ov-lock { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 3px 8px; font-size: 14px; cursor: pointer; transition: all .15s; line-height: 1 }
+.terra-ov-lock.active { background: var(--purple); border-color: var(--purple) }
+.terra-ov-lock:hover { border-color: var(--purple) }
+.terra-ov-size-split { display: flex; flex-direction: column; gap: 4px; flex: 1 }
+.terra-ov-sublabel { font-size: calc(.68rem * var(--fs)); color: var(--text); min-width: 16px; font-weight: 600 }
+.terra-ov-undo-group { display: flex; gap: 4px; margin-left: auto }
+.terra-ov-undo-group .terra-ov-btn:disabled { opacity: .35; cursor: not-allowed; pointer-events: none }
 .terra-map-legend-section { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 8px; border-top: 1px solid var(--border); margin-top: auto }
 .terra-map-legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 8px 0 }
 
