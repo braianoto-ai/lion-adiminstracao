@@ -5065,7 +5065,8 @@ function PaymentHubPage() {
 
   const totalAberto   = bills.filter(b => effectiveStatus(b) === 'em_aberto').reduce((s, b) => s + b.amount, 0)
   const totalVencido  = bills.filter(b => effectiveStatus(b) === 'vencido').reduce((s, b) => s + b.amount, 0)
-  const totalPagoMes  = bills.filter(b => b.status === 'pago' && (b.paidAt?.startsWith(thisMonth) || (!b.paidAt && b.dueDate?.startsWith(thisMonth)))).reduce((s, b) => s + b.amount, 0)
+  const isPagoMes = (b: Bill) => b.status === 'pago' && (b.paidAt?.startsWith(thisMonth) || (!b.paidAt && (b.dueDate?.startsWith(thisMonth) || !b.dueDate)))
+  const totalPagoMes  = bills.filter(isPagoMes).reduce((s, b) => s + b.amount, 0)
   const totalMensal   = bills.filter(b => b.recurrence === 'mensal' && b.status !== 'cancelado').reduce((s, b) => s + b.amount, 0)
 
   const countVencido  = bills.filter(b => effectiveStatus(b) === 'vencido').length
@@ -5108,7 +5109,7 @@ function PaymentHubPage() {
           <div>
             <div className="ph-summary-label">Pago este mês</div>
             <div className="ph-summary-value" style={{ color: 'var(--green)' }}>{fmtCurrency(totalPagoMes)}</div>
-            <div className="ph-summary-sub">{bills.filter(b => b.status === 'pago' && (b.paidAt?.startsWith(thisMonth) || (!b.paidAt && b.dueDate?.startsWith(thisMonth)))).length} quitada{bills.filter(b => b.status === 'pago' && (b.paidAt?.startsWith(thisMonth) || (!b.paidAt && b.dueDate?.startsWith(thisMonth)))).length !== 1 ? 's' : ''}</div>
+            <div className="ph-summary-sub">{bills.filter(isPagoMes).length} quitada{bills.filter(isPagoMes).length !== 1 ? 's' : ''}</div>
           </div>
         </div>
         <div className="ph-summary-card">
