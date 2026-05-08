@@ -5721,3 +5721,132 @@ html[data-theme="light"] .patr-card { background: #fff; border-color: var(--bord
 html[data-theme="light"] .patr-field input,
 html[data-theme="light"] .patr-field select { background: var(--bg2) }
 html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
+
+/* ─── Terra Page ────────────────────────────────────────────────────────────── */
+
+.terra-page { display: flex; flex-direction: column; gap: 20px; padding: 20px; max-width: 960px; margin: 0 auto; width: 100% }
+.terra-fazenda-selector select { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 12px; font-size: calc(.82rem * var(--fs)); color: var(--text3); outline: none }
+
+.terra-tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--border); padding-bottom: 2px; flex-wrap: wrap }
+.terra-tab { padding: 7px 14px; border-radius: var(--radius) var(--radius) 0 0; font-size: calc(.8rem * var(--fs)); color: var(--text); background: none; border: 1px solid transparent; border-bottom: none; transition: all .15s; cursor: pointer }
+.terra-tab:hover { color: var(--text2); background: var(--bg3) }
+.terra-tab-active { color: var(--text3); background: var(--bg3); border-color: var(--border) }
+
+.terra-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px }
+.terra-card-stat { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; display: flex; flex-direction: column; gap: 4px }
+.terra-stat-label { font-size: calc(.72rem * var(--fs)); color: var(--text); text-transform: uppercase; letter-spacing: .04em }
+.terra-stat-value { font-size: calc(1.1rem * var(--fs)); font-weight: 700; color: var(--text3) }
+.terra-stat-sub { font-size: calc(.7rem * var(--fs)); color: var(--text) }
+.terra-ok { color: #22c55e }
+.terra-warn { color: #ef4444 }
+
+.terra-visao-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px }
+.terra-chart-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px }
+.terra-chart-card h4 { font-size: calc(.85rem * var(--fs)); font-weight: 600; color: var(--text3); margin-bottom: 14px }
+.terra-pie-wrap { display: flex; align-items: center; gap: 20px; flex-wrap: wrap }
+.terra-legend { display: flex; flex-direction: column; gap: 6px }
+.terra-legend-item { display: flex; align-items: center; gap: 6px; font-size: calc(.75rem * var(--fs)); color: var(--text2) }
+.terra-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0 }
+.terra-muted { color: var(--text); font-size: calc(.8rem * var(--fs)); opacity: .7 }
+
+.terra-reserve-bar { position: relative; height: 18px; background: var(--bg3); border-radius: 9px; overflow: visible; margin-bottom: 8px }
+.terra-reserve-fill { height: 100%; border-radius: 9px; transition: width .3s }
+.terra-reserve-mark { position: absolute; top: -4px; bottom: -4px; width: 2px; background: var(--text2); border-radius: 1px }
+.terra-reserve-labels { display: flex; justify-content: space-between; font-size: calc(.7rem * var(--fs)); color: var(--text) }
+.terra-info-row { display: flex; gap: 6px; font-size: calc(.78rem * var(--fs)); color: var(--text2); margin-top: 6px }
+.terra-info-row span { color: var(--text) }
+
+.terra-valor-row { display: flex; gap: 12px }
+.terra-valor-row .terra-card-stat { flex: 1 }
+
+/* Map */
+.terra-mapa { display: flex; flex-direction: column; gap: 10px }
+.terra-map-controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap }
+.terra-map-toggle { padding: 6px 14px; font-size: calc(.78rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all .15s }
+.terra-map-toggle.active { background: var(--purple); color: #fff; border-color: var(--purple) }
+.terra-map-spacer { flex: 1 }
+.terra-btn-draw { display: flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: calc(.78rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all .15s }
+.terra-btn-draw:hover { background: var(--bg3); color: var(--text3) }
+.terra-btn-draw:disabled { opacity: .4; cursor: not-allowed }
+.terra-btn-undo { border-color: #f59e0b; color: #f59e0b }
+.terra-draw-select { padding: 6px 10px; font-size: calc(.78rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer }
+.terra-draw-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100% }
+.terra-draw-label { font-size: calc(.75rem * var(--fs)); color: var(--text2); flex: 1; min-width: 200px }
+.terra-map-container { width: 100%; height: 420px; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border) }
+.terra-map-legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 8px 0 }
+
+/* Talhões */
+.terra-section-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap }
+.terra-section-header h4 { font-size: calc(.85rem * var(--fs)); font-weight: 600; color: var(--text3) }
+.terra-alert { background: rgba(239,68,68,.12); color: #ef4444; padding: 10px 14px; border-radius: var(--radius); font-size: calc(.78rem * var(--fs)) }
+.terra-talhao-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px }
+.terra-talhao-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px }
+.terra-talhao-header { display: flex; justify-content: space-between; align-items: center }
+.terra-talhao-badge { padding: 2px 10px; border-radius: 10px; font-size: calc(.68rem * var(--fs)); color: #fff; font-weight: 600 }
+.terra-talhao-area { font-size: calc(.82rem * var(--fs)); font-weight: 600; color: var(--text3) }
+.terra-talhao-name { font-size: calc(.88rem * var(--fs)); font-weight: 600; color: var(--text3) }
+.terra-talhao-detail { font-size: calc(.75rem * var(--fs)); color: var(--text2) }
+.terra-talhao-actions { display: flex; gap: 8px; margin-top: 4px }
+.terra-talhao-actions button { background: none; border: none; color: var(--text); font-size: calc(.72rem * var(--fs)); cursor: pointer; padding: 2px 6px; border-radius: var(--radius); transition: background .15s }
+.terra-talhao-actions button:hover { background: var(--bg3); color: var(--text3) }
+
+/* Docs */
+.terra-docs { display: flex; flex-direction: column; gap: 14px }
+.terra-docs h4 { font-size: calc(.85rem * var(--fs)); font-weight: 600; color: var(--text3) }
+.terra-docs-list { display: flex; flex-direction: column; gap: 8px }
+.terra-doc-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg) }
+.terra-doc-status { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0 }
+.terra-doc-ok { background: rgba(34,197,94,.15); color: #22c55e }
+.terra-doc-missing { background: rgba(239,68,68,.12); color: #ef4444 }
+.terra-doc-label { flex: 1; font-size: calc(.82rem * var(--fs)); color: var(--text3); font-weight: 500 }
+.terra-doc-value { font-size: calc(.78rem * var(--fs)); color: var(--text2) }
+
+/* Fazendas list */
+.terra-fazenda-list { display: flex; flex-direction: column; gap: 10px }
+.terra-fazenda-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; cursor: pointer; transition: border-color .15s; display: flex; flex-direction: column; gap: 6px }
+.terra-fazenda-card:hover { border-color: var(--text) }
+.terra-fazenda-active { border-color: var(--purple) }
+.terra-fazenda-card-header { display: flex; justify-content: space-between; align-items: center }
+.terra-fazenda-card-header strong { font-size: calc(.88rem * var(--fs)); color: var(--text3) }
+.terra-fazenda-loc { font-size: calc(.75rem * var(--fs)); color: var(--text2) }
+.terra-fazenda-card-body { display: flex; gap: 16px; font-size: calc(.78rem * var(--fs)); color: var(--text2) }
+
+/* Form */
+.terra-form { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px; display: flex; flex-direction: column; gap: 14px }
+.terra-form-subtitle { font-size: calc(.78rem * var(--fs)); font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .04em; margin-top: 4px }
+.terra-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 10px }
+.terra-field { display: flex; flex-direction: column; gap: 4px }
+.terra-field label { font-size: calc(.72rem * var(--fs)); color: var(--text); text-transform: uppercase; letter-spacing: .04em }
+.terra-field input, .terra-field select, .terra-field textarea { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 10px; font-size: calc(.82rem * var(--fs)); color: var(--text3); outline: none; transition: border-color .15s; font-family: inherit; resize: vertical }
+.terra-field input:focus, .terra-field select:focus, .terra-field textarea:focus { border-color: var(--purple) }
+.terra-span2 { grid-column: span 2 }
+.terra-check-field label { display: flex; align-items: center; gap: 8px; font-size: calc(.8rem * var(--fs)); text-transform: none; letter-spacing: 0; color: var(--text2); cursor: pointer }
+.terra-check-field input[type="checkbox"] { width: 16px; height: 16px; accent-color: var(--purple) }
+.terra-form-actions { display: flex; gap: 10px }
+.terra-btn-primary { padding: 8px 20px; border-radius: var(--radius); background: var(--purple); color: #fff; font-size: calc(.82rem * var(--fs)); font-weight: 600; border: none; cursor: pointer; transition: opacity .15s }
+.terra-btn-primary:hover { opacity: .85 }
+.terra-btn-primary:disabled { opacity: .5; cursor: not-allowed }
+.terra-btn-secondary { padding: 8px 20px; border-radius: var(--radius); background: var(--bg3); color: var(--text2); font-size: calc(.82rem * var(--fs)); border: 1px solid var(--border); cursor: pointer; transition: background .15s }
+.terra-btn-secondary:hover { background: var(--bg2) }
+.terra-empty { text-align: center; padding: 40px 20px }
+.terra-empty p { margin-bottom: 14px; color: var(--text2) }
+
+@media (max-width: 700px) {
+  .terra-summary { grid-template-columns: 1fr 1fr }
+  .terra-visao-grid { grid-template-columns: 1fr }
+  .terra-fields { grid-template-columns: 1fr }
+  .terra-span2 { grid-column: span 1 }
+  .terra-valor-row { flex-direction: column }
+  .terra-map-container { height: 300px }
+  .terra-talhao-grid { grid-template-columns: 1fr }
+}
+
+html[data-theme="light"] .terra-card-stat,
+html[data-theme="light"] .terra-chart-card,
+html[data-theme="light"] .terra-form,
+html[data-theme="light"] .terra-talhao-card,
+html[data-theme="light"] .terra-doc-item,
+html[data-theme="light"] .terra-fazenda-card { background: #fff; border-color: var(--border2) }
+html[data-theme="light"] .terra-field input,
+html[data-theme="light"] .terra-field select,
+html[data-theme="light"] .terra-field textarea { background: var(--bg2) }
