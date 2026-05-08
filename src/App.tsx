@@ -4798,20 +4798,50 @@ function CollectorForm({ initial, onSave, onCancel }: { initial: typeof COLL_INI
   )
 }
 
-function BillForm({ initial, collectors, onSave, onCancel }: {
+function BillForm({ initial, collectors, onSave, onCancel, onCreateCollector }: {
   initial: typeof BILL_INIT; collectors: Collector[]
   onSave: (v: typeof BILL_INIT) => void; onCancel: () => void
+  onCreateCollector?: (name: string) => string
 }) {
   const [form, setForm] = useState(initial)
+  const [newCollName, setNewCollName] = useState('')
+  const [showNewColl, setShowNewColl] = useState(false)
   const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
+
+  const handleAddCollector = () => {
+    if (!newCollName.trim() || !onCreateCollector) return
+    const id = onCreateCollector(newCollName.trim())
+    f('collectorId', id)
+    setNewCollName('')
+    setShowNewColl(false)
+  }
+
   return (
     <form className="ph-modal-form" onSubmit={e => { e.preventDefault(); if (!form.collectorId || !form.amount || !form.dueDate) return; onSave(form) }}>
       <div className="ph-field">
         <label>Cobrador *</label>
-        <select value={form.collectorId} onChange={e => f('collectorId', e.target.value)} required>
-          <option value="">Selecione…</option>
-          {collectors.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-        </select>
+        {!showNewColl ? (
+          <div className="ph-coll-select-row">
+            <select value={form.collectorId} onChange={e => f('collectorId', e.target.value)} required>
+              <option value="">Selecione…</option>
+              {collectors.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+            </select>
+            <button type="button" className="ph-coll-add-btn" onClick={() => setShowNewColl(true)} title="Novo cobrador">
+              <svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            </button>
+          </div>
+        ) : (
+          <div className="ph-coll-select-row">
+            <input value={newCollName} onChange={e => setNewCollName(e.target.value)} placeholder="Nome do cobrador" autoFocus
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddCollector() } }} />
+            <button type="button" className="ph-coll-add-btn ph-coll-confirm" onClick={handleAddCollector} title="Criar" disabled={!newCollName.trim()}>
+              <svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            </button>
+            <button type="button" className="ph-coll-add-btn" onClick={() => { setShowNewColl(false); setNewCollName('') }} title="Cancelar">
+              <svg viewBox="0 0 14 14" fill="none"><path d="M4 4l6 6M10 4l-6 6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+            </button>
+          </div>
+        )}
       </div>
       <div className="ph-field">
         <label>Descrição</label>
@@ -4890,6 +4920,13 @@ function PaymentHubPage() {
   const [barcodeText, setBarcodeText] = useState('')
   const [copied, setCopied] = useState(false)
 
+
+  const createCollectorInline = (name: string): string => {
+    const id = Date.now().toString()
+    const newColl: Collector = { id, name, category: 'Outros', color: '#6366f1', createdAt: new Date().toISOString() }
+    setCollectors(prev => [...prev, newColl])
+    return id
+  }
 
   const saveCollector = (form: typeof COLL_INIT) => {
     if (editingCollector) {
@@ -5383,6 +5420,7 @@ function PaymentHubPage() {
               ? { collectorId: editingBill.collectorId, description: editingBill.description, amount: String(editingBill.amount), dueDate: editingBill.dueDate, status: editingBill.status, recurrence: editingBill.recurrence, paymentLink: editingBill.paymentLink || '', barcode: editingBill.barcode || '', notes: editingBill.notes || '' }
               : { ...BILL_INIT, collectorId: selCollector || '' }}
             collectors={collectors} onSave={saveBill} onCancel={() => { setModal(null); setEditingBill(null) }}
+            onCreateCollector={createCollectorInline}
           />
         </Modal>
       )}

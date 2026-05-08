@@ -5056,6 +5056,36 @@ html[data-theme="light"] .ap-accent-btn:hover { background: var(--bg4) }
 }
 .ph-collector-item:hover .ph-collector-actions { display: flex }
 
+.ph-coll-select-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.ph-coll-select-row select,
+.ph-coll-select-row input {
+  flex: 1;
+  min-width: 0;
+}
+.ph-coll-add-btn {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg3);
+  color: var(--text);
+  cursor: pointer;
+  transition: background .15s;
+}
+.ph-coll-add-btn:hover { background: var(--bg4) }
+.ph-coll-add-btn svg { width: 14px; height: 14px }
+.ph-coll-confirm { border-color: var(--accent); color: var(--accent) }
+.ph-coll-confirm:hover { background: var(--accent); color: #fff }
+.ph-coll-confirm:disabled { opacity: .4; cursor: default }
+
 .ph-empty-hint {
   font-size: calc(.75rem * var(--fs));
   color: var(--text);
