@@ -182,3 +182,20 @@ create table public.produtos (
 alter table public.produtos enable row level security;
 create policy "own_produtos" on public.produtos
   for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+
+-- ─── Indexes on user_id for all tables ───────────────────
+create index idx_transactions_user    on public.transactions(user_id);
+create index idx_goals_user           on public.goals(user_id);
+create index idx_rentals_user         on public.rentals(user_id);
+create index idx_maintenance_user     on public.maintenance_items(user_id);
+create index idx_vehicles_user        on public.vehicles(user_id);
+create index idx_revisions_user       on public.revisions(user_id);
+create index idx_calendar_events_user on public.calendar_events(user_id);
+create index idx_trips_user           on public.trips(user_id);
+create index idx_family_members_user  on public.family_members(user_id);
+create index idx_collectors_user      on public.collectors(user_id);
+create index idx_bills_user           on public.bills(user_id);
+create index idx_folders_user         on public.folders(user_id);
+create index idx_documents_user       on public.documents(user_id);
+create index idx_imoveis_user         on public.imoveis(user_id);
+create index idx_produtos_user        on public.produtos(user_id);

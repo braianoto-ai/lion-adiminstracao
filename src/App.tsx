@@ -81,13 +81,19 @@ function useCloudTable<T extends { id: string }>(
       syncTimer.current = setTimeout(async () => {
         const uid = userIdRef.current
         if (!uid || !supabase) return
-        await supabase.from(tableName).delete().eq('user_id', uid)
         if (next.length > 0) {
-          await supabase.from(tableName).insert(
-            next.map(item => ({ id: item.id, user_id: uid, data: item }))
+          await supabase.from(tableName).upsert(
+            next.map(item => ({ id: item.id, user_id: uid, data: item })),
+            { onConflict: 'id' }
           )
+          const keepIds = next.map(i => i.id)
+          await supabase.from(tableName).delete()
+            .eq('user_id', uid)
+            .not('id', 'in', `(${keepIds.join(',')})`)
+        } else {
+          await supabase.from(tableName).delete().eq('user_id', uid)
         }
-      }, 800)
+      }, 2000)
     }
   }, [tableName, lsKey])
 
