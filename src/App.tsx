@@ -5882,27 +5882,6 @@ export default function App() {
                 <span className={`hero-pill ${momPct >= 0 ? 'hero-pill-pos' : 'hero-pill-neg'}`}>
                   {momPct >= 0 ? '↑' : '↓'} {Math.abs(momPct)}% vs mês anterior
                 </span>
-                <div className="hero-divider" />
-                <div className="hero-stats">
-                  <div>
-                    <div className="hero-stat-lbl">Receita este mês</div>
-                    <div className="hero-stat-val">{fmt(monthInc)}</div>
-                  </div>
-                  <div>
-                    <div className="hero-stat-lbl">Gastos este mês</div>
-                    <div className="hero-stat-val">{fmt(monthExp)}</div>
-                  </div>
-                  <div>
-                    <div className="hero-stat-lbl">Em metas</div>
-                    <div className="hero-stat-val">{fmt(dashData.totalGoals)}</div>
-                    <div className="hero-stat-sub">{dashData.goalsProgress}% do objetivo</div>
-                  </div>
-                  <div>
-                    <div className="hero-stat-lbl">Aluguéis/mês</div>
-                    <div className="hero-stat-val">{fmt(dashData.monthlyRent)}</div>
-                    <div className="hero-stat-sub">{dashData.rentCount} imóvel(is)</div>
-                  </div>
-                </div>
                 {sparkPath && (
                   <div className="hero-spark">
                     <div className="hero-spark-lbl">Evolução — últimos 6 meses</div>
