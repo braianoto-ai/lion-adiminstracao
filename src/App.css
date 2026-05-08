@@ -5391,9 +5391,165 @@ html[data-theme="light"] .ap-accent-btn:hover { background: var(--bg4) }
   width: 100%;
 }
 
+/* ── Payment Hub Tabs ── */
+.ph-tabs {
+  display: flex;
+  gap: 2px;
+  background: var(--bg2);
+  border-radius: var(--radius);
+  padding: 3px;
+  margin-bottom: 16px;
+}
+.ph-tab {
+  flex: 1;
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  color: var(--text);
+  font-size: calc(.82rem * var(--fs));
+  font-weight: 500;
+  border-radius: calc(var(--radius) - 2px);
+  cursor: pointer;
+  transition: all .15s;
+}
+.ph-tab:hover { color: var(--text3) }
+.ph-tab-active {
+  background: var(--bg3);
+  color: var(--text3);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ── Monthly Summary ── */
+.ph-monthly { display: flex; flex-direction: column; gap: 16px }
+
+.ph-monthly-nav {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+.ph-monthly-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg2);
+  color: var(--text2);
+  cursor: pointer;
+  transition: all .15s;
+}
+.ph-monthly-arrow:hover { background: var(--bg3); color: var(--text3) }
+.ph-monthly-arrow svg { width: 14px; height: 14px }
+.ph-monthly-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 200px;
+  justify-content: center;
+}
+.ph-monthly-label {
+  font-size: calc(.95rem * var(--fs));
+  font-weight: 600;
+  color: var(--text3);
+  text-transform: capitalize;
+}
+.ph-monthly-today {
+  padding: 3px 10px;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--purple-l);
+  font-size: calc(.7rem * var(--fs));
+  cursor: pointer;
+  transition: all .15s;
+}
+.ph-monthly-today:hover { background: var(--purple); color: #fff }
+
+.ph-monthly-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+.ph-monthly-stat {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.ph-monthly-stat-label {
+  font-size: calc(.72rem * var(--fs));
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.ph-monthly-stat-value {
+  font-size: calc(.95rem * var(--fs));
+  font-weight: 600;
+  color: var(--text3);
+}
+.ph-monthly-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.ph-monthly-progress-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--bg4);
+  border-radius: 3px;
+  overflow: hidden;
+}
+.ph-monthly-progress-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 3px;
+  transition: width .3s ease;
+}
+.ph-monthly-progress-pct {
+  font-size: calc(.78rem * var(--fs));
+  font-weight: 600;
+  color: var(--green);
+  min-width: 36px;
+  text-align: right;
+}
+
+.ph-monthly-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ph-monthly-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 42px;
+  padding-right: 10px;
+  border-right: 2px solid var(--border);
+  margin-right: 4px;
+}
+.ph-monthly-day-num {
+  font-size: calc(1.1rem * var(--fs));
+  font-weight: 700;
+  color: var(--text3);
+  line-height: 1.1;
+}
+.ph-monthly-day-label {
+  font-size: calc(.65rem * var(--fs));
+  color: var(--text);
+  text-transform: capitalize;
+}
+
 /* Responsive */
 @media (max-width: 900px) {
   .ph-summary { grid-template-columns: repeat(2, 1fr) }
+  .ph-monthly-stats { grid-template-columns: repeat(2, 1fr) }
 }
 
 @media (max-width: 700px) {
@@ -5407,6 +5563,8 @@ html[data-theme="light"] .ap-accent-btn:hover { background: var(--bg4) }
   .ph-summary { grid-template-columns: repeat(2, 1fr) }
   .ph-bills-header { flex-direction: column; align-items: flex-start }
   .ph-form-row { grid-template-columns: 1fr }
+  .ph-monthly-stats { grid-template-columns: repeat(2, 1fr) }
+  .ph-monthly-day { min-width: 36px; padding-right: 6px }
 }
 
 html[data-theme="light"] .ph-summary-card,
@@ -5419,6 +5577,11 @@ html[data-theme="light"] .ph-field input,
 html[data-theme="light"] .ph-field select { background: var(--bg2) }
 html[data-theme="light"] .ph-icon-btn { background: var(--bg2) }
 html[data-theme="light"] .ph-barcode-text { background: var(--bg2) }
+html[data-theme="light"] .ph-tab { color: var(--text) }
+html[data-theme="light"] .ph-tab-active { background: #fff; color: var(--text3) }
+html[data-theme="light"] .ph-tabs { background: var(--bg2) }
+html[data-theme="light"] .ph-monthly-stat { background: #fff; border-color: var(--border2) }
+html[data-theme="light"] .ph-monthly-arrow { background: #fff; border-color: var(--border2) }
 
 /* ─── Import View ─────────────────────────────────────────── */
 .import-wrap { display: flex; flex-direction: column; gap: 14px; padding: 4px 0 }

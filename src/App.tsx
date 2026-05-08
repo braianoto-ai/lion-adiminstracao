@@ -4870,6 +4870,8 @@ function PaymentHubPage() {
   const [bills, setBills] = useCloudTable<Bill>('bills', 'lion-bills')
   const [selCollector, setSelCollector] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<BillStatus | 'all'>('all')
+  const [phTab, setPhTab] = useState<'bills' | 'monthly'>('bills')
+  const [monthOffset, setMonthOffset] = useState(0)
   const [modal, setModal] = useState<'new-collector' | 'edit-collector' | 'new-bill' | 'edit-bill' | 'barcode' | null>(null)
   const [editingCollector, setEditingCollector] = useState<Collector | null>(null)
   const [editingBill, setEditingBill] = useState<Bill | null>(null)
@@ -4994,8 +4996,140 @@ function PaymentHubPage() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="ph-tabs">
+        <button className={`ph-tab${phTab === 'bills' ? ' ph-tab-active' : ''}`} onClick={() => setPhTab('bills')}>Contas</button>
+        <button className={`ph-tab${phTab === 'monthly' ? ' ph-tab-active' : ''}`} onClick={() => setPhTab('monthly')}>Resumo Mensal</button>
+      </div>
+
+      {/* Monthly Summary */}
+      {phTab === 'monthly' && (() => {
+        const viewDate = new Date(today.getFullYear(), today.getMonth() + monthOffset, 1)
+        const viewMonth = `${viewDate.getFullYear()}-${String(viewDate.getMonth() + 1).padStart(2, '0')}`
+        const viewLabel = viewDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+        const isCurrentMonth = monthOffset === 0
+
+        const monthBills = bills.filter(b => {
+          if (b.status === 'cancelado') return false
+          if (b.dueDate.startsWith(viewMonth)) return true
+          if (b.recurrence === 'mensal' && b.status !== 'pago') {
+            const billStart = b.dueDate.slice(0, 7)
+            return billStart <= viewMonth
+          }
+          return false
+        }).sort((a, b) => {
+          const dayA = parseInt(a.dueDate.slice(8) || '1')
+          const dayB = parseInt(b.dueDate.slice(8) || '1')
+          return dayA - dayB
+        })
+
+        const totalMes = monthBills.reduce((s, b) => s + b.amount, 0)
+        const pagoMes = monthBills.filter(b => b.status === 'pago').reduce((s, b) => s + b.amount, 0)
+        const abertoMes = monthBills.filter(b => effectiveStatus(b) === 'em_aberto' || effectiveStatus(b) === 'vencido').reduce((s, b) => s + b.amount, 0)
+        const vencidoMes = monthBills.filter(b => effectiveStatus(b) === 'vencido').reduce((s, b) => s + b.amount, 0)
+
+        return (
+          <div className="ph-monthly">
+            <div className="ph-monthly-nav">
+              <button className="ph-monthly-arrow" onClick={() => setMonthOffset(p => p - 1)}>
+                <svg viewBox="0 0 16 16" fill="none"><path d="M10 3l-5 5 5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+              <div className="ph-monthly-title">
+                <span className="ph-monthly-label">{viewLabel}</span>
+                {!isCurrentMonth && <button className="ph-monthly-today" onClick={() => setMonthOffset(0)}>Hoje</button>}
+              </div>
+              <button className="ph-monthly-arrow" onClick={() => setMonthOffset(p => p + 1)}>
+                <svg viewBox="0 0 16 16" fill="none"><path d="M6 3l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              </button>
+            </div>
+
+            <div className="ph-monthly-stats">
+              <div className="ph-monthly-stat">
+                <span className="ph-monthly-stat-label">Total do mês</span>
+                <span className="ph-monthly-stat-value">{fmtCurrency(totalMes)}</span>
+              </div>
+              <div className="ph-monthly-stat">
+                <span className="ph-monthly-stat-label">Pago</span>
+                <span className="ph-monthly-stat-value" style={{ color: 'var(--green)' }}>{fmtCurrency(pagoMes)}</span>
+              </div>
+              <div className="ph-monthly-stat">
+                <span className="ph-monthly-stat-label">A pagar</span>
+                <span className="ph-monthly-stat-value" style={{ color: vencidoMes > 0 ? 'var(--red)' : 'var(--blue)' }}>{fmtCurrency(abertoMes)}</span>
+              </div>
+              <div className="ph-monthly-stat">
+                <span className="ph-monthly-stat-label">Progresso</span>
+                <div className="ph-monthly-progress-wrap">
+                  <div className="ph-monthly-progress-bar">
+                    <div className="ph-monthly-progress-fill" style={{ width: totalMes > 0 ? `${Math.round(pagoMes / totalMes * 100)}%` : '0%' }} />
+                  </div>
+                  <span className="ph-monthly-progress-pct">{totalMes > 0 ? Math.round(pagoMes / totalMes * 100) : 0}%</span>
+                </div>
+              </div>
+            </div>
+
+            {monthBills.length === 0 ? (
+              <div className="ph-bills-empty">
+                <svg viewBox="0 0 48 48" fill="none">
+                  <rect x="8" y="12" width="32" height="28" rx="4" stroke="currentColor" strokeWidth="1.5" opacity=".3"/>
+                  <path d="M8 20h32" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity=".3"/>
+                </svg>
+                <span>Nenhuma conta para {viewLabel}</span>
+              </div>
+            ) : (
+              <div className="ph-monthly-list">
+                {monthBills.map(bill => {
+                  const coll = getCollector(bill.collectorId)
+                  const status = effectiveStatus(bill)
+                  const isPaid = status === 'pago'
+                  const isVencido = status === 'vencido'
+                  const dueDay = bill.dueDate.slice(8) || '01'
+                  return (
+                    <div key={bill.id} className={`ph-bill-card${isPaid ? ' ph-bill-paid' : ''}${isVencido ? ' ph-bill-overdue' : ''}`}>
+                      <div className="ph-monthly-day">
+                        <span className="ph-monthly-day-num">{parseInt(dueDay)}</span>
+                        <span className="ph-monthly-day-label">{new Date(viewDate.getFullYear(), viewDate.getMonth(), parseInt(dueDay)).toLocaleDateString('pt-BR', { weekday: 'short' })}</span>
+                      </div>
+                      <div className="ph-bill-left">
+                        {coll && <div className="ph-bill-avatar" style={{ background: coll.color + '22', color: coll.color }}>{coll.name.slice(0,2).toUpperCase()}</div>}
+                      </div>
+                      <div className="ph-bill-body">
+                        <div className="ph-bill-top">
+                          <span className="ph-bill-collector">{coll?.name ?? '—'}</span>
+                          <span className={`ph-bill-status ph-bill-status-${status}`}>{BILL_STATUS_LABEL[status]}</span>
+                        </div>
+                        {bill.description && <div className="ph-bill-desc">{bill.description}</div>}
+                      </div>
+                      <div className="ph-bill-right">
+                        <div className="ph-bill-amount" style={{ color: isVencido ? 'var(--red)' : isPaid ? 'var(--green)' : 'var(--text3)' }}>
+                          {fmtCurrency(bill.amount)}
+                        </div>
+                        <div className="ph-bill-actions">
+                          {!isPaid && status !== 'cancelado' && (
+                            <button className="ph-icon-btn ph-icon-btn-pay" title="Marcar como pago" onClick={() => markPaid(bill.id)}>
+                              <svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                            </button>
+                          )}
+                          {isPaid && (
+                            <button className="ph-icon-btn" title="Reabrir" onClick={() => markOpen(bill.id)}>
+                              <svg viewBox="0 0 14 14" fill="none"><path d="M2 7a5 5 0 1 1 5 5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><path d="M2 4v3h3" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                            </button>
+                          )}
+                          <button className="ph-icon-btn" title="Editar" onClick={() => { setEditingBill(bill); setModal('edit-bill') }}>
+                            <svg viewBox="0 0 14 14" fill="none"><path d="M2 10l7-7 2 2-7 7H2v-2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        )
+      })()}
+
       {/* Layout */}
-      <div className="ph-layout">
+      {phTab === 'bills' && <div className="ph-layout">
         {/* Collectors */}
         <aside className="ph-collectors">
           <div className="ph-collectors-header">
@@ -5147,7 +5281,7 @@ function PaymentHubPage() {
             </div>
           )}
         </div>
-      </div>
+      </div>}
 
       {/* Modals */}
       {(modal === 'new-collector' || modal === 'edit-collector') && (
