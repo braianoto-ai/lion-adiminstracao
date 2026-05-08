@@ -4971,7 +4971,33 @@ function PaymentHubPage() {
   const markPaid = (id: string) => {
     const now = new Date().toISOString()
     const bill = bills.find(b => b.id === id)
-    setBills(prev => prev.map(b => b.id === id ? { ...b, status: 'pago', paidAt: now, updatedAt: now } : b))
+    setBills(prev => {
+      let next = prev.map(b => b.id === id ? { ...b, status: 'pago' as BillStatus, paidAt: now, updatedAt: now } : b)
+      if (bill && bill.recurrence === 'mensal') {
+        const d = new Date(bill.dueDate + 'T12:00:00')
+        d.setMonth(d.getMonth() + 1)
+        const nextDue = d.toISOString().slice(0, 10)
+        const alreadyExists = next.some(b => b.collectorId === bill.collectorId && b.dueDate === nextDue && b.status !== 'cancelado')
+        if (!alreadyExists) {
+          const newBill: Bill = {
+            id: Date.now().toString(),
+            collectorId: bill.collectorId,
+            description: bill.description,
+            amount: bill.amount,
+            dueDate: nextDue,
+            status: 'em_aberto',
+            recurrence: 'mensal',
+            paymentLink: bill.paymentLink,
+            barcode: bill.barcode,
+            notes: bill.notes,
+            createdAt: now,
+            updatedAt: now,
+          }
+          next = [...next, newBill]
+        }
+      }
+      return next
+    })
     if (bill) addTxFromBill(bill)
   }
 
