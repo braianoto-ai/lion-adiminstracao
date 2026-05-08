@@ -4996,8 +4996,9 @@ function TerraPage() {
   const mapRef = useRef<HTMLDivElement>(null)
   const leafletMap = useRef<L.Map | null>(null)
   const layerGroup = useRef<L.LayerGroup | null>(null)
-  const [mapSatellite, setMapSatellite] = useState(false)
+  const [mapLayer, setMapLayer] = useState<'mapa' | 'satelite' | 'relevo'>('mapa')
   const tileRef = useRef<L.TileLayer | null>(null)
+  const [hiddenTalhoes, setHiddenTalhoes] = useState<Set<string>>(new Set())
   const [drawMode, setDrawMode] = useState<'none' | 'perimetro' | 'talhao'>('none')
   const [drawPoints, setDrawPoints] = useState<[number, number][]>([])
   const drawLayerRef = useRef<L.Polyline | null>(null)
@@ -5005,6 +5006,10 @@ function TerraPage() {
   const [showQuickTalhao, setShowQuickTalhao] = useState(false)
   const [quickTalhaoName, setQuickTalhaoName] = useState('')
   const [quickTalhaoUso, setQuickTalhaoUso] = useState<TalhaoUso>('lavoura')
+  const overlayRef = useRef<L.ImageOverlay | null>(null)
+  const [overlayUrl, setOverlayUrl] = useState<string | null>(null)
+  const [overlayOpacity, setOverlayOpacity] = useState(0.5)
+  const overlayFileRef = useRef<HTMLInputElement>(null)
 
   const emptyFazenda: Omit<TerraFazenda, 'id' | 'createdAt'> = {
     nome: '', municipio: '', uf: 'PR', matricula: '', carNumero: '', itrNumero: '', ccir: '',
@@ -5101,29 +5106,48 @@ function TerraPage() {
   useEffect(() => {
     if (!leafletMap.current || !tileRef.current) return
     leafletMap.current.removeLayer(tileRef.current)
-    const url = mapSatellite
-      ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
-      : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
-    const attr = mapSatellite ? '&copy; Esri' : '&copy; OpenStreetMap'
-    tileRef.current = L.tileLayer(url, { attribution: attr }).addTo(leafletMap.current)
-  }, [mapSatellite])
+    const tiles = {
+      mapa: { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attr: '&copy; OpenStreetMap' },
+      satelite: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr: '&copy; Esri' },
+      relevo: { url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', attr: '&copy; OpenTopoMap' },
+    }
+    const t = tiles[mapLayer]
+    tileRef.current = L.tileLayer(t.url, { attribution: t.attr, maxZoom: 17 }).addTo(leafletMap.current)
+  }, [mapLayer])
+
+  useEffect(() => {
+    if (!leafletMap.current) return
+    if (overlayRef.current) { leafletMap.current.removeLayer(overlayRef.current); overlayRef.current = null }
+    if (overlayUrl && fazenda) {
+      const lat = fazenda.latitude
+      const lng = fazenda.longitude
+      const dLat = 0.012
+      const dLng = 0.016
+      const bounds = L.latLngBounds([[lat - dLat, lng - dLng], [lat + dLat, lng + dLng]])
+      overlayRef.current = L.imageOverlay(overlayUrl, bounds, { opacity: overlayOpacity, interactive: false }).addTo(leafletMap.current)
+    }
+  }, [overlayUrl, overlayOpacity, fazenda])
 
   useEffect(() => {
     if (!leafletMap.current || !layerGroup.current) return
     layerGroup.current.clearLayers()
     if (fazenda && fazenda.perimetro.length >= 3) {
-      L.polygon(fazenda.perimetro, { color: '#dc2626', weight: 3, fillOpacity: 0.05 }).addTo(layerGroup.current)
+      L.polygon(fazenda.perimetro, { color: '#dc2626', weight: 3, fillOpacity: 0.04, dashArray: '8 4' })
+        .bindPopup(`<div style="font-family:system-ui;min-width:200px"><strong style="font-size:14px">${fazenda.nome}</strong><br/><span style="color:#888">${fazenda.municipio} — ${fazenda.uf}</span><hr style="margin:6px 0;border:0;border-top:1px solid #ddd"/><b>Área Total:</b> ${fmtHa(fazenda.areaTotal)}<br/><b>Área Útil:</b> ${fmtHa(fazenda.areaUtil)}<br/><b>Reserva Legal:</b> ${fmtHa(fazenda.areaReservaLegal)} (${(fazenda.areaReservaLegal/fazenda.areaTotal*100).toFixed(1)}%)<br/><b>Bioma:</b> ${fazenda.bioma}<br/><b>Relevo:</b> ${fazenda.relevo}</div>`)
+        .addTo(layerGroup.current)
     }
     fazTalhoes.forEach(t => {
-      if (t.poligono.length >= 3) {
-        const cor = t.cor || TALHAO_USOS.find(u => u.value === t.uso)?.cor || '#6b7280'
-        L.polygon(t.poligono, { color: cor, weight: 2, fillColor: cor, fillOpacity: 0.35 })
-          .bindPopup(`<strong>${t.nome}</strong><br/>${TALHAO_USOS.find(u => u.value === t.uso)?.label || t.uso}<br/>${fmtHa(t.areaHa)}${t.cultura ? '<br/>Cultura: ' + t.cultura : ''}`)
+      if (t.poligono.length >= 3 && !hiddenTalhoes.has(t.id)) {
+        const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
+        const cor = t.cor || usoInfo?.cor || '#6b7280'
+        const pctArea = fazenda ? ((t.areaHa / fazenda.areaTotal) * 100).toFixed(1) : '—'
+        L.polygon(t.poligono, { color: cor, weight: 2.5, fillColor: cor, fillOpacity: 0.4 })
+          .bindPopup(`<div style="font-family:system-ui;min-width:180px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="background:${cor};color:#fff;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600">${usoInfo?.label || t.uso}</span></div><strong style="font-size:14px">${t.nome}</strong><hr style="margin:6px 0;border:0;border-top:1px solid #ddd"/><b>Área:</b> ${fmtHa(t.areaHa)} (${pctArea}% da fazenda)${t.cultura ? '<br/><b>Cultura:</b> ' + t.cultura : ''}${t.safra ? '<br/><b>Safra:</b> ' + t.safra : ''}${t.notas ? '<br/><span style="color:#888;font-size:12px">' + t.notas + '</span>' : ''}</div>`)
           .addTo(layerGroup.current!)
       }
     })
     if (fazenda) leafletMap.current.setView([fazenda.latitude, fazenda.longitude], 14)
-  }, [fazenda, fazTalhoes, tab])
+  }, [fazenda, fazTalhoes, tab, hiddenTalhoes])
 
   // Draw mode: click handler
   useEffect(() => {
@@ -5274,8 +5298,11 @@ function TerraPage() {
   const renderMapa = () => (
     <div className="terra-mapa">
       <div className="terra-map-controls">
-        <button className={`terra-map-toggle ${!mapSatellite ? 'active' : ''}`} onClick={() => setMapSatellite(false)}>Mapa</button>
-        <button className={`terra-map-toggle ${mapSatellite ? 'active' : ''}`} onClick={() => setMapSatellite(true)}>Satélite</button>
+        {(['mapa', 'satelite', 'relevo'] as const).map(l => (
+          <button key={l} className={`terra-map-toggle ${mapLayer === l ? 'active' : ''}`} onClick={() => setMapLayer(l)}>
+            {{ mapa: 'Mapa', satelite: 'Satélite', relevo: 'Relevo' }[l]}
+          </button>
+        ))}
         <div className="terra-map-spacer" />
         {drawMode === 'none' && fazenda && !showQuickTalhao && (
           <>
@@ -5287,12 +5314,25 @@ function TerraPage() {
               <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="12" height="12" rx="2" strokeLinejoin="round"/><path d="M8 5v6M5 8h6" strokeLinecap="round"/></svg>
               Desenhar Talhão
             </button>
-            {fazTalhoes.filter(t => t.poligono.length < 3).length > 0 && (
+            {fazTalhoes.length > 0 && (
               <select className="terra-draw-select" value="" onChange={e => { if (e.target.value) { setDrawTalhaoId(e.target.value); setDrawMode('talhao'); setDrawPoints([]) } }}>
                 <option value="">Redesenhar Talhão...</option>
-                {fazTalhoes.filter(t => t.poligono.length < 3).map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
+                {fazTalhoes.map(t => <option key={t.id} value={t.id}>{t.nome}{t.poligono.length >= 3 ? ' ✓' : ''}</option>)}
               </select>
             )}
+            <button className="terra-btn-overlay" onClick={() => setOverlayUrl(overlayUrl ? null : '/lion-adiminstracao/mapa-cadastral.jpg')} title="Sobrepor mapa cadastral">
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="3" width="14" height="10" rx="1.5"/><circle cx="5" cy="7" r="1.5"/><path d="M1 11l4-3 3 2 3-4 4 5"/></svg>
+              {overlayUrl ? 'Remover Overlay' : 'Mapa Cadastral'}
+            </button>
+            <button className="terra-btn-overlay" onClick={() => overlayFileRef.current?.click()} title="Sobrepor imagem personalizada">
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 3v10M3 8h10" strokeLinecap="round"/></svg>
+              Imagem
+            </button>
+            <input ref={overlayFileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={e => {
+              const f = e.target.files?.[0]
+              if (f) { const url = URL.createObjectURL(f); setOverlayUrl(url) }
+              e.target.value = ''
+            }} />
           </>
         )}
         {showQuickTalhao && drawMode === 'none' && (
@@ -5325,27 +5365,48 @@ function TerraPage() {
           </div>
         )}
       </div>
+      {overlayUrl && (
+        <div className="terra-overlay-controls">
+          <span className="terra-overlay-label">Opacidade da imagem:</span>
+          <input type="range" min="0" max="100" value={Math.round(overlayOpacity * 100)} onChange={e => setOverlayOpacity(parseInt(e.target.value) / 100)} className="terra-overlay-slider" />
+          <span className="terra-overlay-pct">{Math.round(overlayOpacity * 100)}%</span>
+          <button className="terra-btn-secondary" onClick={() => { if (overlayRef.current && leafletMap.current) leafletMap.current.removeLayer(overlayRef.current); overlayRef.current = null; setOverlayUrl(null) }} style={{ marginLeft: 8, padding: '2px 10px', fontSize: 'calc(.7rem * var(--fs))' }}>Remover</button>
+          <span className="terra-overlay-hint">Arraste os cantos para ajustar posição</span>
+        </div>
+      )}
       <div className="terra-map-layout">
         <div ref={mapRef} className="terra-map-container" />
         {fazTalhoes.length > 0 && (
           <div className="terra-map-sidebar">
-            <div className="terra-map-sidebar-title">Talhões — {fazenda?.nome}</div>
+            <div className="terra-map-sidebar-title">
+              Talhões — {fazenda?.nome}
+              <button className="terra-toggle-all" onClick={() => {
+                if (hiddenTalhoes.size === 0) setHiddenTalhoes(new Set(fazTalhoes.map(t => t.id)))
+                else setHiddenTalhoes(new Set())
+              }}>{hiddenTalhoes.size === 0 ? 'Ocultar todos' : 'Mostrar todos'}</button>
+            </div>
             {fazTalhoes.map(t => {
               const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
               const drawn = t.poligono.length >= 3
+              const visible = !hiddenTalhoes.has(t.id)
+              const pct = fazenda ? ((t.areaHa / fazenda.areaTotal) * 100).toFixed(1) : '—'
               return (
-                <div key={t.id} className="terra-map-talhao-item">
+                <div key={t.id} className={`terra-map-talhao-item${!visible ? ' terra-talhao-hidden' : ''}`}>
+                  <input type="checkbox" checked={visible} onChange={() => setHiddenTalhoes(prev => {
+                    const next = new Set(prev)
+                    if (next.has(t.id)) next.delete(t.id); else next.add(t.id)
+                    return next
+                  })} className="terra-talhao-check" style={{ accentColor: usoInfo?.cor }} />
                   <span className="terra-talhao-badge" style={{ background: usoInfo?.cor || '#6b7280', fontSize: 'calc(.62rem * var(--fs))', padding: '1px 7px' }}>{usoInfo?.label}</span>
                   <div className="terra-map-talhao-info">
                     <strong>{t.nome}</strong>
-                    <span>{fmtHa(t.areaHa)}{t.cultura ? ` · ${t.cultura}` : ''}</span>
+                    <span>{fmtHa(t.areaHa)} · {pct}%{t.cultura ? ` · ${t.cultura}` : ''}</span>
                   </div>
-                  {!drawn && drawMode === 'none' && !showQuickTalhao && (
-                    <button className="terra-btn-draw-sm" onClick={() => { setDrawTalhaoId(t.id); setDrawMode('talhao'); setDrawPoints([]) }} title="Desenhar no mapa">
+                  {drawMode === 'none' && !showQuickTalhao && (
+                    <button className="terra-btn-draw-sm" onClick={() => { setDrawTalhaoId(t.id); setDrawMode('talhao'); setDrawPoints([]) }} title={drawn ? 'Redesenhar no mapa' : 'Desenhar no mapa'}>
                       <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 2l3 3-9 9H2v-3z" strokeLinejoin="round"/></svg>
                     </button>
                   )}
-                  {drawn && <span className="terra-map-drawn-badge" title="Desenhado no mapa">✓</span>}
                 </div>
               )
             })}
