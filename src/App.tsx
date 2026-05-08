@@ -5756,16 +5756,6 @@ export default function App() {
         </div>
 
         <div className="header-right">
-          <div className="header-date">
-            {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-          </div>
-          {fxRates.map(r => (
-            <div key={r.code} className={`usd-ticker${parseFloat(r.pct) >= 0 ? ' usd-up' : ' usd-down'}`} title={`${r.code}/BRL — atualizado a cada 5 min`}>
-              <span className="usd-label">{r.code}</span>
-              <span className="usd-value">{r.code === 'BTC' ? `R$${r.bid}` : `R$ ${r.bid}`}</span>
-              <span className="usd-pct">{parseFloat(r.pct) >= 0 ? '▲' : '▼'} {Math.abs(parseFloat(r.pct)).toFixed(2)}%</span>
-            </div>
-          ))}
           <button className="theme-toggle-btn" onClick={() => setThemeId(t => t === 'light' ? 'charcoal' : 'light')} title={themeId === 'light' ? 'Modo escuro' : 'Modo claro'}>
             {themeId === 'light' ? (
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
