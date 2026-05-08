@@ -5007,15 +5007,23 @@ function TerraPage() {
   const [quickTalhaoName, setQuickTalhaoName] = useState('')
   const [quickTalhaoUso, setQuickTalhaoUso] = useState<TalhaoUso>('lavoura')
   const overlayRef = useRef<L.ImageOverlay | null>(null)
-  const [overlayUrl, setOverlayUrl] = useState<string | null>(null)
-  const [overlayOpacity, setOverlayOpacity] = useState(0.5)
+  const savedOv = useMemo(() => { try { return JSON.parse(localStorage.getItem('lion-terra-overlay') || 'null') } catch { return null } }, [])
+  const [overlayUrl, setOverlayUrl] = useState<string | null>(savedOv?.url || null)
+  const [overlayOpacity, setOverlayOpacity] = useState(savedOv?.opacity ?? 0.5)
   const overlayFileRef = useRef<HTMLInputElement>(null)
-  const [overlayOffsetLat, setOverlayOffsetLat] = useState(0)
-  const [overlayOffsetLng, setOverlayOffsetLng] = useState(0)
-  const [overlayScaleX, setOverlayScaleX] = useState(1)
-  const [overlayScaleY, setOverlayScaleY] = useState(1)
+  const [overlayOffsetLat, setOverlayOffsetLat] = useState(savedOv?.lat ?? 0)
+  const [overlayOffsetLng, setOverlayOffsetLng] = useState(savedOv?.lng ?? 0)
+  const [overlayScaleX, setOverlayScaleX] = useState(savedOv?.sx ?? 1)
+  const [overlayScaleY, setOverlayScaleY] = useState(savedOv?.sy ?? 1)
   const [overlayLockRatio, setOverlayLockRatio] = useState(true)
-  const [overlayRotation, setOverlayRotation] = useState(0)
+  const [overlayRotation, setOverlayRotation] = useState(savedOv?.rot ?? 0)
+  const [overlaySaved, setOverlaySaved] = useState(!!savedOv)
+  const saveOverlayPos = () => {
+    const data = { url: overlayUrl, opacity: overlayOpacity, lat: overlayOffsetLat, lng: overlayOffsetLng, sx: overlayScaleX, sy: overlayScaleY, rot: overlayRotation }
+    localStorage.setItem('lion-terra-overlay', JSON.stringify(data))
+    setOverlaySaved(true)
+    setTimeout(() => setOverlaySaved(false), 2000)
+  }
   const [overlayDrag, setOverlayDrag] = useState(false)
   const overlayDragStart = useRef<{ lat: number; lng: number } | null>(null)
   type OverlayState = { lat: number; lng: number; sx: number; sy: number; rot: number; opacity: number }
@@ -5489,8 +5497,9 @@ function TerraPage() {
             <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); setOverlayRotation(0) }}>0°</button>
           </div>
           <div className="terra-overlay-row">
+            <button className={`terra-ov-save ${overlaySaved ? 'saved' : ''}`} onClick={saveOverlayPos}>{overlaySaved ? '✓ Salvo!' : '💾 Salvar Posição'}</button>
             <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); setOverlayScaleX(1); setOverlayScaleY(1); setOverlayOffsetLat(0); setOverlayOffsetLng(0); setOverlayRotation(0) }}>Resetar</button>
-            <button className="terra-btn-secondary" onClick={() => { if (overlayRef.current && leafletMap.current) leafletMap.current.removeLayer(overlayRef.current); overlayRef.current = null; setOverlayUrl(null); setOverlayDrag(false); setOverlayHistory([]); setOverlayHistoryIdx(-1) }} style={{ padding: '4px 12px', fontSize: 'calc(.7rem * var(--fs))' }}>Remover Overlay</button>
+            <button className="terra-btn-secondary" onClick={() => { if (overlayRef.current && leafletMap.current) leafletMap.current.removeLayer(overlayRef.current); overlayRef.current = null; setOverlayUrl(null); setOverlayDrag(false); setOverlayHistory([]); setOverlayHistoryIdx(-1); localStorage.removeItem('lion-terra-overlay') }} style={{ padding: '4px 12px', fontSize: 'calc(.7rem * var(--fs))' }}>Remover Overlay</button>
           </div>
         </div>
       )}

@@ -5814,6 +5814,9 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 .terra-ov-sublabel { font-size: calc(.68rem * var(--fs)); color: var(--text); min-width: 16px; font-weight: 600 }
 .terra-ov-undo-group { display: flex; gap: 4px; margin-left: auto }
 .terra-ov-undo-group .terra-ov-btn:disabled { opacity: .35; cursor: not-allowed; pointer-events: none }
+.terra-ov-save { background: var(--purple); color: #fff; border: 1px solid var(--purple); border-radius: var(--radius); padding: 5px 16px; font-size: calc(.76rem * var(--fs)); font-weight: 600; cursor: pointer; transition: all .2s }
+.terra-ov-save:hover { opacity: .85 }
+.terra-ov-save.saved { background: #22c55e; border-color: #22c55e }
 .terra-map-legend-section { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 8px; border-top: 1px solid var(--border); margin-top: auto }
 .terra-map-legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 8px 0 }
 
