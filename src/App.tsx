@@ -4823,12 +4823,12 @@ function BillForm({ initial, collectors, onSave, onCancel, onCreateCollector }: 
   }
 
   return (
-    <form className="ph-modal-form" onSubmit={e => { e.preventDefault(); if (!form.collectorId || !form.amount || !form.dueDate) return; onSave(form) }}>
+    <form className="ph-modal-form" onSubmit={e => { e.preventDefault(); if (!form.amount || !form.dueDate) return; onSave(form) }}>
       <div className="ph-field">
-        <label>Cobrador *</label>
+        <label>Cobrador</label>
         {!showNewColl ? (
           <div className="ph-coll-select-row">
-            <select value={form.collectorId} onChange={e => f('collectorId', e.target.value)} required>
+            <select value={form.collectorId} onChange={e => f('collectorId', e.target.value)}>
               <option value="">Selecione…</option>
               {collectors.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
