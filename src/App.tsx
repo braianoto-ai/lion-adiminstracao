@@ -5325,14 +5325,38 @@ function TerraPage() {
           </div>
         )}
       </div>
-      <div ref={mapRef} className="terra-map-container" />
-      {fazTalhoes.length > 0 && (
-        <div className="terra-map-legend">
-          {TALHAO_USOS.filter(u => fazTalhoes.some(t => t.uso === u.value)).map(u => (
-            <span key={u.value} className="terra-legend-item"><span className="terra-legend-dot" style={{ background: u.cor }} />{u.label}</span>
-          ))}
-        </div>
-      )}
+      <div className="terra-map-layout">
+        <div ref={mapRef} className="terra-map-container" />
+        {fazTalhoes.length > 0 && (
+          <div className="terra-map-sidebar">
+            <div className="terra-map-sidebar-title">Talhões — {fazenda?.nome}</div>
+            {fazTalhoes.map(t => {
+              const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
+              const drawn = t.poligono.length >= 3
+              return (
+                <div key={t.id} className="terra-map-talhao-item">
+                  <span className="terra-talhao-badge" style={{ background: usoInfo?.cor || '#6b7280', fontSize: 'calc(.62rem * var(--fs))', padding: '1px 7px' }}>{usoInfo?.label}</span>
+                  <div className="terra-map-talhao-info">
+                    <strong>{t.nome}</strong>
+                    <span>{fmtHa(t.areaHa)}{t.cultura ? ` · ${t.cultura}` : ''}</span>
+                  </div>
+                  {!drawn && drawMode === 'none' && !showQuickTalhao && (
+                    <button className="terra-btn-draw-sm" onClick={() => { setDrawTalhaoId(t.id); setDrawMode('talhao'); setDrawPoints([]) }} title="Desenhar no mapa">
+                      <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 2l3 3-9 9H2v-3z" strokeLinejoin="round"/></svg>
+                    </button>
+                  )}
+                  {drawn && <span className="terra-map-drawn-badge" title="Desenhado no mapa">✓</span>}
+                </div>
+              )
+            })}
+            <div className="terra-map-legend-section">
+              {TALHAO_USOS.filter(u => fazTalhoes.some(t => t.uso === u.value)).map(u => (
+                <span key={u.value} className="terra-legend-item"><span className="terra-legend-dot" style={{ background: u.cor }} />{u.label}</span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
       {!fazenda && <p className="terra-muted" style={{ marginTop: 12 }}>Cadastre uma fazenda com coordenadas para ver no mapa.</p>}
     </div>
   )
