@@ -858,8 +858,11 @@ function FinancePanel({ onClose }: { onClose: () => void }) {
     despesas: txs.filter(t => t.date === m && t.type === 'despesa').reduce((s, t) => s + t.amount, 0),
   }))
 
-  const totalReceitas = txs.reduce((s, t) => t.type === 'receita' ? s + t.amount : s, 0)
-  const totalDespesas = txs.reduce((s, t) => t.type === 'despesa' ? s + t.amount : s, 0)
+  const _now = new Date()
+  const currentMonth = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}`
+  const txsAteMesAtual = txs.filter(t => t.date <= currentMonth)
+  const totalReceitas = txsAteMesAtual.reduce((s, t) => t.type === 'receita' ? s + t.amount : s, 0)
+  const totalDespesas = txsAteMesAtual.reduce((s, t) => t.type === 'despesa' ? s + t.amount : s, 0)
   const saldo = totalReceitas - totalDespesas
 
   const maxVal = Math.max(...monthData.flatMap(m => [m.receitas, m.despesas]), 1)
@@ -875,7 +878,7 @@ function FinancePanel({ onClose }: { onClose: () => void }) {
   const PIE_COLORS = ['#ef4444','#f59e0b','#3b82f6','#10b981','#8b5cf6','#ec4899','#06b6d4','#84cc16']
   const catTotals = TX_CATEGORIES.despesa.map((cat, i) => ({
     cat,
-    val: txs.filter(t => t.type === 'despesa' && t.category === cat).reduce((s, t) => s + t.amount, 0),
+    val: txsAteMesAtual.filter(t => t.type === 'despesa' && t.category === cat).reduce((s, t) => s + t.amount, 0),
     color: PIE_COLORS[i % PIE_COLORS.length],
   })).filter(c => c.val > 0).sort((a, b) => b.val - a.val)
 
@@ -3033,7 +3036,9 @@ function computeDashData() {
   const rentals: Rental[] = (() => { try { return JSON.parse(localStorage.getItem('lion-rentals') || '[]') } catch { return [] } })()
   const alerts = buildAlerts()
 
-  const balance = txs.reduce((s, t) => s + (t.type === 'receita' ? t.amount : -t.amount), 0)
+  const now = new Date()
+  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const balance = txs.filter(t => t.date <= thisMonth).reduce((s, t) => s + (t.type === 'receita' ? t.amount : -t.amount), 0)
   const totalGoals = goals.reduce((s, g) => s + (g.current || 0), 0)
   const targetGoals = goals.reduce((s, g) => s + (g.target || 0), 0)
   const goalsProgress = targetGoals > 0 ? Math.round(totalGoals / targetGoals * 100) : 0
@@ -3042,8 +3047,6 @@ function computeDashData() {
   const warnCount = alerts.filter(a => a.severity === 'warning').length
 
   // month-over-month balance change
-  const now = new Date()
-  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const lastMonth = (() => { const d = new Date(now.getFullYear(), now.getMonth() - 1, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` })()
   const thisMonthNet = txs.filter(t => t.date === thisMonth).reduce((s, t) => s + (t.type === 'receita' ? t.amount : -t.amount), 0)
   const lastMonthNet = txs.filter(t => t.date === lastMonth).reduce((s, t) => s + (t.type === 'receita' ? t.amount : -t.amount), 0)
