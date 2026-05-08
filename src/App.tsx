@@ -5142,6 +5142,8 @@ function TerraPage() {
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' })
     osm.addTo(map)
     tileRef.current = osm
+    map.createPane('overlayImagePane')
+    map.getPane('overlayImagePane')!.style.zIndex = '450'
     layerGroup.current = L.layerGroup().addTo(map)
     leafletMap.current = map
     return () => { map.remove(); leafletMap.current = null }
@@ -5168,13 +5170,13 @@ function TerraPage() {
       const dLat = 0.012 * overlayScaleY
       const dLng = 0.016 * overlayScaleX
       const bounds = L.latLngBounds([[lat - dLat, lng - dLng], [lat + dLat, lng + dLng]])
-      overlayRef.current = L.imageOverlay(overlayUrl, bounds, { opacity: overlayOpacity, interactive: overlayDrag }).addTo(leafletMap.current)
+      overlayRef.current = L.imageOverlay(overlayUrl, bounds, { opacity: overlayOpacity, interactive: overlayDrag, pane: 'overlayImagePane' }).addTo(leafletMap.current)
       if (overlayRotation !== 0 && overlayRef.current) {
         const el = (overlayRef.current as any).getElement()
         if (el) el.style.transform = (el.style.transform || '') + ` rotate(${overlayRotation}deg)`
       }
     }
-  }, [overlayUrl, overlayOpacity, fazenda, overlayOffsetLat, overlayOffsetLng, overlayScaleX, overlayScaleY, overlayRotation, overlayDrag])
+  }, [overlayUrl, overlayOpacity, fazenda, overlayOffsetLat, overlayOffsetLng, overlayScaleX, overlayScaleY, overlayRotation, overlayDrag, tab])
 
   useEffect(() => {
     const map = leafletMap.current
