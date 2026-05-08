@@ -4913,13 +4913,59 @@ function PaymentHubPage() {
     setBills(prev => prev.filter(b => b.id !== id))
   }
 
+  const billCategoryToTx = (billCat: string): string => {
+    const map: Record<string, string> = {
+      'Energia': 'Moradia', 'Água': 'Moradia', 'Condomínio': 'Moradia', 'Aluguel': 'Moradia',
+      'Internet': 'Moradia', 'Telefonia': 'Moradia',
+      'Cartão': 'Outros', 'Streaming': 'Lazer',
+      'Educação': 'Educação', 'Saúde': 'Saúde', 'Imposto': 'Impostos',
+    }
+    return map[billCat] || 'Outros'
+  }
+
+  const addTxFromBill = (bill: Bill) => {
+    const coll = getCollector(bill.collectorId)
+    const txId = `bill-${bill.id}`
+    const tx: Transaction = {
+      id: txId,
+      type: 'despesa',
+      category: billCategoryToTx(coll?.category || ''),
+      description: `${coll?.name || 'Conta'}${bill.description ? ' — ' + bill.description : ''}`,
+      amount: bill.amount,
+      date: bill.dueDate.slice(0, 7),
+    }
+    try {
+      const txs: Transaction[] = JSON.parse(localStorage.getItem('lion-txs') || '[]')
+      if (!txs.some(t => t.id === txId)) {
+        txs.unshift(tx)
+        localStorage.setItem('lion-txs', JSON.stringify(txs))
+        CLOUD_BUS.dispatchEvent(new Event('lion-txs'))
+      }
+    } catch { /* ignore */ }
+  }
+
+  const removeTxFromBill = (billId: string) => {
+    const txId = `bill-${billId}`
+    try {
+      const txs: Transaction[] = JSON.parse(localStorage.getItem('lion-txs') || '[]')
+      const filtered = txs.filter(t => t.id !== txId)
+      if (filtered.length !== txs.length) {
+        localStorage.setItem('lion-txs', JSON.stringify(filtered))
+        CLOUD_BUS.dispatchEvent(new Event('lion-txs'))
+      }
+    } catch { /* ignore */ }
+  }
+
   const markPaid = (id: string) => {
     const now = new Date().toISOString()
+    const bill = bills.find(b => b.id === id)
     setBills(prev => prev.map(b => b.id === id ? { ...b, status: 'pago', paidAt: now, updatedAt: now } : b))
+    if (bill) addTxFromBill(bill)
   }
 
   const markOpen = (id: string) => {
     setBills(prev => prev.map(b => b.id === id ? { ...b, status: 'em_aberto', paidAt: undefined, updatedAt: new Date().toISOString() } : b))
+    removeTxFromBill(id)
   }
 
   const copyBarcode = (code: string) => {
