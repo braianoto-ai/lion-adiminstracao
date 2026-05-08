@@ -4767,7 +4767,7 @@ function effectiveStatus(bill: Bill): BillStatus {
 }
 
 const fmtCurrency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-const fmtDate = (s: string) => new Date(s + 'T12:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })
+const fmtDate = (s: string) => { if (!s) return '—'; const d = new Date(s + 'T12:00:00'); return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' }) }
 
 const COLL_INIT = { name: '', category: BILL_CATEGORIES[0], color: BILL_COLORS[0] }
 const BILL_INIT = { collectorId: '', description: '', amount: '', dueDate: '', status: 'em_aberto' as BillStatus, recurrence: 'mensal' as BillRecurrence, paymentLink: '', barcode: '', notes: '' }
@@ -4823,12 +4823,12 @@ function BillForm({ initial, collectors, onSave, onCancel, onCreateCollector }: 
   }
 
   return (
-    <form className="ph-modal-form" onSubmit={e => { e.preventDefault(); if (!form.collectorId || !form.amount || !form.dueDate) return; onSave(form) }}>
+    <form className="ph-modal-form" onSubmit={e => { e.preventDefault(); if (!form.amount || !form.dueDate) return; onSave(form) }}>
       <div className="ph-field">
-        <label>Cobrador *</label>
+        <label>Cobrador</label>
         {!showNewColl ? (
           <div className="ph-coll-select-row">
-            <select value={form.collectorId} onChange={e => f('collectorId', e.target.value)} required>
+            <select value={form.collectorId} onChange={e => f('collectorId', e.target.value)}>
               <option value="">Selecione…</option>
               {collectors.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
@@ -5065,7 +5065,7 @@ function PaymentHubPage() {
 
   const totalAberto   = bills.filter(b => effectiveStatus(b) === 'em_aberto').reduce((s, b) => s + b.amount, 0)
   const totalVencido  = bills.filter(b => effectiveStatus(b) === 'vencido').reduce((s, b) => s + b.amount, 0)
-  const totalPagoMes  = bills.filter(b => b.status === 'pago' && b.paidAt?.startsWith(thisMonth)).reduce((s, b) => s + b.amount, 0)
+  const totalPagoMes  = bills.filter(b => b.status === 'pago' && (b.paidAt?.startsWith(thisMonth) || (!b.paidAt && b.dueDate?.startsWith(thisMonth)))).reduce((s, b) => s + b.amount, 0)
   const totalMensal   = bills.filter(b => b.recurrence === 'mensal' && b.status !== 'cancelado').reduce((s, b) => s + b.amount, 0)
 
   const countVencido  = bills.filter(b => effectiveStatus(b) === 'vencido').length
@@ -5108,7 +5108,7 @@ function PaymentHubPage() {
           <div>
             <div className="ph-summary-label">Pago este mês</div>
             <div className="ph-summary-value" style={{ color: 'var(--green)' }}>{fmtCurrency(totalPagoMes)}</div>
-            <div className="ph-summary-sub">{bills.filter(b => b.status === 'pago' && b.paidAt?.startsWith(thisMonth)).length} quitada{bills.filter(b => b.status === 'pago' && b.paidAt?.startsWith(thisMonth)).length !== 1 ? 's' : ''}</div>
+            <div className="ph-summary-sub">{bills.filter(b => b.status === 'pago' && (b.paidAt?.startsWith(thisMonth) || (!b.paidAt && b.dueDate?.startsWith(thisMonth)))).length} quitada{bills.filter(b => b.status === 'pago' && (b.paidAt?.startsWith(thisMonth) || (!b.paidAt && b.dueDate?.startsWith(thisMonth)))).length !== 1 ? 's' : ''}</div>
           </div>
         </div>
         <div className="ph-summary-card">
