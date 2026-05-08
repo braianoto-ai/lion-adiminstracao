@@ -1,5 +1,7 @@
-import { useState, useEffect, useRef, useCallback, useContext, createContext } from 'react'
+import { useState, useEffect, useRef, useCallback, useContext, createContext, useMemo } from 'react'
 import './App.css'
+import 'leaflet/dist/leaflet.css'
+import L from 'leaflet'
 import { supabase } from './lib/supabase'
 import LoginPage from './LoginPage'
 import type { User } from '@supabase/supabase-js'
@@ -14,6 +16,7 @@ const DATA_KEYS = [
   'lion-vehicles','lion-revisions','lion-calendar','lion-trips',
   'lion-family','lion-collectors','lion-bills','np-folders',
   'lion-docs-meta','lion-imoveis','lion-produtos',
+  'lion-terra','lion-talhoes',
 ]
 
 const CLOUD_BUS = new EventTarget()
@@ -118,7 +121,7 @@ interface Folder {
 }
 
 type ModalType = 'imovel' | 'carro' | 'produto' | null
-type SidebarPage = 'dashboard' | 'family' | 'calendar' | 'trips' | 'goals' | 'payment-hub' | 'settings' | 'appearance' | 'patrimonio' | 'financas'
+type SidebarPage = 'dashboard' | 'family' | 'calendar' | 'trips' | 'goals' | 'payment-hub' | 'settings' | 'appearance' | 'patrimonio' | 'financas' | 'terra'
 
 interface Imovel {
   id: string
@@ -141,6 +144,72 @@ interface Produto {
   descricao: string
   createdAt: string
 }
+
+// ─── Terra types ─────────────────────────────────────────────────────────────
+
+interface TerraFazenda {
+  id: string
+  nome: string
+  municipio: string
+  uf: string
+  matricula: string
+  carNumero: string
+  itrNumero: string
+  ccir: string
+  areaTotal: number
+  areaUtil: number
+  areaReservaLegal: number
+  areaApp: number
+  areaPastagem: number
+  areaLavoura: number
+  areaReflorestamento: number
+  areaBenfeitorias: number
+  latitude: number
+  longitude: number
+  perimetro: [number, number][]
+  tipoSolo: string
+  bioma: string
+  relevo: string
+  fonteAgua: string
+  valorVenal: string
+  valorMercado: string
+  geoReferenciado: boolean
+  licencaAmbiental: boolean
+  notas: string
+  createdAt: string
+}
+
+type TalhaoUso = 'lavoura' | 'pastagem' | 'reserva_legal' | 'app' | 'reflorestamento' | 'benfeitorias' | 'sede' | 'outro'
+
+interface TerraTalhao {
+  id: string
+  fazendaId: string
+  nome: string
+  uso: TalhaoUso
+  areaHa: number
+  cultura: string
+  safra: string
+  poligono: [number, number][]
+  cor: string
+  notas: string
+  createdAt: string
+}
+
+const TERRA_BIOMAS = ['Mata Atlântica', 'Cerrado', 'Amazônia', 'Caatinga', 'Pampa', 'Pantanal']
+const TERRA_RELEVOS = ['Plano', 'Suave Ondulado', 'Ondulado', 'Forte Ondulado', 'Montanhoso']
+const TERRA_SOLOS = ['Latossolo Vermelho', 'Latossolo Amarelo', 'Argissolo', 'Neossolo', 'Cambissolo', 'Gleissolo', 'Nitossolo', 'Outro']
+const TERRA_UFS = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
+const TALHAO_USOS: { value: TalhaoUso; label: string; cor: string }[] = [
+  { value: 'lavoura', label: 'Lavoura', cor: '#f59e0b' },
+  { value: 'pastagem', label: 'Pastagem', cor: '#22c55e' },
+  { value: 'reserva_legal', label: 'Reserva Legal', cor: '#166534' },
+  { value: 'app', label: 'APP', cor: '#0d9488' },
+  { value: 'reflorestamento', label: 'Reflorestamento', cor: '#65a30d' },
+  { value: 'benfeitorias', label: 'Benfeitorias', cor: '#8b5cf6' },
+  { value: 'sede', label: 'Sede/Moradia', cor: '#ef4444' },
+  { value: 'outro', label: 'Outro', cor: '#6b7280' },
+]
+const TERRA_CULTURAS = ['Soja','Milho','Café','Cana-de-Açúcar','Trigo','Algodão','Feijão','Arroz','Mandioca','Eucalipto','Pinus','Pastagem (Braquiária)','Pastagem (Tifton)','Outra']
 
 type BillStatus = 'em_aberto' | 'pago' | 'vencido' | 'cancelado'
 type BillRecurrence = 'mensal' | 'unica' | 'anual' | 'semanal'
@@ -4913,6 +4982,531 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
   )
 }
 
+// ─── Terra Page ──────────────────────────────────────────────────────────────
+
+function TerraPage() {
+  const [fazendas, setFazendas] = useCloudTable<TerraFazenda>('terra_fazendas', 'lion-terra')
+  const [talhoes, setTalhoes] = useCloudTable<TerraTalhao>('terra_talhoes', 'lion-talhoes')
+  const [tab, setTab] = useState<'visao' | 'mapa' | 'talhoes' | 'docs' | 'fazendas'>('visao')
+  const [activeFazendaId, setActiveFazendaId] = useState<string | null>(null)
+  const [showFazendaForm, setShowFazendaForm] = useState(false)
+  const [editFazendaId, setEditFazendaId] = useState<string | null>(null)
+  const [showTalhaoForm, setShowTalhaoForm] = useState(false)
+  const [editTalhaoId, setEditTalhaoId] = useState<string | null>(null)
+  const mapRef = useRef<HTMLDivElement>(null)
+  const leafletMap = useRef<L.Map | null>(null)
+  const layerGroup = useRef<L.LayerGroup | null>(null)
+  const [mapSatellite, setMapSatellite] = useState(false)
+  const tileRef = useRef<L.TileLayer | null>(null)
+  const [drawMode, setDrawMode] = useState<'none' | 'perimetro' | 'talhao'>('none')
+  const [drawPoints, setDrawPoints] = useState<[number, number][]>([])
+  const drawLayerRef = useRef<L.Polyline | null>(null)
+  const [drawTalhaoId, setDrawTalhaoId] = useState<string | null>(null)
+
+  const emptyFazenda: Omit<TerraFazenda, 'id' | 'createdAt'> = {
+    nome: '', municipio: '', uf: 'PR', matricula: '', carNumero: '', itrNumero: '', ccir: '',
+    areaTotal: 0, areaUtil: 0, areaReservaLegal: 0, areaApp: 0, areaPastagem: 0,
+    areaLavoura: 0, areaReflorestamento: 0, areaBenfeitorias: 0,
+    latitude: -23.55, longitude: -51.43, perimetro: [],
+    tipoSolo: '', bioma: '', relevo: '', fonteAgua: '',
+    valorVenal: '', valorMercado: '', geoReferenciado: false, licencaAmbiental: false, notas: '',
+  }
+  const [fazForm, setFazForm] = useState(emptyFazenda)
+
+  const emptyTalhao: Omit<TerraTalhao, 'id' | 'createdAt'> = {
+    fazendaId: '', nome: '', uso: 'lavoura', areaHa: 0, cultura: '', safra: '', poligono: [], cor: '', notas: '',
+  }
+  const [talForm, setTalForm] = useState(emptyTalhao)
+
+  const fazenda = fazendas.find(f => f.id === activeFazendaId) || fazendas[0] || null
+  useEffect(() => { if (fazendas.length && !activeFazendaId) setActiveFazendaId(fazendas[0].id) }, [fazendas, activeFazendaId])
+  const fazTalhoes = useMemo(() => talhoes.filter(t => t.fazendaId === fazenda?.id), [talhoes, fazenda])
+
+  const reservaMinPct = useMemo(() => {
+    if (!fazenda) return 20
+    if (fazenda.bioma === 'Amazônia') return 80
+    if (fazenda.bioma === 'Cerrado') return 35
+    return 20
+  }, [fazenda])
+
+  const reservaPct = fazenda && fazenda.areaTotal > 0 ? ((fazenda.areaReservaLegal / fazenda.areaTotal) * 100) : 0
+  const grauUtil = fazenda && fazenda.areaTotal > 0 ? ((fazenda.areaUtil / fazenda.areaTotal) * 100) : 0
+  const somaTalhoes = fazTalhoes.reduce((s, t) => s + t.areaHa, 0)
+
+  const fmtHa = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ha'
+
+  // ─── Fazenda CRUD
+  const saveFazenda = () => {
+    if (!fazForm.nome.trim()) return
+    if (editFazendaId) {
+      setFazendas(prev => prev.map(f => f.id === editFazendaId ? { ...f, ...fazForm } : f))
+    } else {
+      const nf: TerraFazenda = { ...fazForm, id: crypto.randomUUID(), createdAt: new Date().toISOString() } as TerraFazenda
+      setFazendas(prev => [...prev, nf])
+      setActiveFazendaId(nf.id)
+    }
+    setShowFazendaForm(false)
+    setEditFazendaId(null)
+    setFazForm(emptyFazenda)
+  }
+  const editFazenda = (f: TerraFazenda) => {
+    setFazForm({ ...f })
+    setEditFazendaId(f.id)
+    setShowFazendaForm(true)
+    setTab('fazendas')
+  }
+  const deleteFazenda = (id: string) => {
+    setFazendas(prev => prev.filter(f => f.id !== id))
+    setTalhoes(prev => prev.filter(t => t.fazendaId !== id))
+    if (activeFazendaId === id) setActiveFazendaId(null)
+  }
+
+  // ─── Talhão CRUD
+  const saveTalhao = () => {
+    if (!talForm.nome.trim() || !fazenda) return
+    const cor = talForm.cor || TALHAO_USOS.find(u => u.value === talForm.uso)?.cor || '#6b7280'
+    if (editTalhaoId) {
+      setTalhoes(prev => prev.map(t => t.id === editTalhaoId ? { ...t, ...talForm, cor } : t))
+    } else {
+      const nt: TerraTalhao = { ...talForm, cor, fazendaId: fazenda.id, id: crypto.randomUUID(), createdAt: new Date().toISOString() } as TerraTalhao
+      setTalhoes(prev => [...prev, nt])
+    }
+    setShowTalhaoForm(false)
+    setEditTalhaoId(null)
+    setTalForm(emptyTalhao)
+  }
+  const editTalhao = (t: TerraTalhao) => {
+    setTalForm({ ...t })
+    setEditTalhaoId(t.id)
+    setShowTalhaoForm(true)
+  }
+  const deleteTalhao = (id: string) => { setTalhoes(prev => prev.filter(t => t.id !== id)) }
+
+  // ─── Map
+  useEffect(() => {
+    if (tab !== 'mapa' || !mapRef.current || leafletMap.current) return
+    const center: [number, number] = fazenda ? [fazenda.latitude, fazenda.longitude] : [-15.78, -47.93]
+    const map = L.map(mapRef.current).setView(center, fazenda ? 14 : 4)
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' })
+    osm.addTo(map)
+    tileRef.current = osm
+    layerGroup.current = L.layerGroup().addTo(map)
+    leafletMap.current = map
+    return () => { map.remove(); leafletMap.current = null }
+  }, [tab])
+
+  useEffect(() => {
+    if (!leafletMap.current || !tileRef.current) return
+    leafletMap.current.removeLayer(tileRef.current)
+    const url = mapSatellite
+      ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+      : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+    const attr = mapSatellite ? '&copy; Esri' : '&copy; OpenStreetMap'
+    tileRef.current = L.tileLayer(url, { attribution: attr }).addTo(leafletMap.current)
+  }, [mapSatellite])
+
+  useEffect(() => {
+    if (!leafletMap.current || !layerGroup.current) return
+    layerGroup.current.clearLayers()
+    if (fazenda && fazenda.perimetro.length >= 3) {
+      L.polygon(fazenda.perimetro, { color: '#dc2626', weight: 3, fillOpacity: 0.05 }).addTo(layerGroup.current)
+    }
+    fazTalhoes.forEach(t => {
+      if (t.poligono.length >= 3) {
+        const cor = t.cor || TALHAO_USOS.find(u => u.value === t.uso)?.cor || '#6b7280'
+        L.polygon(t.poligono, { color: cor, weight: 2, fillColor: cor, fillOpacity: 0.35 })
+          .bindPopup(`<strong>${t.nome}</strong><br/>${TALHAO_USOS.find(u => u.value === t.uso)?.label || t.uso}<br/>${fmtHa(t.areaHa)}${t.cultura ? '<br/>Cultura: ' + t.cultura : ''}`)
+          .addTo(layerGroup.current!)
+      }
+    })
+    if (fazenda) leafletMap.current.setView([fazenda.latitude, fazenda.longitude], 14)
+  }, [fazenda, fazTalhoes, tab])
+
+  // Draw mode: click handler
+  useEffect(() => {
+    const map = leafletMap.current
+    if (!map) return
+    if (drawMode === 'none') {
+      map.getContainer().style.cursor = ''
+      return
+    }
+    map.getContainer().style.cursor = 'crosshair'
+    const onClick = (e: L.LeafletMouseEvent) => {
+      const pt: [number, number] = [parseFloat(e.latlng.lat.toFixed(6)), parseFloat(e.latlng.lng.toFixed(6))]
+      setDrawPoints(prev => {
+        const next = [...prev, pt]
+        if (drawLayerRef.current) map.removeLayer(drawLayerRef.current)
+        drawLayerRef.current = L.polyline(next, { color: drawMode === 'perimetro' ? '#dc2626' : '#f59e0b', weight: 3, dashArray: '6 4' }).addTo(map)
+        L.circleMarker(pt, { radius: 5, color: '#fff', fillColor: drawMode === 'perimetro' ? '#dc2626' : '#f59e0b', fillOpacity: 1, weight: 2 }).addTo(layerGroup.current!)
+        return next
+      })
+    }
+    map.on('click', onClick)
+    return () => { map.off('click', onClick); map.getContainer().style.cursor = '' }
+  }, [drawMode])
+
+  const finishDraw = () => {
+    if (drawPoints.length < 3) return
+    if (drawMode === 'perimetro' && fazenda) {
+      const center = drawPoints.reduce((acc, p) => [acc[0] + p[0], acc[1] + p[1]] as [number, number], [0, 0] as [number, number])
+      const lat = center[0] / drawPoints.length
+      const lng = center[1] / drawPoints.length
+      setFazendas(prev => prev.map(f => f.id === fazenda.id ? { ...f, perimetro: drawPoints, latitude: lat, longitude: lng } : f))
+    } else if (drawMode === 'talhao' && drawTalhaoId) {
+      setTalhoes(prev => prev.map(t => t.id === drawTalhaoId ? { ...t, poligono: drawPoints } : t))
+    }
+    cancelDraw()
+  }
+  const cancelDraw = () => {
+    if (drawLayerRef.current && leafletMap.current) leafletMap.current.removeLayer(drawLayerRef.current)
+    drawLayerRef.current = null
+    setDrawMode('none')
+    setDrawPoints([])
+    setDrawTalhaoId(null)
+  }
+  const undoDrawPoint = () => {
+    setDrawPoints(prev => {
+      const next = prev.slice(0, -1)
+      if (drawLayerRef.current && leafletMap.current) leafletMap.current.removeLayer(drawLayerRef.current)
+      if (next.length > 0 && leafletMap.current) {
+        drawLayerRef.current = L.polyline(next, { color: drawMode === 'perimetro' ? '#dc2626' : '#f59e0b', weight: 3, dashArray: '6 4' }).addTo(leafletMap.current)
+      }
+      return next
+    })
+  }
+
+  // ─── Pie chart SVG (land use distribution)
+  const pieData = useMemo(() => {
+    if (!fazenda) return []
+    const items: { label: string; value: number; cor: string }[] = [
+      { label: 'Lavoura', value: fazenda.areaLavoura, cor: '#f59e0b' },
+      { label: 'Pastagem', value: fazenda.areaPastagem, cor: '#22c55e' },
+      { label: 'Reserva Legal', value: fazenda.areaReservaLegal, cor: '#166534' },
+      { label: 'APP', value: fazenda.areaApp, cor: '#0d9488' },
+      { label: 'Reflorestamento', value: fazenda.areaReflorestamento, cor: '#65a30d' },
+      { label: 'Benfeitorias', value: fazenda.areaBenfeitorias, cor: '#8b5cf6' },
+    ].filter(i => i.value > 0)
+    return items
+  }, [fazenda])
+
+  const pieSlices = useMemo(() => {
+    const total = pieData.reduce((s, i) => s + i.value, 0)
+    if (!total) return []
+    let cum = 0
+    return pieData.map(item => {
+      const start = cum / total
+      cum += item.value
+      const end = cum / total
+      const startAngle = start * 2 * Math.PI - Math.PI / 2
+      const endAngle = end * 2 * Math.PI - Math.PI / 2
+      const large = end - start > 0.5 ? 1 : 0
+      const r = 50
+      const x1 = 60 + r * Math.cos(startAngle)
+      const y1 = 60 + r * Math.sin(startAngle)
+      const x2 = 60 + r * Math.cos(endAngle)
+      const y2 = 60 + r * Math.sin(endAngle)
+      return { ...item, d: `M60,60 L${x1},${y1} A${r},${r} 0 ${large} 1 ${x2},${y2} Z`, pct: ((item.value / total) * 100).toFixed(1) }
+    })
+  }, [pieData])
+
+  // ─── Render helpers
+  const renderField = (label: string, children: React.ReactNode, span2 = false) => (
+    <div className={`terra-field${span2 ? ' terra-span2' : ''}`}><label>{label}</label>{children}</div>
+  )
+
+  // ─── VISÃO GERAL
+  const renderVisao = () => {
+    if (!fazenda) return <div className="terra-empty"><p>Nenhuma fazenda cadastrada.</p><button className="terra-btn-primary" onClick={() => { setTab('fazendas'); setShowFazendaForm(true) }}>+ Adicionar Fazenda</button></div>
+    return (
+      <div className="terra-visao">
+        <div className="terra-summary">
+          <div className="terra-card-stat"><span className="terra-stat-label">Área Total</span><span className="terra-stat-value">{fmtHa(fazenda.areaTotal)}</span></div>
+          <div className="terra-card-stat"><span className="terra-stat-label">Área Útil</span><span className="terra-stat-value">{fmtHa(fazenda.areaUtil)}</span><span className="terra-stat-sub">{grauUtil.toFixed(1)}% de utilização</span></div>
+          <div className="terra-card-stat"><span className="terra-stat-label">Reserva + APP</span><span className="terra-stat-value">{fmtHa(fazenda.areaReservaLegal + fazenda.areaApp)}</span><span className={`terra-stat-sub ${reservaPct >= reservaMinPct ? 'terra-ok' : 'terra-warn'}`}>{reservaPct.toFixed(1)}% (mín. {reservaMinPct}%)</span></div>
+          <div className="terra-card-stat"><span className="terra-stat-label">Talhões</span><span className="terra-stat-value">{fazTalhoes.length}</span><span className="terra-stat-sub">{fmtHa(somaTalhoes)} mapeados</span></div>
+        </div>
+
+        <div className="terra-visao-grid">
+          <div className="terra-chart-card">
+            <h4>Distribuição de Uso</h4>
+            {pieSlices.length ? (
+              <div className="terra-pie-wrap">
+                <svg viewBox="0 0 120 120" width="160" height="160">
+                  {pieSlices.map((s, i) => <path key={i} d={s.d} fill={s.cor} stroke="var(--bg)" strokeWidth="1.5" />)}
+                </svg>
+                <div className="terra-legend">
+                  {pieSlices.map((s, i) => <div key={i} className="terra-legend-item"><span className="terra-legend-dot" style={{ background: s.cor }} />{s.label} — {s.pct}%</div>)}
+                </div>
+              </div>
+            ) : <p className="terra-muted">Preencha as áreas da fazenda para ver a distribuição.</p>}
+          </div>
+
+          <div className="terra-chart-card">
+            <h4>Reserva Legal</h4>
+            <div className="terra-reserve-bar">
+              <div className="terra-reserve-fill" style={{ width: `${Math.min(reservaPct, 100)}%`, background: reservaPct >= reservaMinPct ? '#22c55e' : '#ef4444' }} />
+              <div className="terra-reserve-mark" style={{ left: `${reservaMinPct}%` }} title={`Mínimo: ${reservaMinPct}%`} />
+            </div>
+            <div className="terra-reserve-labels">
+              <span>{reservaPct.toFixed(1)}% atual</span>
+              <span>Mínimo: {reservaMinPct}%</span>
+            </div>
+            <div className="terra-info-row"><span>Bioma:</span> <strong>{fazenda.bioma || '—'}</strong></div>
+            <div className="terra-info-row"><span>Solo:</span> <strong>{fazenda.tipoSolo || '—'}</strong></div>
+            <div className="terra-info-row"><span>Relevo:</span> <strong>{fazenda.relevo || '—'}</strong></div>
+          </div>
+        </div>
+
+        {(fazenda.valorVenal || fazenda.valorMercado) && (
+          <div className="terra-valor-row">
+            {fazenda.valorVenal && <div className="terra-card-stat"><span className="terra-stat-label">Valor Venal</span><span className="terra-stat-value">R$ {fazenda.valorVenal}</span></div>}
+            {fazenda.valorMercado && <div className="terra-card-stat"><span className="terra-stat-label">Valor de Mercado</span><span className="terra-stat-value">R$ {fazenda.valorMercado}</span></div>}
+          </div>
+        )}
+      </div>
+    )
+  }
+
+  // ─── MAPA
+  const renderMapa = () => (
+    <div className="terra-mapa">
+      <div className="terra-map-controls">
+        <button className={`terra-map-toggle ${!mapSatellite ? 'active' : ''}`} onClick={() => setMapSatellite(false)}>Mapa</button>
+        <button className={`terra-map-toggle ${mapSatellite ? 'active' : ''}`} onClick={() => setMapSatellite(true)}>Satélite</button>
+        <div className="terra-map-spacer" />
+        {drawMode === 'none' && fazenda && (
+          <>
+            <button className="terra-btn-draw" onClick={() => { setDrawMode('perimetro'); setDrawPoints([]) }}>
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="2,14 8,2 14,14" strokeLinejoin="round"/></svg>
+              Desenhar Perímetro
+            </button>
+            {fazTalhoes.length > 0 && (
+              <select className="terra-draw-select" value="" onChange={e => { if (e.target.value) { setDrawTalhaoId(e.target.value); setDrawMode('talhao'); setDrawPoints([]) } }}>
+                <option value="">Desenhar Talhão...</option>
+                {fazTalhoes.filter(t => t.poligono.length < 3).map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
+              </select>
+            )}
+          </>
+        )}
+        {drawMode !== 'none' && (
+          <div className="terra-draw-bar">
+            <span className="terra-draw-label">
+              {drawMode === 'perimetro' ? 'Desenhando perímetro' : 'Desenhando talhão'} — clique no mapa para adicionar pontos ({drawPoints.length} pontos)
+            </span>
+            <button className="terra-btn-draw terra-btn-undo" onClick={undoDrawPoint} disabled={drawPoints.length === 0}>Desfazer</button>
+            <button className="terra-btn-primary" onClick={finishDraw} disabled={drawPoints.length < 3}>Finalizar</button>
+            <button className="terra-btn-secondary" onClick={cancelDraw}>Cancelar</button>
+          </div>
+        )}
+      </div>
+      <div ref={mapRef} className="terra-map-container" />
+      {fazTalhoes.length > 0 && (
+        <div className="terra-map-legend">
+          {TALHAO_USOS.filter(u => fazTalhoes.some(t => t.uso === u.value)).map(u => (
+            <span key={u.value} className="terra-legend-item"><span className="terra-legend-dot" style={{ background: u.cor }} />{u.label}</span>
+          ))}
+        </div>
+      )}
+      {!fazenda && <p className="terra-muted" style={{ marginTop: 12 }}>Cadastre uma fazenda com coordenadas para ver no mapa.</p>}
+    </div>
+  )
+
+  // ─── TALHÕES
+  const renderTalhoes = () => (
+    <div className="terra-talhoes">
+      <div className="terra-section-header">
+        <h4>Talhões{fazenda ? ` — ${fazenda.nome}` : ''}</h4>
+        <button className="terra-btn-primary" onClick={() => { setTalForm(emptyTalhao); setEditTalhaoId(null); setShowTalhaoForm(true) }} disabled={!fazenda}>+ Novo Talhão</button>
+      </div>
+      {fazenda && fazenda.areaTotal > 0 && somaTalhoes > fazenda.areaTotal && (
+        <div className="terra-alert">Soma dos talhões ({fmtHa(somaTalhoes)}) excede a área total ({fmtHa(fazenda.areaTotal)})</div>
+      )}
+      {showTalhaoForm && (
+        <div className="terra-form">
+          <div className="terra-fields">
+            {renderField('Nome', <input value={talForm.nome} onChange={e => setTalForm(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Talhão 3" />)}
+            {renderField('Uso', <select value={talForm.uso} onChange={e => setTalForm(p => ({ ...p, uso: e.target.value as TalhaoUso }))}>{TALHAO_USOS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}</select>)}
+            {renderField('Área (ha)', <input type="number" step="0.01" value={talForm.areaHa || ''} onChange={e => setTalForm(p => ({ ...p, areaHa: parseFloat(e.target.value) || 0 }))} />)}
+            {talForm.uso === 'lavoura' && renderField('Cultura', <select value={talForm.cultura} onChange={e => setTalForm(p => ({ ...p, cultura: e.target.value }))}><option value="">Selecione</option>{TERRA_CULTURAS.map(c => <option key={c} value={c}>{c}</option>)}</select>)}
+            {talForm.uso === 'lavoura' && renderField('Safra', <input value={talForm.safra} onChange={e => setTalForm(p => ({ ...p, safra: e.target.value }))} placeholder="Ex: 2025/26" />)}
+            {renderField('Coordenadas (lat,lng por linha)', <textarea rows={3} value={talForm.poligono.map(p => p.join(',')).join('\n')} onChange={e => setTalForm(p => ({ ...p, poligono: e.target.value.split('\n').filter(l => l.includes(',')).map(l => { const [a, b] = l.split(',').map(Number); return [a, b] as [number, number] }) }))} placeholder="-23.55,-51.43&#10;-23.56,-51.44&#10;-23.55,-51.45" />, true)}
+            {renderField('Notas', <textarea rows={2} value={talForm.notas} onChange={e => setTalForm(p => ({ ...p, notas: e.target.value }))} />, true)}
+          </div>
+          <div className="terra-form-actions">
+            <button className="terra-btn-primary" onClick={saveTalhao}>Salvar</button>
+            <button className="terra-btn-secondary" onClick={() => { setShowTalhaoForm(false); setEditTalhaoId(null); setTalForm(emptyTalhao) }}>Cancelar</button>
+          </div>
+        </div>
+      )}
+      <div className="terra-talhao-grid">
+        {fazTalhoes.map(t => {
+          const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
+          return (
+            <div key={t.id} className="terra-talhao-card">
+              <div className="terra-talhao-header">
+                <span className="terra-talhao-badge" style={{ background: usoInfo?.cor || '#6b7280' }}>{usoInfo?.label || t.uso}</span>
+                <span className="terra-talhao-area">{fmtHa(t.areaHa)}</span>
+              </div>
+              <div className="terra-talhao-name">{t.nome}</div>
+              {t.cultura && <div className="terra-talhao-detail">Cultura: {t.cultura}</div>}
+              {t.safra && <div className="terra-talhao-detail">Safra: {t.safra}</div>}
+              {t.notas && <div className="terra-talhao-detail terra-muted">{t.notas}</div>}
+              <div className="terra-talhao-actions">
+                <button onClick={() => editTalhao(t)}>Editar</button>
+                <button onClick={() => deleteTalhao(t.id)}>Excluir</button>
+              </div>
+            </div>
+          )
+        })}
+        {!fazTalhoes.length && <p className="terra-muted">Nenhum talhão cadastrado.</p>}
+      </div>
+    </div>
+  )
+
+  // ─── DOCUMENTOS
+  const renderDocs = () => {
+    if (!fazenda) return <p className="terra-muted">Cadastre uma fazenda primeiro.</p>
+    const docs = [
+      { label: 'CAR (Cadastro Ambiental Rural)', value: fazenda.carNumero, field: 'carNumero' as const },
+      { label: 'ITR (Imposto Territorial Rural)', value: fazenda.itrNumero, field: 'itrNumero' as const },
+      { label: 'CCIR', value: fazenda.ccir, field: 'ccir' as const },
+      { label: 'Matrícula', value: fazenda.matricula, field: 'matricula' as const },
+    ]
+    return (
+      <div className="terra-docs">
+        <h4>Documentação — {fazenda.nome}</h4>
+        <div className="terra-docs-list">
+          {docs.map(d => (
+            <div key={d.field} className="terra-doc-item">
+              <span className={`terra-doc-status ${d.value ? 'terra-doc-ok' : 'terra-doc-missing'}`}>{d.value ? '✓' : '✗'}</span>
+              <span className="terra-doc-label">{d.label}</span>
+              <span className="terra-doc-value">{d.value || 'Não informado'}</span>
+            </div>
+          ))}
+          <div className="terra-doc-item">
+            <span className={`terra-doc-status ${fazenda.geoReferenciado ? 'terra-doc-ok' : 'terra-doc-missing'}`}>{fazenda.geoReferenciado ? '✓' : '✗'}</span>
+            <span className="terra-doc-label">Georreferenciamento{fazenda.areaTotal > 100 ? ' (obrigatório)' : ''}</span>
+            <span className="terra-doc-value">{fazenda.geoReferenciado ? 'Certificado' : 'Pendente'}</span>
+          </div>
+          <div className="terra-doc-item">
+            <span className={`terra-doc-status ${fazenda.licencaAmbiental ? 'terra-doc-ok' : 'terra-doc-missing'}`}>{fazenda.licencaAmbiental ? '✓' : '✗'}</span>
+            <span className="terra-doc-label">Licença Ambiental</span>
+            <span className="terra-doc-value">{fazenda.licencaAmbiental ? 'Ativa' : 'Pendente'}</span>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  // ─── FAZENDAS (CRUD)
+  const renderFazendas = () => (
+    <div className="terra-fazendas">
+      <div className="terra-section-header">
+        <h4>Fazendas</h4>
+        <button className="terra-btn-primary" onClick={() => { setFazForm(emptyFazenda); setEditFazendaId(null); setShowFazendaForm(true) }}>+ Nova Fazenda</button>
+      </div>
+      {showFazendaForm && (
+        <div className="terra-form">
+          <div className="terra-fields">
+            {renderField('Nome da Fazenda', <input value={fazForm.nome} onChange={e => setFazForm(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Fazenda Boa Vista" />)}
+            {renderField('Município', <input value={fazForm.municipio} onChange={e => setFazForm(p => ({ ...p, municipio: e.target.value }))} />)}
+            {renderField('UF', <select value={fazForm.uf} onChange={e => setFazForm(p => ({ ...p, uf: e.target.value }))}>{TERRA_UFS.map(u => <option key={u} value={u}>{u}</option>)}</select>)}
+            {renderField('Bioma', <select value={fazForm.bioma} onChange={e => setFazForm(p => ({ ...p, bioma: e.target.value }))}><option value="">Selecione</option>{TERRA_BIOMAS.map(b => <option key={b} value={b}>{b}</option>)}</select>)}
+            {renderField('Tipo de Solo', <select value={fazForm.tipoSolo} onChange={e => setFazForm(p => ({ ...p, tipoSolo: e.target.value }))}><option value="">Selecione</option>{TERRA_SOLOS.map(s => <option key={s} value={s}>{s}</option>)}</select>)}
+            {renderField('Relevo', <select value={fazForm.relevo} onChange={e => setFazForm(p => ({ ...p, relevo: e.target.value }))}><option value="">Selecione</option>{TERRA_RELEVOS.map(r => <option key={r} value={r}>{r}</option>)}</select>)}
+            {renderField('Fonte de Água', <input value={fazForm.fonteAgua} onChange={e => setFazForm(p => ({ ...p, fonteAgua: e.target.value }))} placeholder="Ex: Rio, Poço artesiano..." />)}
+          </div>
+          <h5 className="terra-form-subtitle">Áreas (hectares)</h5>
+          <div className="terra-fields">
+            {renderField('Área Total', <input type="number" step="0.01" value={fazForm.areaTotal || ''} onChange={e => setFazForm(p => ({ ...p, areaTotal: parseFloat(e.target.value) || 0 }))} />)}
+            {renderField('Área Útil', <input type="number" step="0.01" value={fazForm.areaUtil || ''} onChange={e => setFazForm(p => ({ ...p, areaUtil: parseFloat(e.target.value) || 0 }))} />)}
+            {renderField('Reserva Legal', <input type="number" step="0.01" value={fazForm.areaReservaLegal || ''} onChange={e => setFazForm(p => ({ ...p, areaReservaLegal: parseFloat(e.target.value) || 0 }))} />)}
+            {renderField('APP', <input type="number" step="0.01" value={fazForm.areaApp || ''} onChange={e => setFazForm(p => ({ ...p, areaApp: parseFloat(e.target.value) || 0 }))} />)}
+            {renderField('Pastagem', <input type="number" step="0.01" value={fazForm.areaPastagem || ''} onChange={e => setFazForm(p => ({ ...p, areaPastagem: parseFloat(e.target.value) || 0 }))} />)}
+            {renderField('Lavoura', <input type="number" step="0.01" value={fazForm.areaLavoura || ''} onChange={e => setFazForm(p => ({ ...p, areaLavoura: parseFloat(e.target.value) || 0 }))} />)}
+            {renderField('Reflorestamento', <input type="number" step="0.01" value={fazForm.areaReflorestamento || ''} onChange={e => setFazForm(p => ({ ...p, areaReflorestamento: parseFloat(e.target.value) || 0 }))} />)}
+            {renderField('Benfeitorias', <input type="number" step="0.01" value={fazForm.areaBenfeitorias || ''} onChange={e => setFazForm(p => ({ ...p, areaBenfeitorias: parseFloat(e.target.value) || 0 }))} />)}
+          </div>
+          <h5 className="terra-form-subtitle">Localização</h5>
+          <div className="terra-fields">
+            {renderField('Latitude', <input type="number" step="0.000001" value={fazForm.latitude || ''} onChange={e => setFazForm(p => ({ ...p, latitude: parseFloat(e.target.value) || 0 }))} placeholder="-23.550520" />)}
+            {renderField('Longitude', <input type="number" step="0.000001" value={fazForm.longitude || ''} onChange={e => setFazForm(p => ({ ...p, longitude: parseFloat(e.target.value) || 0 }))} placeholder="-51.433100" />)}
+            {renderField('Perímetro (lat,lng por linha)', <textarea rows={4} value={fazForm.perimetro.map(p => p.join(',')).join('\n')} onChange={e => setFazForm(p => ({ ...p, perimetro: e.target.value.split('\n').filter(l => l.includes(',')).map(l => { const [a, b] = l.split(',').map(Number); return [a, b] as [number, number] }) }))} placeholder="-23.55,-51.43&#10;-23.56,-51.44&#10;-23.55,-51.45" />, true)}
+          </div>
+          <h5 className="terra-form-subtitle">Documentação</h5>
+          <div className="terra-fields">
+            {renderField('Matrícula', <input value={fazForm.matricula} onChange={e => setFazForm(p => ({ ...p, matricula: e.target.value }))} />)}
+            {renderField('CAR', <input value={fazForm.carNumero} onChange={e => setFazForm(p => ({ ...p, carNumero: e.target.value }))} />)}
+            {renderField('ITR', <input value={fazForm.itrNumero} onChange={e => setFazForm(p => ({ ...p, itrNumero: e.target.value }))} />)}
+            {renderField('CCIR', <input value={fazForm.ccir} onChange={e => setFazForm(p => ({ ...p, ccir: e.target.value }))} />)}
+          </div>
+          <div className="terra-fields">
+            <div className="terra-field terra-check-field"><label><input type="checkbox" checked={fazForm.geoReferenciado} onChange={e => setFazForm(p => ({ ...p, geoReferenciado: e.target.checked }))} /> Georreferenciamento certificado</label></div>
+            <div className="terra-field terra-check-field"><label><input type="checkbox" checked={fazForm.licencaAmbiental} onChange={e => setFazForm(p => ({ ...p, licencaAmbiental: e.target.checked }))} /> Licença Ambiental ativa</label></div>
+          </div>
+          <h5 className="terra-form-subtitle">Valores</h5>
+          <div className="terra-fields">
+            {renderField('Valor Venal', <input value={fazForm.valorVenal} onChange={e => setFazForm(p => ({ ...p, valorVenal: e.target.value }))} placeholder="Ex: 5.000.000,00" />)}
+            {renderField('Valor de Mercado', <input value={fazForm.valorMercado} onChange={e => setFazForm(p => ({ ...p, valorMercado: e.target.value }))} placeholder="Ex: 8.000.000,00" />)}
+          </div>
+          <div className="terra-fields">
+            {renderField('Notas', <textarea rows={3} value={fazForm.notas} onChange={e => setFazForm(p => ({ ...p, notas: e.target.value }))} />, true)}
+          </div>
+          <div className="terra-form-actions">
+            <button className="terra-btn-primary" onClick={saveFazenda}>Salvar</button>
+            <button className="terra-btn-secondary" onClick={() => { setShowFazendaForm(false); setEditFazendaId(null); setFazForm(emptyFazenda) }}>Cancelar</button>
+          </div>
+        </div>
+      )}
+      <div className="terra-fazenda-list">
+        {fazendas.map(f => (
+          <div key={f.id} className={`terra-fazenda-card${f.id === activeFazendaId ? ' terra-fazenda-active' : ''}`} onClick={() => setActiveFazendaId(f.id)}>
+            <div className="terra-fazenda-card-header">
+              <strong>{f.nome}</strong>
+              <span className="terra-fazenda-loc">{f.municipio}{f.uf ? ` — ${f.uf}` : ''}</span>
+            </div>
+            <div className="terra-fazenda-card-body">
+              <span>{fmtHa(f.areaTotal)}</span>
+              <span>{f.bioma || '—'}</span>
+            </div>
+            <div className="terra-talhao-actions">
+              <button onClick={e => { e.stopPropagation(); editFazenda(f) }}>Editar</button>
+              <button onClick={e => { e.stopPropagation(); deleteFazenda(f.id) }}>Excluir</button>
+            </div>
+          </div>
+        ))}
+        {!fazendas.length && <p className="terra-muted">Nenhuma fazenda cadastrada.</p>}
+      </div>
+    </div>
+  )
+
+  return (
+    <div className="terra-page">
+      {fazendas.length > 1 && (
+        <div className="terra-fazenda-selector">
+          <select value={activeFazendaId || ''} onChange={e => setActiveFazendaId(e.target.value)}>
+            {fazendas.map(f => <option key={f.id} value={f.id}>{f.nome}</option>)}
+          </select>
+        </div>
+      )}
+      <div className="terra-tabs">
+        {(['visao', 'mapa', 'talhoes', 'docs', 'fazendas'] as const).map(t => (
+          <button key={t} className={`terra-tab${tab === t ? ' terra-tab-active' : ''}`} onClick={() => setTab(t)}>
+            {{ visao: 'Visão Geral', mapa: 'Mapa', talhoes: 'Talhões', docs: 'Documentos', fazendas: 'Fazendas' }[t]}
+          </button>
+        ))}
+      </div>
+      <div className="terra-tab-content">
+        {tab === 'visao' && renderVisao()}
+        {tab === 'mapa' && renderMapa()}
+        {tab === 'talhoes' && renderTalhoes()}
+        {tab === 'docs' && renderDocs()}
+        {tab === 'fazendas' && renderFazendas()}
+      </div>
+    </div>
+  )
+}
+
 function PaymentHubPage() {
   const [collectors, setCollectors] = useCloudTable<Collector>('collectors', 'lion-collectors')
   const [bills, setBills] = useCloudTable<Bill>('bills', 'lion-bills')
@@ -5674,6 +6268,7 @@ export default function App() {
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M4 18a6 6 0 0 1 12 0"/></svg>, label: 'Família', active: sidebarPage === 'family', action: () => { setSidebarPage('family'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="4" width="16" height="14" rx="2"/><path d="M6 2v4M14 2v4M2 9h16" strokeLinecap="round"/></svg>, label: 'Calendário', active: sidebarPage === 'calendar', action: () => { setSidebarPage('calendar'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l7-6 7 6v9H3V9z" strokeLinejoin="round"/><path d="M7 18V12h6v6" strokeLinecap="round"/><rect x="10" y="4" width="6" height="5" rx="1" fill="currentColor" opacity=".2" stroke="none"/></svg>, label: 'Patrimônio', active: sidebarPage === 'patrimonio', action: () => { setSidebarPage('patrimonio'); setShowSidebar(false) } },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 16l4-3 3 2 4-5 5 3" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 18h16" strokeLinecap="round"/><circle cx="16" cy="5" r="2" fill="currentColor" opacity=".3" stroke="none"/></svg>, label: 'Terra', active: sidebarPage === 'terra', action: () => { setSidebarPage('terra'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="7"/><path d="M10 7v3l2 2" strokeLinecap="round"/><circle cx="10" cy="3" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="17" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="17" cy="10" r="1" fill="currentColor" stroke="none"/></svg>, label: 'Aparência', active: sidebarPage === 'appearance', action: () => { setSidebarPage('appearance'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2h4M10 2v3M7 5h6a1 1 0 0 1 1 1v1H6V6a1 1 0 0 1 1-1zM5 7h10l-1 10H6L5 7z" strokeLinejoin="round"/></svg>, label: 'Configurações', active: sidebarPage === 'settings', action: () => { setSidebarPage('settings'); setShowSidebar(false) } },
           ] as { icon: React.ReactNode; label: string; active?: boolean; badge?: string; action: () => void }[]).map(item => (
@@ -5805,6 +6400,7 @@ export default function App() {
           {sidebarPage === 'goals'        && <GoalsPage />}
           {sidebarPage === 'financas'       && <div className="fin-page-wrap"><FinancePanel onClose={() => setSidebarPage('dashboard')} /></div>}
           {sidebarPage === 'patrimonio'    && <PatrimonioPage />}
+          {sidebarPage === 'terra'          && <TerraPage />}
           {sidebarPage === 'payment-hub'  && <PaymentHubPage />}
           {sidebarPage === 'appearance'   && <AppearancePage themeId={themeId} setThemeId={setThemeId} fontSize={fontSize} setFontSize={setFontSize} accentId={accentId} setAccentId={setAccentId} animations={animations} setAnimations={setAnimations} sidebarFixed={sidebarFixed} setSidebarFixed={setSidebarFixed} />}
           {sidebarPage === 'settings'     && <SettingsPage user={user} />}
