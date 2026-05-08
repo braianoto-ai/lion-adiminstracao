@@ -6056,7 +6056,7 @@ export default function App() {
       })()}
 
       {/* keep legacy section components referenced to avoid unused-locals TS error */}
-      {false && <><PatrimonySection /><NotesSection onOpenNotepad={toggleNp} /></>}
+      {false && <><PatrimonySection /><NotesSection onOpenNotepad={toggleNp} /><RentalsSection /><MaintenanceSection /><VehicleHistorySection />{fxRates}</>}
 
       </div>{/* /main-col */}
 
