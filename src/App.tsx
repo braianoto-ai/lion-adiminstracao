@@ -5668,11 +5668,11 @@ export default function App() {
         <nav className="sidebar-nav">
           {([
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="2" width="7" height="7" rx="1"/><rect x="2" y="11" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></svg>, label: 'Dashboard', action: () => { setSidebarPage('dashboard'); setShowSidebar(false) }, active: sidebarPage === 'dashboard' },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="5" width="16" height="11" rx="2"/><path d="M2 9h16" strokeLinecap="round"/><path d="M5 13h3M11 13h4" strokeLinecap="round"/></svg>, label: 'Hub de Pagamentos', active: sidebarPage === 'payment-hub', action: () => { setSidebarPage('payment-hub'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 2v16M6 6h5.5a2.5 2.5 0 0 1 0 5H6m0 0h6a2.5 2.5 0 0 1 0 5H6" strokeLinecap="round"/></svg>, label: 'Finanças', active: sidebarPage === 'financas', action: () => { setSidebarPage('financas'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M4 18a6 6 0 0 1 12 0"/></svg>, label: 'Família', active: sidebarPage === 'family', action: () => { setSidebarPage('family'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="4" width="16" height="14" rx="2"/><path d="M6 2v4M14 2v4M2 9h16" strokeLinecap="round"/></svg>, label: 'Calendário', active: sidebarPage === 'calendar', action: () => { setSidebarPage('calendar'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l7-6 7 6v9H3V9z" strokeLinejoin="round"/><path d="M7 18V12h6v6" strokeLinecap="round"/><rect x="10" y="4" width="6" height="5" rx="1" fill="currentColor" opacity=".2" stroke="none"/></svg>, label: 'Patrimônio', active: sidebarPage === 'patrimonio', action: () => { setSidebarPage('patrimonio'); setShowSidebar(false) } },
-            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="5" width="16" height="11" rx="2"/><path d="M2 9h16" strokeLinecap="round"/><path d="M5 13h3M11 13h4" strokeLinecap="round"/></svg>, label: 'Hub de Pagamentos', active: sidebarPage === 'payment-hub', action: () => { setSidebarPage('payment-hub'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="7"/><path d="M10 7v3l2 2" strokeLinecap="round"/><circle cx="10" cy="3" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="17" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="17" cy="10" r="1" fill="currentColor" stroke="none"/></svg>, label: 'Aparência', active: sidebarPage === 'appearance', action: () => { setSidebarPage('appearance'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2h4M10 2v3M7 5h6a1 1 0 0 1 1 1v1H6V6a1 1 0 0 1 1-1zM5 7h10l-1 10H6L5 7z" strokeLinejoin="round"/></svg>, label: 'Configurações', active: sidebarPage === 'settings', action: () => { setSidebarPage('settings'); setShowSidebar(false) } },
           ] as { icon: React.ReactNode; label: string; active?: boolean; badge?: string; action: () => void }[]).map(item => (
@@ -5769,34 +5769,6 @@ export default function App() {
               </svg>
             )}
           </button>
-          <button className={`share-header-btn${showShare ? ' share-header-active' : ''}`} onClick={toggleShare} title="Compartilhar">
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="15" cy="4" r="2"/><circle cx="15" cy="16" r="2"/><circle cx="5" cy="10" r="2"/>
-              <path d="M13 5l-6 4M13 15l-6-4" strokeLinecap="round"/>
-            </svg>
-          </button>
-          <button className="pdf-btn" onClick={() => window.print()} title="Exportar PDF">
-            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M5 3h7l3 3v11H5V3z" strokeLinejoin="round"/>
-              <path d="M12 3v3h3" strokeLinejoin="round"/>
-              <path d="M7 11h6M7 14h4" strokeLinecap="round"/>
-            </svg>
-            <span>PDF</span>
-          </button>
-          <div className="kb-legend-wrap">
-            <button className="kb-legend-btn" onClick={() => setShowKbLegend(v => !v)} title="Atalhos de teclado">
-              <span>?</span>
-            </button>
-            {showKbLegend && (
-              <div className="kb-legend">
-                <div className="kb-legend-title">Atalhos de teclado</div>
-                {[['F','Finanças'],['N','Notas'],['C','Calculadora'],['S','Simulador'],['A','Alertas'],['D','Documentos'],['Esc','Fechar painel']].map(([k,l]) => (
-                  <div key={k} className="kb-row"><kbd>{k}</kbd><span>{l}</span></div>
-                ))}
-              </div>
-            )}
-          </div>
-
           <button className={`bell-btn${showAlerts ? ' bell-active' : ''}`} onClick={toggleAlerts} title="Alertas">
             <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M10 2a6 6 0 0 0-6 6v3l-1.5 2.5h15L16 11V8a6 6 0 0 0-6-6z" strokeLinejoin="round"/>
@@ -5864,10 +5836,6 @@ export default function App() {
         const curKey = `${now2.getFullYear()}-${String(now2.getMonth()+1).padStart(2,'0')}`
         const monthInc = txsRaw.filter(t=>t.date===curKey&&t.type==='receita').reduce((s,t)=>s+t.amount,0)
         const monthExp = txsRaw.filter(t=>t.date===curKey&&t.type==='despesa').reduce((s,t)=>s+t.amount,0)
-
-        // Goals top 3
-        const goalsRaw: Goal[] = (() => { try { return JSON.parse(localStorage.getItem('lion-goals') || '[]') } catch { return [] } })()
-        const topGoals = [...goalsRaw].sort((a,b) => (b.current/Math.max(b.target,1))-(a.current/Math.max(a.target,1))).slice(0,4)
 
         const momPct = dashData.lastMonthNet !== 0 ? Math.round((dashData.thisMonthNet-dashData.lastMonthNet)/Math.abs(dashData.lastMonthNet)*100) : 0
 
@@ -5962,28 +5930,63 @@ export default function App() {
                 ))}
               </div>
 
-              {/* Goals summary */}
-              <div className="bc">
-                <div className="bc-title">
-                  Metas
-                  <button className="bc-title-btn" onClick={() => { setSidebarPage('goals'); setShowSidebar(false) }}>Ver todas</button>
-                </div>
-                {topGoals.length === 0 ? (
-                  <div className="feed-empty">Nenhuma meta cadastrada.</div>
-                ) : topGoals.map(g => {
-                  const p = g.target > 0 ? Math.min((g.current/g.target)*100,100) : 0
-                  const barC = p >= 100 ? 'linear-gradient(90deg,var(--green),var(--green-l))' : p >= 70 ? 'var(--green)' : p >= 40 ? 'var(--blue)' : 'var(--purple-l, #a78bfa)'
-                  return (
-                    <div key={g.id} className="gs-row">
-                      <div className="gs-top">
-                        <span className="gs-name">{g.name}</span>
-                        <span className="gs-pct" style={{ color: p >= 100 ? 'var(--green-l)' : 'var(--text)' }}>{Math.round(p)}%</span>
-                      </div>
-                      <div className="gs-bar"><div className="gs-fill" style={{ width:`${p}%`, background: barC }}/></div>
+              {/* Hub de Pagamentos summary */}
+              {(() => {
+                const hubBills: Bill[] = (() => { try { return JSON.parse(localStorage.getItem('lion-bills') || '[]') } catch { return [] } })()
+                const hubNow = new Date()
+                const hubMonth = `${hubNow.getFullYear()}-${String(hubNow.getMonth() + 1).padStart(2, '0')}`
+                const monthBills = hubBills.filter(b => b.dueDate?.startsWith(hubMonth) && b.status !== 'cancelado')
+                const aberto = monthBills.filter(b => effectiveStatus(b) === 'em_aberto')
+                const vencido = monthBills.filter(b => effectiveStatus(b) === 'vencido')
+                const pago = monthBills.filter(b => b.status === 'pago')
+                const totalAberto = aberto.reduce((s, b) => s + b.amount, 0) + vencido.reduce((s, b) => s + b.amount, 0)
+                const totalPago = pago.reduce((s, b) => s + b.amount, 0)
+                const progress = (totalAberto + totalPago) > 0 ? Math.round((totalPago / (totalAberto + totalPago)) * 100) : 0
+                return (
+                  <div className="bc">
+                    <div className="bc-title">
+                      Contas do Mês
+                      <button className="bc-title-btn" onClick={() => setSidebarPage('payment-hub')}>Ver todas</button>
                     </div>
-                  )
-                })}
-              </div>
+                    {monthBills.length === 0 ? (
+                      <div className="feed-empty">Nenhuma conta este mês.</div>
+                    ) : (
+                      <>
+                        <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                          <div style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', background: 'rgba(239,68,68,.1)' }}>
+                            <div style={{ fontSize: 'calc(.65rem * var(--fs))', color: 'var(--text)', opacity: .6 }}>A pagar</div>
+                            <div style={{ fontSize: 'calc(.85rem * var(--fs))', fontWeight: 600, color: vencido.length > 0 ? 'var(--red)' : 'var(--text)' }}>{fmt(totalAberto)}</div>
+                            <div style={{ fontSize: 'calc(.6rem * var(--fs))', color: 'var(--text)', opacity: .5 }}>{aberto.length + vencido.length} conta{(aberto.length + vencido.length) !== 1 ? 's' : ''}{vencido.length > 0 ? ` · ${vencido.length} vencida` : ''}</div>
+                          </div>
+                          <div style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', background: 'rgba(16,185,129,.1)' }}>
+                            <div style={{ fontSize: 'calc(.65rem * var(--fs))', color: 'var(--text)', opacity: .6 }}>Pago</div>
+                            <div style={{ fontSize: 'calc(.85rem * var(--fs))', fontWeight: 600, color: 'var(--green)' }}>{fmt(totalPago)}</div>
+                            <div style={{ fontSize: 'calc(.6rem * var(--fs))', color: 'var(--text)', opacity: .5 }}>{pago.length} quitada{pago.length !== 1 ? 's' : ''}</div>
+                          </div>
+                        </div>
+                        <div style={{ background: 'var(--bg3)', borderRadius: '6px', height: '6px', overflow: 'hidden' }}>
+                          <div style={{ width: `${progress}%`, height: '100%', background: 'var(--green)', borderRadius: '6px', transition: 'width .3s' }} />
+                        </div>
+                        <div style={{ fontSize: 'calc(.6rem * var(--fs))', color: 'var(--text)', opacity: .5, marginTop: '4px', textAlign: 'right' }}>{progress}% quitado</div>
+                        {vencido.slice(0, 3).map(b => {
+                          const collectors: Collector[] = (() => { try { return JSON.parse(localStorage.getItem('lion-collectors') || '[]') } catch { return [] } })()
+                          const c = collectors.find(cl => cl.id === b.collectorId)
+                          return (
+                            <div key={b.id} className="feed-row">
+                              <div className="feed-dot" style={{ background: 'var(--red)' }} />
+                              <div className="feed-info">
+                                <div className="feed-name">{c?.name || 'Conta'}{b.description ? ` — ${b.description}` : ''}</div>
+                                <div className="feed-time">Vencida · {fmtDate(b.dueDate)}</div>
+                              </div>
+                              <div className="feed-amt" style={{ color: '#f87171' }}>{fmt(b.amount)}</div>
+                            </div>
+                          )
+                        })}
+                      </>
+                    )}
+                  </div>
+                )
+              })()}
 
 
             </div>
@@ -5993,7 +5996,7 @@ export default function App() {
       })()}
 
       {/* keep legacy section components referenced to avoid unused-locals TS error */}
-      {false && <><PatrimonySection /><NotesSection onOpenNotepad={toggleNp} /><RentalsSection /><MaintenanceSection /><VehicleHistorySection />{fxRates}</>}
+      {false && <><PatrimonySection /><NotesSection onOpenNotepad={toggleNp} /><RentalsSection /><MaintenanceSection /><VehicleHistorySection />{fxRates}{toggleShare}{showKbLegend}</>}
 
       </div>{/* /main-col */}
 
