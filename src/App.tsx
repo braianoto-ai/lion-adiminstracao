@@ -6019,36 +6019,7 @@ export default function App() {
                 })}
               </div>
 
-              {/* Quick actions */}
-              <div className="bc">
-                <div className="bc-title">Ações Rápidas</div>
-                <div className="qa-bento-grid">
-                  {[
-                    { label:'Transação', sub:'Receita ou gasto', color:'rgba(192,57,43,.12)', tc:'var(--red-l)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M8 2v12M4 6l4-4 4 4M4 10l4 4 4-4" strokeLinecap="round"/></svg>, action: () => { setSidebarPage('financas'); setShowSidebar(false) } },
-                    { label:'Novo Imóvel', sub:'Casas, aptos', color:'rgba(59,130,246,.12)', tc:'var(--blue-l)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M2 7l6-5 6 5v7H2V7z" strokeLinejoin="round"/><path d="M6 14V9h4v5" strokeLinecap="round"/></svg>, action:()=>setModal('imovel') },
-                    { label:'Novo Carro', sub:'Veículos', color:'rgba(245,158,11,.12)', tc:'var(--amber-l)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1" y="6" width="14" height="7" rx="1.5"/><path d="M4 6V5a3 3 0 0 1 3-3h2a3 3 0 0 1 3 3v1"/><circle cx="4.5" cy="13" r="1.5"/><circle cx="11.5" cy="13" r="1.5"/></svg>, action:()=>setModal('carro') },
-                    { label:'Nova Meta', sub:'Objetivos', color:'rgba(139,92,246,.12)', tc:'var(--purple-l,#a78bfa)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="3"/><circle cx="8" cy="8" r="1" fill="currentColor" stroke="none"/></svg>, action:()=>{ setSidebarPage('goals'); setShowSidebar(false) } },
-                    { label:'Nova Viagem', sub:'Planejamento', color:'rgba(6,182,212,.12)', tc:'#67e8f9', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M2 12l3-6 3 3 2.5-4 3 7H2z" strokeLinecap="round" strokeLinejoin="round"/><circle cx="11.5" cy="3.5" r="1.2"/></svg>, action:()=>{ setSidebarPage('trips'); setShowSidebar(false) } },
-                    { label:'Notas', sub:'Rascunhos', color:'rgba(16,185,129,.12)', tc:'var(--green-l)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 6h6M5 9h4" strokeLinecap="round"/></svg>, action: toggleNp },
-                  ].map(q => (
-                    <button key={q.label} className="qa-bento-item" onClick={q.action}>
-                      <div className="qa-bento-ico" style={{ background: q.color, color: q.tc }}>{q.icon}</div>
-                      <div>
-                        <div className="qa-bento-lbl">{q.label}</div>
-                        <div className="qa-bento-sub">{q.sub}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
 
-            </div>
-
-            {/* ── Row 3: Rentals + Maintenance + Vehicles ── */}
-            <div className="bento-row bento-r3">
-              <RentalsSection />
-              <MaintenanceSection />
-              <VehicleHistorySection />
             </div>
 
           </main>
@@ -6062,17 +6033,6 @@ export default function App() {
 
       {/* ── Floating Buttons ── */}
       <div className="floats">
-        <button className={`float-btn float-docs${showDocs ? ' float-active' : ''}`} onClick={toggleDocs} title="Documentos (D)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-          </svg>
-        </button>
-        <button className={`float-btn float-sim${showSim ? ' float-active' : ''}`} onClick={toggleSim} title="Simulador (S)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M3 9l9-7 9 7v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-            <path d="M9 22V12h6v10"/>
-          </svg>
-        </button>
         <button className={`float-btn float-np${showNp ? ' float-active' : ''}`} onClick={toggleNp} title="Notas (N)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M4 4h16v16H4z" rx="2"/>
