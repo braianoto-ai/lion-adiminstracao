@@ -5002,6 +5002,9 @@ function TerraPage() {
   const [drawPoints, setDrawPoints] = useState<[number, number][]>([])
   const drawLayerRef = useRef<L.Polyline | null>(null)
   const [drawTalhaoId, setDrawTalhaoId] = useState<string | null>(null)
+  const [showQuickTalhao, setShowQuickTalhao] = useState(false)
+  const [quickTalhaoName, setQuickTalhaoName] = useState('')
+  const [quickTalhaoUso, setQuickTalhaoUso] = useState<TalhaoUso>('lavoura')
 
   const emptyFazenda: Omit<TerraFazenda, 'id' | 'createdAt'> = {
     nome: '', municipio: '', uf: 'PR', matricula: '', carNumero: '', itrNumero: '', ccir: '',
@@ -5274,19 +5277,42 @@ function TerraPage() {
         <button className={`terra-map-toggle ${!mapSatellite ? 'active' : ''}`} onClick={() => setMapSatellite(false)}>Mapa</button>
         <button className={`terra-map-toggle ${mapSatellite ? 'active' : ''}`} onClick={() => setMapSatellite(true)}>Satélite</button>
         <div className="terra-map-spacer" />
-        {drawMode === 'none' && fazenda && (
+        {drawMode === 'none' && fazenda && !showQuickTalhao && (
           <>
             <button className="terra-btn-draw" onClick={() => { setDrawMode('perimetro'); setDrawPoints([]) }}>
               <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="2,14 8,2 14,14" strokeLinejoin="round"/></svg>
               Desenhar Perímetro
             </button>
-            {fazTalhoes.length > 0 && (
+            <button className="terra-btn-draw" onClick={() => { setShowQuickTalhao(true); setQuickTalhaoName(''); setQuickTalhaoUso('lavoura') }}>
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="12" height="12" rx="2" strokeLinejoin="round"/><path d="M8 5v6M5 8h6" strokeLinecap="round"/></svg>
+              Desenhar Talhão
+            </button>
+            {fazTalhoes.filter(t => t.poligono.length < 3).length > 0 && (
               <select className="terra-draw-select" value="" onChange={e => { if (e.target.value) { setDrawTalhaoId(e.target.value); setDrawMode('talhao'); setDrawPoints([]) } }}>
-                <option value="">Desenhar Talhão...</option>
+                <option value="">Redesenhar Talhão...</option>
                 {fazTalhoes.filter(t => t.poligono.length < 3).map(t => <option key={t.id} value={t.id}>{t.nome}</option>)}
               </select>
             )}
           </>
+        )}
+        {showQuickTalhao && drawMode === 'none' && (
+          <div className="terra-draw-bar">
+            <input className="terra-quick-input" placeholder="Nome do talhão (ex: Talhão 1)" value={quickTalhaoName} onChange={e => setQuickTalhaoName(e.target.value)} />
+            <select className="terra-draw-select" value={quickTalhaoUso} onChange={e => setQuickTalhaoUso(e.target.value as TalhaoUso)}>
+              {TALHAO_USOS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+            </select>
+            <button className="terra-btn-primary" disabled={!quickTalhaoName.trim()} onClick={() => {
+              if (!quickTalhaoName.trim() || !fazenda) return
+              const cor = TALHAO_USOS.find(u => u.value === quickTalhaoUso)?.cor || '#6b7280'
+              const nt: TerraTalhao = { id: crypto.randomUUID(), fazendaId: fazenda.id, nome: quickTalhaoName.trim(), uso: quickTalhaoUso, areaHa: 0, cultura: '', safra: '', poligono: [], cor, notas: '', createdAt: new Date().toISOString() }
+              setTalhoes(prev => [...prev, nt])
+              setDrawTalhaoId(nt.id)
+              setDrawMode('talhao')
+              setDrawPoints([])
+              setShowQuickTalhao(false)
+            }}>Iniciar Desenho</button>
+            <button className="terra-btn-secondary" onClick={() => setShowQuickTalhao(false)}>Cancelar</button>
+          </div>
         )}
         {drawMode !== 'none' && (
           <div className="terra-draw-bar">
