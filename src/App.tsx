@@ -5670,11 +5670,7 @@ export default function App() {
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 2v16M6 6h5.5a2.5 2.5 0 0 1 0 5H6m0 0h6a2.5 2.5 0 0 1 0 5H6" strokeLinecap="round"/></svg>, label: 'Finanças', active: sidebarPage === 'financas', action: () => { setSidebarPage('financas'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M4 18a6 6 0 0 1 12 0"/></svg>, label: 'Família', active: sidebarPage === 'family', action: () => { setSidebarPage('family'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="4" width="16" height="14" rx="2"/><path d="M6 2v4M14 2v4M2 9h16" strokeLinecap="round"/></svg>, label: 'Calendário', active: sidebarPage === 'calendar', action: () => { setSidebarPage('calendar'); setShowSidebar(false) } },
-            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 15l4-8 4 4 3-5 3 9H3z" strokeLinecap="round" strokeLinejoin="round"/><circle cx="14" cy="5" r="1.5"/></svg>, label: 'Próximas Viagens', active: sidebarPage === 'trips', action: () => { setSidebarPage('trips'); setShowSidebar(false) } },
-            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="8"/><circle cx="10" cy="10" r="4.5"/><circle cx="10" cy="10" r="1.5" fill="currentColor" stroke="none"/></svg>, label: 'Metas', active: sidebarPage === 'goals', action: () => { setSidebarPage('goals'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l7-6 7 6v9H3V9z" strokeLinejoin="round"/><path d="M7 18V12h6v6" strokeLinecap="round"/><rect x="10" y="4" width="6" height="5" rx="1" fill="currentColor" opacity=".2" stroke="none"/></svg>, label: 'Patrimônio', active: sidebarPage === 'patrimonio', action: () => { setSidebarPage('patrimonio'); setShowSidebar(false) } },
-            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2z"/><path d="M8 8h4M8 12h4" strokeLinecap="round"/></svg>, label: 'Documentos', action: () => { setShowSidebar(false); toggleDocs() } },
-            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="3"/><path d="M10 2v2M10 16v2M2 10h2M16 10h2M4.22 4.22l1.42 1.42M14.36 14.36l1.42 1.42M4.22 15.78l1.42-1.42M14.36 5.64l1.42-1.42" strokeLinecap="round"/></svg>, label: 'Simulador', action: () => { setShowSidebar(false); toggleSim() } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="5" width="16" height="11" rx="2"/><path d="M2 9h16" strokeLinecap="round"/><path d="M5 13h3M11 13h4" strokeLinecap="round"/></svg>, label: 'Hub de Pagamentos', active: sidebarPage === 'payment-hub', action: () => { setSidebarPage('payment-hub'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="7"/><path d="M10 7v3l2 2" strokeLinecap="round"/><circle cx="10" cy="3" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="17" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="17" cy="10" r="1" fill="currentColor" stroke="none"/></svg>, label: 'Aparência', active: sidebarPage === 'appearance', action: () => { setSidebarPage('appearance'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2h4M10 2v3M7 5h6a1 1 0 0 1 1 1v1H6V6a1 1 0 0 1 1-1zM5 7h10l-1 10H6L5 7z" strokeLinejoin="round"/></svg>, label: 'Configurações', active: sidebarPage === 'settings', action: () => { setSidebarPage('settings'); setShowSidebar(false) } },
@@ -5760,16 +5756,6 @@ export default function App() {
         </div>
 
         <div className="header-right">
-          <div className="header-date">
-            {new Date().toLocaleDateString('pt-BR', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })}
-          </div>
-          {fxRates.map(r => (
-            <div key={r.code} className={`usd-ticker${parseFloat(r.pct) >= 0 ? ' usd-up' : ' usd-down'}`} title={`${r.code}/BRL — atualizado a cada 5 min`}>
-              <span className="usd-label">{r.code}</span>
-              <span className="usd-value">{r.code === 'BTC' ? `R$${r.bid}` : `R$ ${r.bid}`}</span>
-              <span className="usd-pct">{parseFloat(r.pct) >= 0 ? '▲' : '▼'} {Math.abs(parseFloat(r.pct)).toFixed(2)}%</span>
-            </div>
-          ))}
           <button className="theme-toggle-btn" onClick={() => setThemeId(t => t === 'light' ? 'charcoal' : 'light')} title={themeId === 'light' ? 'Modo escuro' : 'Modo claro'}>
             {themeId === 'light' ? (
               <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -5896,27 +5882,6 @@ export default function App() {
                 <span className={`hero-pill ${momPct >= 0 ? 'hero-pill-pos' : 'hero-pill-neg'}`}>
                   {momPct >= 0 ? '↑' : '↓'} {Math.abs(momPct)}% vs mês anterior
                 </span>
-                <div className="hero-divider" />
-                <div className="hero-stats">
-                  <div>
-                    <div className="hero-stat-lbl">Receita este mês</div>
-                    <div className="hero-stat-val">{fmt(monthInc)}</div>
-                  </div>
-                  <div>
-                    <div className="hero-stat-lbl">Gastos este mês</div>
-                    <div className="hero-stat-val">{fmt(monthExp)}</div>
-                  </div>
-                  <div>
-                    <div className="hero-stat-lbl">Em metas</div>
-                    <div className="hero-stat-val">{fmt(dashData.totalGoals)}</div>
-                    <div className="hero-stat-sub">{dashData.goalsProgress}% do objetivo</div>
-                  </div>
-                  <div>
-                    <div className="hero-stat-lbl">Aluguéis/mês</div>
-                    <div className="hero-stat-val">{fmt(dashData.monthlyRent)}</div>
-                    <div className="hero-stat-sub">{dashData.rentCount} imóvel(is)</div>
-                  </div>
-                </div>
                 {sparkPath && (
                   <div className="hero-spark">
                     <div className="hero-spark-lbl">Evolução — últimos 6 meses</div>
@@ -6019,36 +5984,7 @@ export default function App() {
                 })}
               </div>
 
-              {/* Quick actions */}
-              <div className="bc">
-                <div className="bc-title">Ações Rápidas</div>
-                <div className="qa-bento-grid">
-                  {[
-                    { label:'Transação', sub:'Receita ou gasto', color:'rgba(192,57,43,.12)', tc:'var(--red-l)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M8 2v12M4 6l4-4 4 4M4 10l4 4 4-4" strokeLinecap="round"/></svg>, action: () => { setSidebarPage('financas'); setShowSidebar(false) } },
-                    { label:'Novo Imóvel', sub:'Casas, aptos', color:'rgba(59,130,246,.12)', tc:'var(--blue-l)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M2 7l6-5 6 5v7H2V7z" strokeLinejoin="round"/><path d="M6 14V9h4v5" strokeLinecap="round"/></svg>, action:()=>setModal('imovel') },
-                    { label:'Novo Carro', sub:'Veículos', color:'rgba(245,158,11,.12)', tc:'var(--amber-l)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="1" y="6" width="14" height="7" rx="1.5"/><path d="M4 6V5a3 3 0 0 1 3-3h2a3 3 0 0 1 3 3v1"/><circle cx="4.5" cy="13" r="1.5"/><circle cx="11.5" cy="13" r="1.5"/></svg>, action:()=>setModal('carro') },
-                    { label:'Nova Meta', sub:'Objetivos', color:'rgba(139,92,246,.12)', tc:'var(--purple-l,#a78bfa)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="8" cy="8" r="6"/><circle cx="8" cy="8" r="3"/><circle cx="8" cy="8" r="1" fill="currentColor" stroke="none"/></svg>, action:()=>{ setSidebarPage('goals'); setShowSidebar(false) } },
-                    { label:'Nova Viagem', sub:'Planejamento', color:'rgba(6,182,212,.12)', tc:'#67e8f9', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M2 12l3-6 3 3 2.5-4 3 7H2z" strokeLinecap="round" strokeLinejoin="round"/><circle cx="11.5" cy="3.5" r="1.2"/></svg>, action:()=>{ setSidebarPage('trips'); setShowSidebar(false) } },
-                    { label:'Notas', sub:'Rascunhos', color:'rgba(16,185,129,.12)', tc:'var(--green-l)', icon:<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 6h6M5 9h4" strokeLinecap="round"/></svg>, action: toggleNp },
-                  ].map(q => (
-                    <button key={q.label} className="qa-bento-item" onClick={q.action}>
-                      <div className="qa-bento-ico" style={{ background: q.color, color: q.tc }}>{q.icon}</div>
-                      <div>
-                        <div className="qa-bento-lbl">{q.label}</div>
-                        <div className="qa-bento-sub">{q.sub}</div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
 
-            </div>
-
-            {/* ── Row 3: Rentals + Maintenance + Vehicles ── */}
-            <div className="bento-row bento-r3">
-              <RentalsSection />
-              <MaintenanceSection />
-              <VehicleHistorySection />
             </div>
 
           </main>
@@ -6062,17 +5998,6 @@ export default function App() {
 
       {/* ── Floating Buttons ── */}
       <div className="floats">
-        <button className={`float-btn float-docs${showDocs ? ' float-active' : ''}`} onClick={toggleDocs} title="Documentos (D)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-          </svg>
-        </button>
-        <button className={`float-btn float-sim${showSim ? ' float-active' : ''}`} onClick={toggleSim} title="Simulador (S)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M3 9l9-7 9 7v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
-            <path d="M9 22V12h6v10"/>
-          </svg>
-        </button>
         <button className={`float-btn float-np${showNp ? ' float-active' : ''}`} onClick={toggleNp} title="Notas (N)">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
             <path d="M4 4h16v16H4z" rx="2"/>
