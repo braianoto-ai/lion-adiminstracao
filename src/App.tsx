@@ -5371,35 +5371,44 @@ function TerraPage() {
               const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
               const drawn = t.poligono.length >= 3
               const visible = !hiddenTalhoes.has(t.id)
+              const cor = t.cor || usoInfo?.cor || '#6b7280'
               const pct = fazenda ? ((t.areaHa / fazenda.areaTotal) * 100).toFixed(1) : '—'
               return (
                 <div key={t.id} className={`terra-map-talhao-item${!visible ? ' terra-talhao-hidden' : ''}`}>
-                  <input type="checkbox" checked={visible} onChange={() => setHiddenTalhoes(prev => {
-                    const next = new Set(prev)
-                    if (next.has(t.id)) next.delete(t.id); else next.add(t.id)
-                    return next
-                  })} className="terra-talhao-check" style={{ accentColor: t.cor || usoInfo?.cor }} />
-                  <span className="terra-talhao-badge" style={{ background: t.cor || usoInfo?.cor || '#6b7280', fontSize: 'calc(.62rem * var(--fs))', padding: '1px 7px' }}>{usoInfo?.label}</span>
-                  <input type="color" value={t.cor || usoInfo?.cor || '#6b7280'} onChange={e => setTalhoes(prev => prev.map(x => x.id === t.id ? { ...x, cor: e.target.value } : x))} className="terra-color-swatch" title="Alterar cor" />
+                  <div className="terra-sidebar-color-dot" style={{ background: cor }} />
                   <div className="terra-map-talhao-info">
-                    <strong>{t.nome}</strong>
-                    <span>{fmtHa(t.areaHa)} · {pct}%{t.cultura ? ` · ${t.cultura}` : ''}</span>
-                  </div>
-                  {drawMode === 'none' && !showQuickTalhao && (
-                    <div className="terra-talhao-sidebar-actions">
-                      <button className="terra-btn-draw-sm" onClick={() => { setDrawTalhaoId(t.id); setDrawMode('talhao'); setDrawPoints([]) }} title={drawn ? 'Redesenhar no mapa' : 'Desenhar no mapa'}>
-                        <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 2l3 3-9 9H2v-3z" strokeLinejoin="round"/></svg>
-                      </button>
-                      {drawn && (
-                        <button className="terra-btn-draw-sm terra-btn-clear-poly" onClick={() => setTalhoes(prev => prev.map(x => x.id === t.id ? { ...x, poligono: [] } : x))} title="Limpar polígono">
-                          <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3l10 10M13 3L3 13" strokeLinecap="round"/></svg>
-                        </button>
-                      )}
-                      <button className="terra-btn-draw-sm terra-btn-del-talhao" onClick={() => deleteTalhao(t.id)} title="Excluir talhão">
-                        <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h8v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4zM6 2h4M3 4h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                      </button>
+                    <div className="terra-sidebar-row1">
+                      <strong>{t.nome}</strong>
+                      <span className="terra-sidebar-area">{fmtHa(t.areaHa)}</span>
                     </div>
-                  )}
+                    <div className="terra-sidebar-row2">
+                      <span className="terra-talhao-badge" style={{ background: cor, fontSize: 'calc(.6rem * var(--fs))', padding: '1px 8px' }}>{usoInfo?.label}</span>
+                      <span className="terra-sidebar-pct">{pct}%{t.cultura ? ` · ${t.cultura}` : ''}</span>
+                    </div>
+                  </div>
+                  <div className="terra-sidebar-tools">
+                    <input type="checkbox" checked={visible} onChange={() => setHiddenTalhoes(prev => {
+                      const next = new Set(prev)
+                      if (next.has(t.id)) next.delete(t.id); else next.add(t.id)
+                      return next
+                    })} className="terra-talhao-check" style={{ accentColor: cor }} title={visible ? 'Ocultar' : 'Mostrar'} />
+                    <input type="color" value={cor} onChange={e => setTalhoes(prev => prev.map(x => x.id === t.id ? { ...x, cor: e.target.value } : x))} className="terra-color-swatch" title="Alterar cor" />
+                    {drawMode === 'none' && !showQuickTalhao && (
+                      <>
+                        <button className="terra-btn-draw-sm" onClick={() => { setDrawTalhaoId(t.id); setDrawMode('talhao'); setDrawPoints([]) }} title={drawn ? 'Redesenhar' : 'Desenhar'}>
+                          <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 2l3 3-9 9H2v-3z" strokeLinejoin="round"/></svg>
+                        </button>
+                        {drawn && (
+                          <button className="terra-btn-draw-sm terra-btn-clear-poly" onClick={() => setTalhoes(prev => prev.map(x => x.id === t.id ? { ...x, poligono: [] } : x))} title="Limpar polígono">
+                            <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3l10 10M13 3L3 13" strokeLinecap="round"/></svg>
+                          </button>
+                        )}
+                        <button className="terra-btn-draw-sm terra-btn-del-talhao" onClick={() => deleteTalhao(t.id)} title="Excluir">
+                          <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h8v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4zM6 2h4M3 4h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
               )
             })}
@@ -5446,19 +5455,25 @@ function TerraPage() {
       <div className="terra-talhao-grid">
         {fazTalhoes.map(t => {
           const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
+          const cor = t.cor || usoInfo?.cor || '#6b7280'
+          const pct = fazenda && fazenda.areaTotal > 0 ? ((t.areaHa / fazenda.areaTotal) * 100).toFixed(1) : null
           return (
             <div key={t.id} className="terra-talhao-card">
-              <div className="terra-talhao-header">
-                <span className="terra-talhao-badge" style={{ background: usoInfo?.cor || '#6b7280' }}>{usoInfo?.label || t.uso}</span>
-                <span className="terra-talhao-area">{fmtHa(t.areaHa)}</span>
-              </div>
-              <div className="terra-talhao-name">{t.nome}</div>
-              {t.cultura && <div className="terra-talhao-detail">Cultura: {t.cultura}</div>}
-              {t.safra && <div className="terra-talhao-detail">Safra: {t.safra}</div>}
-              {t.notas && <div className="terra-talhao-detail terra-muted">{t.notas}</div>}
-              <div className="terra-talhao-actions">
-                <button onClick={() => editTalhao(t)}>Editar</button>
-                <button onClick={() => deleteTalhao(t.id)}>Excluir</button>
+              <div className="terra-talhao-color-bar" style={{ background: cor }} />
+              <div className="terra-talhao-body">
+                <div className="terra-talhao-header">
+                  <span className="terra-talhao-badge" style={{ background: cor }}>{usoInfo?.label || t.uso}</span>
+                  <span className="terra-talhao-area">{fmtHa(t.areaHa)}</span>
+                </div>
+                <div className="terra-talhao-name">{t.nome}</div>
+                {pct && <div className="terra-talhao-pct">{pct}% da área total</div>}
+                {t.cultura && <div className="terra-talhao-detail"><svg className="terra-talhao-detail-icon" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2v12M4 6c2-2 6-2 8 0M4 10c2 2 6 2 8 0" strokeLinecap="round"/></svg>{t.cultura}</div>}
+                {t.safra && <div className="terra-talhao-detail"><svg className="terra-talhao-detail-icon" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M2 7h12M5 1v4M11 1v4" strokeLinecap="round"/></svg>{t.safra}</div>}
+                {t.notas && <div className="terra-talhao-detail terra-muted">{t.notas}</div>}
+                <div className="terra-talhao-actions">
+                  <button onClick={() => editTalhao(t)}>Editar</button>
+                  <button onClick={() => deleteTalhao(t.id)}>Excluir</button>
+                </div>
               </div>
             </div>
           )
@@ -5469,36 +5484,112 @@ function TerraPage() {
   )
 
   // ─── DOCUMENTOS
+  const [docEditField, setDocEditField] = useState<string | null>(null)
+  const [docEditValue, setDocEditValue] = useState('')
+
   const renderDocs = () => {
     if (!fazenda) return <p className="terra-muted">Cadastre uma fazenda primeiro.</p>
-    const docs = [
-      { label: 'CAR (Cadastro Ambiental Rural)', value: fazenda.carNumero, field: 'carNumero' as const },
-      { label: 'ITR (Imposto Territorial Rural)', value: fazenda.itrNumero, field: 'itrNumero' as const },
-      { label: 'CCIR', value: fazenda.ccir, field: 'ccir' as const },
-      { label: 'Matrícula', value: fazenda.matricula, field: 'matricula' as const },
+
+    const textDocs = [
+      { label: 'Matrícula do Imóvel', value: fazenda.matricula, field: 'matricula', desc: 'Registro no Cartório de Imóveis', category: 'fundiaria' },
+      { label: 'CCIR (Certif. Cadastro Imóvel Rural)', value: fazenda.ccir, field: 'ccir', desc: 'Emitido pelo INCRA', category: 'fundiaria' },
+      { label: 'CAR (Cadastro Ambiental Rural)', value: fazenda.carNumero, field: 'carNumero', desc: 'Registro no SICAR', category: 'ambiental' },
+      { label: 'ITR (Imposto Territorial Rural)', value: fazenda.itrNumero, field: 'itrNumero', desc: 'Receita Federal / DIAT', category: 'fiscal' },
+    ] as const
+    const boolDocs = [
+      { label: 'Georreferenciamento', ok: fazenda.geoReferenciado, desc: fazenda.areaTotal > 100 ? 'Obrigatório para áreas > 100 ha (Lei 10.267/01)' : 'Opcional para áreas ≤ 100 ha', field: 'geoReferenciado', category: 'fundiaria', warn: fazenda.areaTotal > 100 && !fazenda.geoReferenciado },
+      { label: 'Licença Ambiental', ok: fazenda.licencaAmbiental, desc: 'Licença de operação ambiental', field: 'licencaAmbiental', category: 'ambiental', warn: false },
+    ] as const
+
+    const totalDocs = textDocs.length + boolDocs.length
+    const doneDocs = textDocs.filter(d => !!d.value).length + boolDocs.filter(d => d.ok).length
+    const pct = Math.round((doneDocs / totalDocs) * 100)
+
+    const saveDocField = (field: string, val: string) => {
+      setFazendas(prev => prev.map(f => f.id === fazenda.id ? { ...f, [field]: val } : f))
+      setDocEditField(null)
+    }
+    const toggleBool = (field: string, current: boolean) => {
+      setFazendas(prev => prev.map(f => f.id === fazenda.id ? { ...f, [field]: !current } : f))
+    }
+
+    const categories = [
+      { key: 'fundiaria', label: 'Regularização Fundiária', icon: '📋' },
+      { key: 'ambiental', label: 'Ambiental', icon: '🌿' },
+      { key: 'fiscal', label: 'Fiscal', icon: '📊' },
     ]
+
     return (
       <div className="terra-docs">
         <h4>Documentação — {fazenda.nome}</h4>
-        <div className="terra-docs-list">
-          {docs.map(d => (
-            <div key={d.field} className="terra-doc-item">
-              <span className={`terra-doc-status ${d.value ? 'terra-doc-ok' : 'terra-doc-missing'}`}>{d.value ? '✓' : '✗'}</span>
-              <span className="terra-doc-label">{d.label}</span>
-              <span className="terra-doc-value">{d.value || 'Não informado'}</span>
-            </div>
-          ))}
-          <div className="terra-doc-item">
-            <span className={`terra-doc-status ${fazenda.geoReferenciado ? 'terra-doc-ok' : 'terra-doc-missing'}`}>{fazenda.geoReferenciado ? '✓' : '✗'}</span>
-            <span className="terra-doc-label">Georreferenciamento{fazenda.areaTotal > 100 ? ' (obrigatório)' : ''}</span>
-            <span className="terra-doc-value">{fazenda.geoReferenciado ? 'Certificado' : 'Pendente'}</span>
+
+        <div className="terra-docs-progress">
+          <div className="terra-docs-progress-header">
+            <span>{doneDocs} de {totalDocs} documentos</span>
+            <span className={`terra-docs-pct ${pct === 100 ? 'terra-docs-pct-ok' : pct >= 50 ? 'terra-docs-pct-mid' : 'terra-docs-pct-low'}`}>{pct}%</span>
           </div>
-          <div className="terra-doc-item">
-            <span className={`terra-doc-status ${fazenda.licencaAmbiental ? 'terra-doc-ok' : 'terra-doc-missing'}`}>{fazenda.licencaAmbiental ? '✓' : '✗'}</span>
-            <span className="terra-doc-label">Licença Ambiental</span>
-            <span className="terra-doc-value">{fazenda.licencaAmbiental ? 'Ativa' : 'Pendente'}</span>
+          <div className="terra-docs-bar">
+            <div className="terra-docs-bar-fill" style={{ width: `${pct}%` }} />
           </div>
         </div>
+
+        {categories.map(cat => {
+          const catTextDocs = textDocs.filter(d => d.category === cat.key)
+          const catBoolDocs = boolDocs.filter(d => d.category === cat.key)
+          if (catTextDocs.length === 0 && catBoolDocs.length === 0) return null
+          return (
+            <div key={cat.key} className="terra-docs-category">
+              <div className="terra-docs-cat-header">
+                <span>{cat.icon} {cat.label}</span>
+              </div>
+              <div className="terra-docs-list">
+                {catTextDocs.map(d => (
+                  <div key={d.field} className="terra-doc-item">
+                    <span className={`terra-doc-status ${d.value ? 'terra-doc-ok' : 'terra-doc-missing'}`}>{d.value ? '✓' : '✗'}</span>
+                    <div className="terra-doc-content">
+                      <span className="terra-doc-label">{d.label}</span>
+                      <span className="terra-doc-desc">{d.desc}</span>
+                    </div>
+                    {docEditField === d.field ? (
+                      <div className="terra-doc-edit">
+                        <input value={docEditValue} onChange={e => setDocEditValue(e.target.value)} placeholder="Nº do documento" autoFocus onKeyDown={e => { if (e.key === 'Enter') saveDocField(d.field, docEditValue); if (e.key === 'Escape') setDocEditField(null) }} />
+                        <button className="terra-doc-save" onClick={() => saveDocField(d.field, docEditValue)}>✓</button>
+                        <button className="terra-doc-cancel" onClick={() => setDocEditField(null)}>✗</button>
+                      </div>
+                    ) : (
+                      <span className="terra-doc-value" onClick={() => { setDocEditField(d.field); setDocEditValue(d.value || '') }} title="Clique para editar">{d.value || 'Não informado'}</span>
+                    )}
+                  </div>
+                ))}
+                {catBoolDocs.map(d => (
+                  <div key={d.field} className={`terra-doc-item${d.warn ? ' terra-doc-warn' : ''}`}>
+                    <span className={`terra-doc-status ${d.ok ? 'terra-doc-ok' : 'terra-doc-missing'}`}>{d.ok ? '✓' : '✗'}</span>
+                    <div className="terra-doc-content">
+                      <span className="terra-doc-label">{d.label}</span>
+                      <span className={`terra-doc-desc${d.warn ? ' terra-doc-desc-warn' : ''}`}>{d.desc}</span>
+                    </div>
+                    <button className={`terra-doc-toggle ${d.ok ? 'terra-doc-toggle-on' : ''}`} onClick={() => toggleBool(d.field, d.ok)}>
+                      <span className="terra-doc-toggle-thumb" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+
+        {fazenda.areaTotal > 100 && !fazenda.geoReferenciado && (
+          <div className="terra-docs-alert">
+            <span>⚠️</span>
+            <span>A propriedade possui {fazenda.areaTotal.toFixed(2)} ha — o georreferenciamento é <strong>obrigatório</strong> pela Lei 10.267/2001 para imóveis acima de 100 ha.</span>
+          </div>
+        )}
+
+        {doneDocs < totalDocs && (
+          <div className="terra-docs-hint">
+            Clique no valor de um documento para editá-lo diretamente.
+          </div>
+        )}
       </div>
     )
   }

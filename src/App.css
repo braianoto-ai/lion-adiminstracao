@@ -5724,25 +5724,27 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 
 /* ─── Terra Page ────────────────────────────────────────────────────────────── */
 
-.terra-page { display: flex; flex-direction: column; gap: 20px; padding: 20px; max-width: 960px; margin: 0 auto; width: 100% }
+.terra-page { display: flex; flex-direction: column; gap: 24px; padding: 24px; max-width: 1200px; margin: 0 auto; width: 100% }
 .terra-fazenda-selector select { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 12px; font-size: calc(.82rem * var(--fs)); color: var(--text3); outline: none }
 
-.terra-tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--border); padding-bottom: 2px; flex-wrap: wrap }
-.terra-tab { padding: 7px 14px; border-radius: var(--radius) var(--radius) 0 0; font-size: calc(.8rem * var(--fs)); color: var(--text); background: none; border: 1px solid transparent; border-bottom: none; transition: all .15s; cursor: pointer }
-.terra-tab:hover { color: var(--text2); background: var(--bg3) }
-.terra-tab-active { color: var(--text3); background: var(--bg3); border-color: var(--border) }
+.terra-tabs { display: flex; gap: 4px; background: var(--bg2); border-radius: var(--radius-lg); padding: 4px; border: 1px solid var(--border); flex-wrap: wrap }
+.terra-tab { padding: 8px 18px; border-radius: var(--radius); font-size: calc(.8rem * var(--fs)); color: var(--text); background: none; border: none; transition: all .2s; cursor: pointer; font-weight: 500 }
+.terra-tab:hover { color: var(--text3); background: var(--bg3) }
+.terra-tab-active { color: #fff; background: var(--purple); box-shadow: 0 2px 8px rgba(139,92,246,.25) }
 
-.terra-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px }
-.terra-card-stat { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; display: flex; flex-direction: column; gap: 4px }
-.terra-stat-label { font-size: calc(.72rem * var(--fs)); color: var(--text); text-transform: uppercase; letter-spacing: .04em }
-.terra-stat-value { font-size: calc(1.1rem * var(--fs)); font-weight: 700; color: var(--text3) }
+.terra-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px }
+.terra-card-stat { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px 22px; display: flex; flex-direction: column; gap: 6px; transition: border-color .2s, box-shadow .2s }
+.terra-card-stat:hover { border-color: var(--purple); box-shadow: 0 4px 16px rgba(139,92,246,.08) }
+.terra-stat-label { font-size: calc(.72rem * var(--fs)); color: var(--text); text-transform: uppercase; letter-spacing: .05em; font-weight: 500 }
+.terra-stat-value { font-size: calc(1.2rem * var(--fs)); font-weight: 700; color: var(--text3) }
 .terra-stat-sub { font-size: calc(.7rem * var(--fs)); color: var(--text) }
 .terra-ok { color: #22c55e }
 .terra-warn { color: #ef4444 }
 
 .terra-visao-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px }
-.terra-chart-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px }
-.terra-chart-card h4 { font-size: calc(.85rem * var(--fs)); font-weight: 600; color: var(--text3); margin-bottom: 14px }
+.terra-chart-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 22px; transition: border-color .2s }
+.terra-chart-card:hover { border-color: var(--text) }
+.terra-chart-card h4 { font-size: calc(.88rem * var(--fs)); font-weight: 700; color: var(--text3); margin-bottom: 16px }
 .terra-pie-wrap { display: flex; align-items: center; gap: 20px; flex-wrap: wrap }
 .terra-legend { display: flex; flex-direction: column; gap: 6px }
 .terra-legend-item { display: flex; align-items: center; gap: 6px; font-size: calc(.75rem * var(--fs)); color: var(--text2) }
@@ -5761,9 +5763,10 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 
 /* Map */
 .terra-mapa { display: flex; flex-direction: column; gap: 10px }
-.terra-map-controls { display: flex; gap: 6px; align-items: center; flex-wrap: wrap }
-.terra-map-toggle { padding: 6px 14px; font-size: calc(.78rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all .15s }
-.terra-map-toggle.active { background: var(--purple); color: #fff; border-color: var(--purple) }
+.terra-map-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding-bottom: 4px }
+.terra-map-toggle { padding: 7px 16px; font-size: calc(.78rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all .2s; font-weight: 500 }
+.terra-map-toggle:hover { border-color: var(--purple); color: var(--text3) }
+.terra-map-toggle.active { background: var(--purple); color: #fff; border-color: var(--purple); box-shadow: 0 2px 8px rgba(139,92,246,.25) }
 .terra-map-spacer { flex: 1 }
 .terra-btn-draw { display: flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: calc(.78rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all .15s }
 .terra-btn-draw:hover { background: var(--bg3); color: var(--text3) }
@@ -5774,24 +5777,30 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 .terra-quick-input:focus { border-color: var(--purple) }
 .terra-draw-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100% }
 .terra-draw-label { font-size: calc(.75rem * var(--fs)); color: var(--text2); flex: 1; min-width: 200px }
-.terra-map-layout { display: flex; gap: 12px; min-height: 460px }
-.terra-map-container { flex: 1; min-height: 420px; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border) }
-.terra-map-sidebar { width: 260px; flex-shrink: 0; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; max-height: 460px }
-.terra-map-sidebar-title { font-size: calc(.75rem * var(--fs)); font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .04em; padding-bottom: 6px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 6px }
+.terra-map-layout { display: flex; gap: 14px; min-height: 640px }
+.terra-map-container { flex: 1; min-height: 600px; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border); box-shadow: 0 4px 24px rgba(0,0,0,.12) }
+.terra-map-sidebar { width: 300px; flex-shrink: 0; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 640px }
+.terra-map-sidebar-title { font-size: calc(.78rem * var(--fs)); font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 6px }
 .terra-toggle-all { font-size: calc(.62rem * var(--fs)); text-transform: none; letter-spacing: 0; background: none; border: 1px solid var(--border); border-radius: var(--radius); padding: 2px 8px; color: var(--text); cursor: pointer; transition: all .15s; white-space: nowrap }
 .terra-toggle-all:hover { background: var(--bg3); color: var(--text3) }
 .terra-talhao-check { width: 14px; height: 14px; flex-shrink: 0; cursor: pointer }
-.terra-talhao-hidden { opacity: .45 }
-.terra-map-talhao-item { display: flex; align-items: center; gap: 8px; padding: 6px 0; border-bottom: 1px solid var(--border) }
+.terra-talhao-hidden { opacity: .4 }
+.terra-map-talhao-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius); transition: background .15s; margin: 0 -4px; border-bottom: 1px solid var(--border) }
 .terra-map-talhao-item:last-of-type { border-bottom: none }
-.terra-map-talhao-info { flex: 1; display: flex; flex-direction: column; gap: 1px; min-width: 0 }
-.terra-map-talhao-info strong { font-size: calc(.76rem * var(--fs)); color: var(--text3); word-break: break-word }
-.terra-map-talhao-info span { font-size: calc(.66rem * var(--fs)); color: var(--text) }
+.terra-map-talhao-item:hover { background: var(--bg3) }
+.terra-sidebar-color-dot { width: 6px; align-self: stretch; border-radius: 3px; flex-shrink: 0 }
+.terra-map-talhao-info { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0 }
+.terra-sidebar-row1 { display: flex; justify-content: space-between; align-items: center; gap: 8px }
+.terra-sidebar-row1 strong { font-size: calc(.8rem * var(--fs)); color: var(--text3); word-break: break-word; font-weight: 600 }
+.terra-sidebar-area { font-size: calc(.75rem * var(--fs)); color: var(--text3); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums }
+.terra-sidebar-row2 { display: flex; align-items: center; gap: 6px }
+.terra-sidebar-pct { font-size: calc(.66rem * var(--fs)); color: var(--text); opacity: .7 }
+.terra-sidebar-tools { display: flex; align-items: center; gap: 3px; flex-shrink: 0 }
 .terra-btn-draw-sm { background: none; border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 6px; cursor: pointer; color: var(--text); transition: all .15s; flex-shrink: 0 }
 .terra-btn-draw-sm:hover { background: var(--bg3); color: var(--text3); border-color: var(--text) }
 .terra-btn-clear-poly:hover { color: #f59e0b; border-color: #f59e0b }
 .terra-btn-del-talhao:hover { color: #ef4444; border-color: #ef4444 }
-.terra-talhao-sidebar-actions { display: flex; gap: 2px; flex-shrink: 0 }
+.terra-talhao-sidebar-actions { display: flex; gap: 3px; flex-shrink: 0 }
 .terra-btn-danger { color: #ef4444 !important; border-color: #ef4444 !important }
 .terra-btn-danger:hover { background: #ef4444 !important; color: #fff !important }
 .terra-color-swatch { width: 18px; height: 18px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; padding: 0; flex-shrink: 0; background: none }
@@ -5827,34 +5836,67 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 .terra-ov-save { background: var(--purple); color: #fff; border: 1px solid var(--purple); border-radius: var(--radius); padding: 5px 16px; font-size: calc(.76rem * var(--fs)); font-weight: 600; cursor: pointer; transition: all .2s }
 .terra-ov-save:hover { opacity: .85 }
 .terra-ov-save.saved { background: #22c55e; border-color: #22c55e }
-.terra-map-legend-section { display: flex; flex-wrap: wrap; gap: 6px; padding-top: 8px; border-top: 1px solid var(--border); margin-top: auto }
+.terra-map-legend-section { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; border-top: 1px solid var(--border); margin-top: auto }
 .terra-map-legend { display: flex; flex-wrap: wrap; gap: 10px; padding: 8px 0 }
 
 /* Talhões */
 .terra-section-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap }
 .terra-section-header h4 { font-size: calc(.85rem * var(--fs)); font-weight: 600; color: var(--text3) }
 .terra-alert { background: rgba(239,68,68,.12); color: #ef4444; padding: 10px 14px; border-radius: var(--radius); font-size: calc(.78rem * var(--fs)) }
-.terra-talhao-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px }
-.terra-talhao-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px }
+.terra-talhao-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 16px }
+.terra-talhao-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 0; display: flex; flex-direction: column; overflow: hidden; transition: border-color .2s, box-shadow .2s }
+.terra-talhao-card:hover { border-color: var(--text); box-shadow: 0 4px 20px rgba(0,0,0,.08) }
+.terra-talhao-color-bar { height: 4px; width: 100% }
+.terra-talhao-body { padding: 16px 18px; display: flex; flex-direction: column; gap: 8px }
 .terra-talhao-header { display: flex; justify-content: space-between; align-items: center }
-.terra-talhao-badge { padding: 2px 10px; border-radius: 10px; font-size: calc(.68rem * var(--fs)); color: #fff; font-weight: 600 }
-.terra-talhao-area { font-size: calc(.82rem * var(--fs)); font-weight: 600; color: var(--text3) }
-.terra-talhao-name { font-size: calc(.88rem * var(--fs)); font-weight: 600; color: var(--text3) }
-.terra-talhao-detail { font-size: calc(.75rem * var(--fs)); color: var(--text2) }
-.terra-talhao-actions { display: flex; gap: 8px; margin-top: 4px }
-.terra-talhao-actions button { background: none; border: none; color: var(--text); font-size: calc(.72rem * var(--fs)); cursor: pointer; padding: 2px 6px; border-radius: var(--radius); transition: background .15s }
-.terra-talhao-actions button:hover { background: var(--bg3); color: var(--text3) }
+.terra-talhao-badge { padding: 3px 12px; border-radius: 12px; font-size: calc(.68rem * var(--fs)); color: #fff; font-weight: 600; letter-spacing: .02em }
+.terra-talhao-area { font-size: calc(.92rem * var(--fs)); font-weight: 700; color: var(--text3); font-variant-numeric: tabular-nums }
+.terra-talhao-name { font-size: calc(.95rem * var(--fs)); font-weight: 700; color: var(--text3) }
+.terra-talhao-detail { font-size: calc(.76rem * var(--fs)); color: var(--text2); display: flex; align-items: center; gap: 6px }
+.terra-talhao-detail-icon { opacity: .5; flex-shrink: 0 }
+.terra-talhao-pct { font-size: calc(.7rem * var(--fs)); color: var(--text); opacity: .7 }
+.terra-talhao-actions { display: flex; gap: 6px; margin-top: 6px; padding-top: 10px; border-top: 1px solid var(--border) }
+.terra-talhao-actions button { background: none; border: 1px solid var(--border); color: var(--text); font-size: calc(.72rem * var(--fs)); cursor: pointer; padding: 4px 12px; border-radius: var(--radius); transition: all .15s; flex: 1 }
+.terra-talhao-actions button:hover { background: var(--bg3); color: var(--text3); border-color: var(--text) }
+.terra-talhao-actions button:last-child:hover { color: #ef4444; border-color: #ef4444 }
 
 /* Docs */
-.terra-docs { display: flex; flex-direction: column; gap: 14px }
-.terra-docs h4 { font-size: calc(.85rem * var(--fs)); font-weight: 600; color: var(--text3) }
+.terra-docs { display: flex; flex-direction: column; gap: 20px }
+.terra-docs h4 { font-size: calc(.92rem * var(--fs)); font-weight: 700; color: var(--text3) }
+.terra-docs-progress { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 20px }
+.terra-docs-progress-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: calc(.78rem * var(--fs)); color: var(--text2) }
+.terra-docs-pct { font-weight: 700; font-size: calc(.85rem * var(--fs)) }
+.terra-docs-pct-ok { color: #22c55e }
+.terra-docs-pct-mid { color: #f59e0b }
+.terra-docs-pct-low { color: #ef4444 }
+.terra-docs-bar { height: 8px; background: var(--bg3); border-radius: 4px; overflow: hidden }
+.terra-docs-bar-fill { height: 100%; background: linear-gradient(90deg, #8b5cf6, #22c55e); border-radius: 4px; transition: width .4s ease }
+.terra-docs-category { display: flex; flex-direction: column; gap: 8px }
+.terra-docs-cat-header { font-size: calc(.78rem * var(--fs)); font-weight: 600; color: var(--text2); text-transform: uppercase; letter-spacing: .05em; display: flex; align-items: center; gap: 6px }
 .terra-docs-list { display: flex; flex-direction: column; gap: 8px }
-.terra-doc-item { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg) }
-.terra-doc-status { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; flex-shrink: 0 }
+.terra-doc-item { display: flex; align-items: center; gap: 14px; padding: 14px 18px; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); transition: border-color .2s }
+.terra-doc-item:hover { border-color: var(--text) }
+.terra-doc-warn { border-color: rgba(239,68,68,.3) }
+.terra-doc-status { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700; flex-shrink: 0 }
 .terra-doc-ok { background: rgba(34,197,94,.15); color: #22c55e }
 .terra-doc-missing { background: rgba(239,68,68,.12); color: #ef4444 }
-.terra-doc-label { flex: 1; font-size: calc(.82rem * var(--fs)); color: var(--text3); font-weight: 500 }
-.terra-doc-value { font-size: calc(.78rem * var(--fs)); color: var(--text2) }
+.terra-doc-content { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0 }
+.terra-doc-label { font-size: calc(.82rem * var(--fs)); color: var(--text3); font-weight: 600 }
+.terra-doc-desc { font-size: calc(.68rem * var(--fs)); color: var(--text); opacity: .7 }
+.terra-doc-desc-warn { color: #ef4444; opacity: 1; font-weight: 500 }
+.terra-doc-value { font-size: calc(.78rem * var(--fs)); color: var(--text2); cursor: pointer; padding: 4px 10px; border-radius: var(--radius); transition: background .15s; white-space: nowrap }
+.terra-doc-value:hover { background: var(--bg3); color: var(--text3) }
+.terra-doc-edit { display: flex; align-items: center; gap: 4px }
+.terra-doc-edit input { background: var(--bg3); border: 1px solid var(--purple); border-radius: var(--radius); padding: 4px 10px; font-size: calc(.78rem * var(--fs)); color: var(--text3); outline: none; width: 160px }
+.terra-doc-save, .terra-doc-cancel { background: none; border: 1px solid var(--border); border-radius: var(--radius); width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 13px; transition: all .15s }
+.terra-doc-save:hover { background: #22c55e; color: #fff; border-color: #22c55e }
+.terra-doc-cancel:hover { background: #ef4444; color: #fff; border-color: #ef4444 }
+.terra-doc-toggle { width: 44px; height: 24px; border-radius: 12px; background: var(--bg3); border: 1px solid var(--border); cursor: pointer; position: relative; transition: all .2s; flex-shrink: 0; padding: 0 }
+.terra-doc-toggle-on { background: #22c55e; border-color: #22c55e }
+.terra-doc-toggle-thumb { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: transform .2s; box-shadow: 0 1px 3px rgba(0,0,0,.2) }
+.terra-doc-toggle-on .terra-doc-toggle-thumb { transform: translateX(20px) }
+.terra-docs-alert { display: flex; align-items: flex-start; gap: 10px; padding: 14px 18px; background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.2); border-radius: var(--radius-lg); font-size: calc(.78rem * var(--fs)); color: #ef4444; line-height: 1.5 }
+.terra-docs-hint { text-align: center; font-size: calc(.72rem * var(--fs)); color: var(--text); opacity: .5; padding-top: 8px }
 
 /* Fazendas list */
 .terra-fazenda-list { display: flex; flex-direction: column; gap: 10px }
@@ -5893,8 +5935,8 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
   .terra-span2 { grid-column: span 1 }
   .terra-valor-row { flex-direction: column }
   .terra-map-layout { flex-direction: column }
-  .terra-map-sidebar { width: 100%; max-height: 200px }
-  .terra-map-container { height: 300px; min-height: 300px }
+  .terra-map-sidebar { width: 100%; max-height: 240px }
+  .terra-map-container { height: 400px; min-height: 400px }
   .terra-talhao-grid { grid-template-columns: 1fr }
 }
 
@@ -5903,8 +5945,11 @@ html[data-theme="light"] .terra-chart-card,
 html[data-theme="light"] .terra-form,
 html[data-theme="light"] .terra-talhao-card,
 html[data-theme="light"] .terra-doc-item,
+html[data-theme="light"] .terra-docs-progress,
 html[data-theme="light"] .terra-fazenda-card,
 html[data-theme="light"] .terra-map-sidebar { background: #fff; border-color: var(--border2) }
+html[data-theme="light"] .terra-tabs { background: #f3f4f6; border-color: var(--border2) }
+html[data-theme="light"] .terra-map-container { box-shadow: 0 4px 24px rgba(0,0,0,.06) }
 html[data-theme="light"] .terra-field input,
 html[data-theme="light"] .terra-field select,
 html[data-theme="light"] .terra-field textarea { background: var(--bg2) }
