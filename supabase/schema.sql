@@ -185,27 +185,31 @@ create policy "own_produtos" on public.produtos
 
 -- ─── Terra Fazendas (lion-terra) ──────────────────────────
 create table public.terra_fazendas (
-  id         text        primary key,
-  user_id    uuid        references auth.users(id) on delete cascade not null,
-  data       jsonb       not null default '{}',
-  created_at timestamptz default now()
+  id          text        primary key,
+  user_id     uuid        references auth.users(id) on delete cascade not null,
+  shared_with uuid[]      not null default '{}',
+  data        jsonb       not null default '{}',
+  created_at  timestamptz default now()
 );
 alter table public.terra_fazendas enable row level security;
 create policy "own_terra_fazendas" on public.terra_fazendas
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  for all using (auth.uid() = user_id OR auth.uid() = ANY(shared_with))
+  with check (auth.uid() = user_id OR auth.uid() = ANY(shared_with));
 create policy "public_read_terra_fazendas" on public.terra_fazendas
   for select using (true);
 
 -- ─── Terra Talhões (lion-talhoes) ─────────────────────────
 create table public.terra_talhoes (
-  id         text        primary key,
-  user_id    uuid        references auth.users(id) on delete cascade not null,
-  data       jsonb       not null default '{}',
-  created_at timestamptz default now()
+  id          text        primary key,
+  user_id     uuid        references auth.users(id) on delete cascade not null,
+  shared_with uuid[]      not null default '{}',
+  data        jsonb       not null default '{}',
+  created_at  timestamptz default now()
 );
 alter table public.terra_talhoes enable row level security;
 create policy "own_terra_talhoes" on public.terra_talhoes
-  for all using (auth.uid() = user_id) with check (auth.uid() = user_id);
+  for all using (auth.uid() = user_id OR auth.uid() = ANY(shared_with))
+  with check (auth.uid() = user_id OR auth.uid() = ANY(shared_with));
 create policy "public_read_terra_talhoes" on public.terra_talhoes
   for select using (true);
 

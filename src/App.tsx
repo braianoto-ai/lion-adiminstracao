@@ -24,10 +24,12 @@ const CLOUD_BUS = new EventTarget()
 function useCloudTable<T extends { id: string }>(
   tableName: string,
   lsKey: string,
+  options?: { shared?: boolean },
 ): [T[], React.Dispatch<React.SetStateAction<T[]>>] {
   const userId = useContext(UserCtx)
   const userIdRef = useRef(userId)
   useEffect(() => { userIdRef.current = userId }, [userId])
+  const shared = options?.shared || false
 
   const [data, _setData] = useState<T[]>(() => {
     try { return JSON.parse(localStorage.getItem(lsKey) || '[]') } catch { return [] }
@@ -35,6 +37,8 @@ function useCloudTable<T extends { id: string }>(
 
   const dataRef = useRef(data)
   useEffect(() => { dataRef.current = data }, [data])
+
+  const ownerMap = useRef<Map<string, string>>(new Map())
 
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -45,10 +49,15 @@ function useCloudTable<T extends { id: string }>(
       localStorage.removeItem(lsKey)
       return
     }
-    supabase.from(tableName).select('id, data').eq('user_id', userId)
-      .then(({ data: rows }) => {
+    const query = shared
+      ? supabase.from(tableName).select('id, data, user_id').or(`user_id.eq.${userId},shared_with.cs.{${userId}}`)
+      : supabase.from(tableName).select('id, data, user_id').eq('user_id', userId)
+    query.then(({ data: rows }) => {
         if (rows) {
-          const remote = rows.map(r => ({ ...(r.data as object), id: r.id })) as T[]
+          const remote = rows.map(r => {
+            ownerMap.current.set(r.id, r.user_id)
+            return { ...(r.data as object), id: r.id } as T
+          })
           const local: T[] = (() => { try { return JSON.parse(localStorage.getItem(lsKey) || '[]') } catch { return [] } })()
           const remoteIds = new Set(remote.map(i => i.id))
           const pending = local.filter(i => !remoteIds.has(i.id))
@@ -57,9 +66,8 @@ function useCloudTable<T extends { id: string }>(
           localStorage.setItem(lsKey, JSON.stringify(merged))
         }
       })
-  }, [userId, tableName, lsKey])
+  }, [userId, tableName, lsKey, shared])
 
-  // Listen for cross-instance updates (same lsKey, different component)
   useEffect(() => {
     const handler = () => {
       try {
@@ -72,8 +80,6 @@ function useCloudTable<T extends { id: string }>(
   }, [lsKey])
 
   const setData: React.Dispatch<React.SetStateAction<T[]>> = useCallback((action) => {
-    // Compute next synchronously using ref — side effects run immediately,
-    // not inside the React updater (which can be dropped if component unmounts)
     const next = typeof action === 'function' ? (action as (p: T[]) => T[])(dataRef.current) : action
     dataRef.current = next
     localStorage.setItem(lsKey, JSON.stringify(next))
@@ -86,7 +92,7 @@ function useCloudTable<T extends { id: string }>(
         if (!uid || !supabase) return
         if (next.length > 0) {
           await supabase.from(tableName).upsert(
-            next.map(item => ({ id: item.id, user_id: uid, data: item })),
+            next.map(item => ({ id: item.id, user_id: ownerMap.current.get(item.id) || uid, data: item })),
             { onConflict: 'id' }
           )
           const keepIds = next.map(i => i.id)
@@ -220,6 +226,8 @@ function PublicMapPage() {
   const [pubTab, setPubTab] = useState<'mapa' | 'talhoes'>('mapa')
   const [mapLayer, setMapLayer] = useState<'mapa' | 'satelite' | 'relevo'>('mapa')
   const [hiddenUsos, setHiddenUsos] = useState<Set<string>>(new Set())
+  const [showSidebar, setShowSidebar] = useState(true)
+  const [hiddenTalhoes, setHiddenTalhoes] = useState<Set<string>>(new Set())
   const mapRef = useRef<HTMLDivElement>(null)
   const leafletMap = useRef<L.Map | null>(null)
   const layerGroup = useRef<L.LayerGroup | null>(null)
@@ -294,7 +302,7 @@ function PublicMapPage() {
       perimPoly.addTo(layerGroup.current)
     }
     fazTalhoes.forEach(t => {
-      if (t.poligono.length >= 3 && !hiddenUsos.has(t.uso)) {
+      if (t.poligono.length >= 3 && !hiddenUsos.has(t.uso) && !hiddenTalhoes.has(t.id)) {
         const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
         const cor = t.cor || usoInfo?.cor || '#6b7280'
         const pctArea = fazenda ? ((t.areaHa / fazenda.areaTotal) * 100).toFixed(1) : '—'
@@ -307,7 +315,7 @@ function PublicMapPage() {
       const bounds = L.polygon(fazenda.perimetro).getBounds()
       leafletMap.current.fitBounds(bounds, { padding: [40, 40] })
     }
-  }, [fazenda, fazTalhoes, hiddenUsos])
+  }, [fazenda, fazTalhoes, hiddenUsos, hiddenTalhoes])
 
   const usoGroups = useMemo(() => {
     const map = new Map<string, { label: string; cor: string; count: number; areaHa: number }>()
@@ -328,6 +336,10 @@ function PublicMapPage() {
       return next
     })
   }
+
+  useEffect(() => {
+    if (leafletMap.current) setTimeout(() => leafletMap.current?.invalidateSize(), 200)
+  }, [showSidebar])
 
   if (loading) return <div className="pub-map-loading"><div className="pub-map-spinner" /><span>Carregando mapa...</span></div>
 
@@ -359,48 +371,69 @@ function PublicMapPage() {
             ))}
           </div>
           <div className="pub-terra-map-layout">
-            <div ref={mapRef} className="pub-terra-map-container" />
-            <div className="pub-terra-map-sidebar">
-              {fazenda && (
-                <div className="pub-terra-fazenda-info">
-                  <div className="pub-terra-stats">
-                    <div className="pub-terra-stat"><span className="pub-terra-stat-val">{fmtHa(fazenda.areaTotal)}</span><span className="pub-terra-stat-lbl">Área Total</span></div>
-                    <div className="pub-terra-stat"><span className="pub-terra-stat-val">{fmtHa(fazenda.areaUtil)}</span><span className="pub-terra-stat-lbl">Área Útil</span></div>
-                    <div className="pub-terra-stat"><span className="pub-terra-stat-val">{fmtHa(fazenda.areaReservaLegal + fazenda.areaApp)}</span><span className="pub-terra-stat-lbl">Reserva + APP</span></div>
-                  </div>
-                  {fazenda.areaTotal > 0 && (
-                    <div className="pub-terra-utiliz">
-                      <div className="pub-terra-utiliz-bar"><div className="pub-terra-utiliz-fill" style={{ width: `${Math.min(100, (fazenda.areaUtil / fazenda.areaTotal) * 100)}%` }} /></div>
-                      <span className="pub-terra-utiliz-lbl">{((fazenda.areaUtil / fazenda.areaTotal) * 100).toFixed(0)}% utilização</span>
-                    </div>
-                  )}
-                  <div className="pub-terra-meta">
-                    {fazenda.bioma && <span>{fazenda.bioma}</span>}
-                    {fazenda.tipoSolo && <span>{fazenda.tipoSolo}</span>}
-                    {fazenda.relevo && <span>{fazenda.relevo}</span>}
-                  </div>
-                </div>
-              )}
-              {fazTalhoes.length > 0 && (
-                <>
-                  <div className="pub-terra-talhoes-title">Talhões ({fazTalhoes.length})<span className="pub-terra-talhoes-mapped">{fmtHa(somaTalhoes)} mapeados</span></div>
-                  {usoGroups.map(([uso, g]) => (
-                    <button key={uso} className={`pub-map-legend-item${hiddenUsos.has(uso) ? ' hidden' : ''}`} onClick={() => toggleUso(uso)}>
-                      <span className="pub-map-legend-swatch" style={{ background: g.cor, opacity: hiddenUsos.has(uso) ? 0.3 : 1 }} />
-                      <span className="pub-map-legend-label">{g.label}</span>
-                      <span className="pub-map-legend-info">{g.count}× · {fmtHa(g.areaHa)}</span>
-                    </button>
-                  ))}
-                </>
-              )}
-              {mapLayer === 'relevo' && (
-                <div className="pub-terra-elev-legend">
-                  <div className="pub-terra-elev-title">Elevação</div>
-                  <div className="pub-terra-elev-bar" />
-                  <div className="pub-terra-elev-labels"><span>200m</span><span>400m</span><span>600m</span><span>800m</span><span>1000m+</span></div>
-                </div>
-              )}
+            <div ref={mapRef} className="pub-terra-map-container">
+              <button className="terra-sidebar-toggle" onClick={() => setShowSidebar(v => !v)} title={showSidebar ? 'Ocultar painel' : 'Mostrar painel'}>
+                <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  {showSidebar
+                    ? <path d="M10 3l5 5-5 5M1 3v10M4 8h11" strokeLinecap="round" strokeLinejoin="round"/>
+                    : <path d="M6 3L1 8l5 5M15 3v10M12 8H1" strokeLinecap="round" strokeLinejoin="round"/>}
+                </svg>
+              </button>
             </div>
+            {showSidebar && (
+              <div className="pub-terra-map-sidebar">
+                {fazenda && (
+                  <div className="pub-terra-fazenda-info">
+                    <div className="pub-terra-stats">
+                      <div className="pub-terra-stat"><span className="pub-terra-stat-val">{fmtHa(fazenda.areaTotal)}</span><span className="pub-terra-stat-lbl">Área Total</span></div>
+                      <div className="pub-terra-stat"><span className="pub-terra-stat-val">{fmtHa(fazenda.areaUtil)}</span><span className="pub-terra-stat-lbl">Área Útil</span></div>
+                      <div className="pub-terra-stat"><span className="pub-terra-stat-val">{fmtHa(fazenda.areaReservaLegal + fazenda.areaApp)}</span><span className="pub-terra-stat-lbl">Reserva + APP</span></div>
+                    </div>
+                    {fazenda.areaTotal > 0 && (
+                      <div className="pub-terra-utiliz">
+                        <div className="pub-terra-utiliz-bar"><div className="pub-terra-utiliz-fill" style={{ width: `${Math.min(100, (fazenda.areaUtil / fazenda.areaTotal) * 100)}%` }} /></div>
+                        <span className="pub-terra-utiliz-lbl">{((fazenda.areaUtil / fazenda.areaTotal) * 100).toFixed(0)}% utilização</span>
+                      </div>
+                    )}
+                    <div className="pub-terra-meta">
+                      {fazenda.bioma && <span>{fazenda.bioma}</span>}
+                      {fazenda.tipoSolo && <span>{fazenda.tipoSolo}</span>}
+                      {fazenda.relevo && <span>{fazenda.relevo}</span>}
+                    </div>
+                  </div>
+                )}
+                {fazTalhoes.length > 0 && (
+                  <>
+                    <div className="pub-terra-talhoes-title">Talhões ({fazTalhoes.length})<span className="pub-terra-talhoes-mapped">{fmtHa(somaTalhoes)} mapeados</span></div>
+                    {fazTalhoes.map(t => {
+                      const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
+                      const cor = t.cor || usoInfo?.cor || '#6b7280'
+                      const pct = fazenda && fazenda.areaTotal > 0 ? ((t.areaHa / fazenda.areaTotal) * 100).toFixed(1) : '—'
+                      const visible = !hiddenTalhoes.has(t.id)
+                      return (
+                        <div key={t.id} className={`pub-map-legend-item${!visible ? ' hidden' : ''}`} style={{ cursor: 'default' }}>
+                          <input type="checkbox" checked={visible} onChange={() => setHiddenTalhoes(prev => {
+                            const next = new Set(prev)
+                            if (next.has(t.id)) next.delete(t.id); else next.add(t.id)
+                            return next
+                          })} style={{ accentColor: cor }} />
+                          <span className="pub-map-legend-swatch" style={{ background: cor, opacity: visible ? 1 : 0.3 }} />
+                          <span className="pub-map-legend-label">{t.nome}</span>
+                          <span className="pub-map-legend-info">{fmtHa(t.areaHa)} · {pct}%</span>
+                        </div>
+                      )
+                    })}
+                  </>
+                )}
+                {mapLayer === 'relevo' && (
+                  <div className="pub-terra-elev-legend">
+                    <div className="pub-terra-elev-title">Elevação</div>
+                    <div className="pub-terra-elev-bar" />
+                    <div className="pub-terra-elev-labels"><span>200m</span><span>400m</span><span>600m</span><span>800m</span><span>1000m+</span></div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -5217,8 +5250,8 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 
 function TerraPage() {
   const userId = useContext(UserCtx)
-  const [fazendas, setFazendas] = useCloudTable<TerraFazenda>('terra_fazendas', 'lion-terra')
-  const [talhoes, setTalhoes] = useCloudTable<TerraTalhao>('terra_talhoes', 'lion-talhoes')
+  const [fazendas, setFazendas] = useCloudTable<TerraFazenda>('terra_fazendas', 'lion-terra', { shared: true })
+  const [talhoes, setTalhoes] = useCloudTable<TerraTalhao>('terra_talhoes', 'lion-talhoes', { shared: true })
   const [tab, setTab] = useState<'visao' | 'mapa' | 'talhoes' | 'docs' | 'fazendas'>('visao')
   const [shareCopied, setShareCopied] = useState(false)
   const [syncing, setSyncing] = useState(false)
@@ -5355,6 +5388,10 @@ function TerraPage() {
     leafletMap.current = map
     return () => { map.remove(); leafletMap.current = null; drawMarkersRef.current = null }
   }, [tab])
+
+  useEffect(() => {
+    if (leafletMap.current) setTimeout(() => leafletMap.current?.invalidateSize(), 200)
+  }, [showMapSidebar])
 
   useEffect(() => {
     if (!leafletMap.current || !tileRef.current) return
