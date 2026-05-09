@@ -211,6 +211,22 @@ const TALHAO_USOS: { value: TalhaoUso; label: string; cor: string }[] = [
 ]
 const TERRA_CULTURAS = ['Soja','Milho','Café','Cana-de-Açúcar','Trigo','Algodão','Feijão','Arroz','Mandioca','Eucalipto','Pinus','Pastagem (Braquiária)','Pastagem (Tifton)','Outra']
 
+// Polígonos traçados do mapa cadastral (Agiliza - Uso e Ocupação do Solo)
+// Posições em pixels na área do mapa da imagem. Bounding box do perímetro na imagem:
+const PX_MIN_X = 48, PX_MAX_X = 712, PX_MIN_Y = 25, PX_MAX_Y = 425
+const CADASTRAL_TALHOES_PX: Record<string, { px: number[][], cor: string }> = {
+  'Talhão I':    { px: [[100,55],[145,42],[190,38],[200,55],[190,80],[165,100],[130,105],[105,90]], cor: '#d97706' },
+  'Talhão II':   { px: [[400,185],[440,200],[480,250],[520,260],[560,255],[600,240],[625,215],[640,255],[652,295],[655,335],[645,365],[632,385],[610,395],[570,402],[530,410],[490,410],[450,405],[420,385],[395,355],[375,320],[360,280],[355,245],[365,215],[385,195]], cor: '#d97706' },
+  'Talhão III':  { px: [[208,40],[280,30],[360,28],[430,30],[435,55],[430,95],[420,140],[400,180],[370,210],[330,225],[280,230],[240,220],[215,195],[205,160],[205,120],[208,75]], cor: '#d97706' },
+  'Talhão IV':   { px: [[440,30],[520,27],[570,27],[615,30],[640,32],[655,55],[650,90],[645,130],[638,170],[625,210],[600,235],[560,250],[520,255],[480,245],[455,225],[440,195],[435,155],[435,110],[435,65]], cor: '#d97706' },
+  'Pastagem':    { px: [[90,110],[130,108],[165,105],[200,115],[215,145],[210,180],[190,205],[155,215],[115,210],[90,190],[78,160],[80,130]], cor: '#a78bfa' },
+  'Vegetação Nativa / Reserva Legal': { px: [[180,215],[230,225],[280,235],[330,230],[355,245],[360,280],[350,320],[330,360],[300,395],[260,415],[225,420],[195,415],[165,405],[140,390],[120,370],[105,345],[100,310],[100,275],[110,245],[140,225],[165,218]], cor: '#22c55e' },
+  'APP Rio Pinhalito': { px: [[640,28],[670,30],[700,32],[712,42],[710,60],[705,90],[698,125],[694,160],[690,190],[686,220],[672,218],[676,190],[680,160],[684,130],[690,100],[695,70],[700,48],[692,36],[668,32],[640,30]], cor: '#06b6d4' },
+  'Área Consolidada': { px: [[290,265],[330,260],[345,280],[340,305],[305,315],[285,295]], cor: '#eab308' },
+  'Edificações / Sede': { px: [[300,270],[322,270],[322,290],[300,290]], cor: '#d946ef' },
+  "Reservatório D'água": { px: [[295,305],[315,305],[315,325],[295,325]], cor: '#3b82f6' },
+}
+
 type BillStatus = 'em_aberto' | 'pago' | 'vencido' | 'cancelado'
 type BillRecurrence = 'mensal' | 'unica' | 'anual' | 'semanal'
 
@@ -5278,6 +5294,29 @@ function TerraPage() {
     })
   }
 
+  const [cadastralLoaded, setCadastralLoaded] = useState(false)
+  const loadCadastralPolygons = () => {
+    if (!fazenda || fazenda.perimetro.length < 3) { alert('Desenhe o perímetro primeiro!'); return }
+    const lats = fazenda.perimetro.map(p => p[0])
+    const lngs = fazenda.perimetro.map(p => p[1])
+    const minLat = Math.min(...lats), maxLat = Math.max(...lats)
+    const minLng = Math.min(...lngs), maxLng = Math.max(...lngs)
+    const latSpan = maxLat - minLat, lngSpan = maxLng - minLng
+    const pxW = PX_MAX_X - PX_MIN_X, pxH = PX_MAX_Y - PX_MIN_Y
+    const convert = (pts: number[][]): [number, number][] =>
+      pts.map(([px, py]) => [
+        maxLat - ((py - PX_MIN_Y) / pxH) * latSpan,
+        minLng + ((px - PX_MIN_X) / pxW) * lngSpan,
+      ] as [number, number])
+    setTalhoes(prev => prev.map(t => {
+      const data = CADASTRAL_TALHOES_PX[t.nome]
+      if (data) return { ...t, poligono: convert(data.px), cor: data.cor }
+      return t
+    }))
+    setCadastralLoaded(true)
+    setTimeout(() => setCadastralLoaded(false), 3000)
+  }
+
   // ─── Pie chart SVG (land use distribution)
   const pieData = useMemo(() => {
     if (!fazenda) return []
@@ -5396,6 +5435,10 @@ function TerraPage() {
                 {fazTalhoes.map(t => <option key={t.id} value={t.id}>{t.nome}{t.poligono.length >= 3 ? ' ✓' : ''}</option>)}
               </select>
             )}
+            <button className={`terra-btn-overlay ${cadastralLoaded ? 'saved' : ''}`} onClick={loadCadastralPolygons} title="Carregar polígonos do mapa cadastral (Agiliza)">
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 14l4-4 3 3 5-7" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              {cadastralLoaded ? 'Carregado!' : 'Carregar Cadastral'}
+            </button>
             <button className="terra-btn-overlay" onClick={() => setOverlayUrl(overlayUrl ? null : '/lion-adiminstracao/mapa-cadastral.jpg')} title="Sobrepor mapa cadastral">
               <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="3" width="14" height="10" rx="1.5"/><circle cx="5" cy="7" r="1.5"/><path d="M1 11l4-3 3 2 3-4 4 5"/></svg>
               {overlayUrl ? 'Remover Overlay' : 'Mapa Cadastral'}
