@@ -1319,6 +1319,14 @@ export default function App() {
           ))}
         </nav>
         <div className="sidebar-footer">
+          <button className={`sidebar-nav-item${showNp ? ' sidebar-nav-active' : ''}`} onClick={toggleNp} title="Notas (N)">
+            <span className="sidebar-nav-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3.5 3.5h13v13h-13z" rx="2"/><path d="M7 1.5v3.5M10 1.5v3.5M13 1.5v3.5" strokeLinecap="round"/><line x1="7" y1="10" x2="13" y2="10" strokeLinecap="round"/><line x1="7" y1="13" x2="10" y2="13" strokeLinecap="round"/></svg></span>
+            <span className="sidebar-nav-label">Notas</span>
+          </button>
+          <button className={`sidebar-nav-item${showCalc ? ' sidebar-nav-active' : ''}`} onClick={toggleCalc} title="Calculadora (C)">
+            <span className="sidebar-nav-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3.5" y="1.5" width="13" height="17" rx="2.5"/><rect x="6" y="4" width="8" height="3.5" rx="1" fill="currentColor" opacity=".3" stroke="none"/><circle cx="7" cy="11" r=".7" fill="currentColor" stroke="none"/><circle cx="10" cy="11" r=".7" fill="currentColor" stroke="none"/><circle cx="13" cy="11" r=".7" fill="currentColor" stroke="none"/><circle cx="7" cy="14.5" r=".7" fill="currentColor" stroke="none"/><circle cx="10" cy="14.5" r=".7" fill="currentColor" stroke="none"/><circle cx="13" cy="14.5" r=".7" fill="currentColor" stroke="none"/></svg></span>
+            <span className="sidebar-nav-label">Calculadora</span>
+          </button>
           <button className="sidebar-nav-item" onClick={handleLogout}>
             <span className="sidebar-nav-icon"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M13 15l3-5-3-5" strokeLinecap="round" strokeLinejoin="round"/><path d="M16 10H7" strokeLinecap="round"/><path d="M8 4H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" strokeLinecap="round"/></svg></span>
             <span className="sidebar-nav-label">Sair</span>
@@ -1657,29 +1665,6 @@ export default function App() {
 
       </div>{/* /main-col */}
 
-      {/* ── Floating Buttons ── */}
-      <div className="floats">
-        <button className={`float-btn float-np${showNp ? ' float-active' : ''}`} onClick={toggleNp} title="Notas (N)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M4 4h16v16H4z" rx="2"/>
-            <path d="M8 2v4M12 2v4M16 2v4" strokeLinecap="round"/>
-            <line x1="8" y1="12" x2="16" y2="12" strokeLinecap="round"/>
-            <line x1="8" y1="16" x2="12" y2="16" strokeLinecap="round"/>
-          </svg>
-        </button>
-        <button className={`float-btn float-calc${showCalc ? ' float-active' : ''}`} onClick={toggleCalc} title="Calculadora (C)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <rect x="4" y="2" width="16" height="20" rx="3"/>
-            <rect x="7" y="5" width="10" height="4" rx="1" fill="currentColor" opacity=".3" stroke="none"/>
-            <circle cx="8.5" cy="13" r=".8" fill="currentColor" stroke="none"/>
-            <circle cx="12" cy="13" r=".8" fill="currentColor" stroke="none"/>
-            <circle cx="15.5" cy="13" r=".8" fill="currentColor" stroke="none"/>
-            <circle cx="8.5" cy="17" r=".8" fill="currentColor" stroke="none"/>
-            <circle cx="12" cy="17" r=".8" fill="currentColor" stroke="none"/>
-            <circle cx="15.5" cy="17" r=".8" fill="currentColor" stroke="none"/>
-          </svg>
-        </button>
-      </div>
 
       {/* ── Panels ── */}
       <div className={`float-panel panel-share${showShare ? ' panel-open' : ''}`}>
