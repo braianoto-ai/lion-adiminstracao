@@ -5705,12 +5705,6 @@ function TerraPage() {
             {terraEditMode ? 'Sair da Edição' : 'Editar Mapa'}
           </button>
         )}
-        {drawMode === 'none' && !editingMapTalhaoId && !showQuickTalhao && (
-          <button className={`terra-btn-draw${terraEditMode ? ' terra-btn-edit-active' : ''}`} onClick={() => setTerraEditMode(v => !v)}>
-            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 14h3l9-9-3-3-9 9v3z" strokeLinejoin="round"/></svg>
-            {terraEditMode ? 'Sair da Edição' : 'Editar Mapa'}
-          </button>
-        )}
         {terraEditMode && drawMode === 'none' && fazenda && !showQuickTalhao && (
           <>
             <button className="terra-btn-draw" onClick={() => { setDrawMode('perimetro'); setDrawPoints([]) }}>
