@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react'
 import './App.css'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
@@ -5784,6 +5784,34 @@ export default function App() {
     return () => { window.removeEventListener('keydown', onKey); clearTimeout(hintTimer) }
   }, [showCalc, showNp, showFin, showSim, showDocs, showAlerts])
 
+  const dashMiniMapInstance = useRef<L.Map | null>(null)
+  const dashMiniMapRef = useCallback((node: HTMLDivElement | null) => {
+    if (dashMiniMapInstance.current) { dashMiniMapInstance.current.remove(); dashMiniMapInstance.current = null }
+    if (!node) return
+    const fazArr: TerraFazenda[] = (() => { try { return JSON.parse(localStorage.getItem('lion-terra') || '[]') } catch { return [] } })()
+    const talArr: TerraTalhao[] = (() => { try { return JSON.parse(localStorage.getItem('lion-talhoes') || '[]') } catch { return [] } })()
+    if (!fazArr.length) return
+    const fz = fazArr[0]
+    const map = L.map(node, {
+      zoomControl: false, dragging: false, scrollWheelZoom: false,
+      doubleClickZoom: false, touchZoom: false, boxZoom: false,
+      keyboard: false, attributionControl: false,
+    })
+    L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map)
+    if (fz.perimetro?.length >= 3) {
+      const perim = L.polygon(fz.perimetro, { color: '#dc2626', weight: 2, fillOpacity: 0.08, dashArray: '6 3' }).addTo(map)
+      talArr.filter(t => t.fazendaId === fz.id && t.poligono?.length >= 3).forEach(t => {
+        const cor = t.cor || TALHAO_USOS.find(u => u.value === t.uso)?.cor || '#6b7280'
+        L.polygon(t.poligono, { color: cor, weight: 1, fillColor: cor, fillOpacity: 0.15 }).addTo(map)
+      })
+      map.fitBounds(perim.getBounds(), { padding: [10, 10] })
+    } else {
+      map.setView([fz.latitude, fz.longitude], 14)
+    }
+    dashMiniMapInstance.current = map
+    setTimeout(() => map.invalidateSize(), 200)
+  }, [sidebarPage])
+
   if (!authReady) return null
 
   // Public map route — no auth required
@@ -6170,6 +6198,111 @@ export default function App() {
 
 
             </div>
+
+            {/* ── Row 3: Terra overview ── */}
+            {(() => {
+              const dashFazendas: TerraFazenda[] = (() => { try { return JSON.parse(localStorage.getItem('lion-terra') || '[]') } catch { return [] } })()
+              const dashTalhoes: TerraTalhao[] = (() => { try { return JSON.parse(localStorage.getItem('lion-talhoes') || '[]') } catch { return [] } })()
+              if (dashFazendas.length === 0) return null
+              const faz = dashFazendas[0]
+              const fazTal = dashTalhoes.filter(t => t.fazendaId === faz.id)
+              const areaUtilVal = faz.areaUtil || 0
+              const utilizPct = faz.areaTotal > 0 ? ((areaUtilVal / faz.areaTotal) * 100).toFixed(1) : '0'
+              const somaTal = fazTal.reduce((s, t) => s + t.areaHa, 0)
+              const fmtHa2 = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' ha'
+
+              const pieItems = fazTal.length > 0
+                ? fazTal.map(t => {
+                    const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
+                    return { label: t.nome, value: t.areaHa, cor: t.cor || usoInfo?.cor || '#6b7280' }
+                  }).filter(i => i.value > 0)
+                : [
+                    { label: 'Lavoura', value: faz.areaLavoura, cor: '#f59e0b' },
+                    { label: 'Pastagem', value: faz.areaPastagem, cor: '#22c55e' },
+                    { label: 'APP', value: faz.areaApp, cor: '#0d9488' },
+                    { label: 'Reflorestamento', value: faz.areaReflorestamento, cor: '#65a30d' },
+                    { label: 'Benfeitorias', value: faz.areaBenfeitorias, cor: '#8b5cf6' },
+                  ].filter(i => i.value > 0)
+
+              const pieTotal = pieItems.reduce((s, i) => s + i.value, 0)
+              let pieCum = 0
+              const slices = pieTotal > 0 ? pieItems.map(item => {
+                const startFrac = pieCum / pieTotal
+                pieCum += item.value
+                const frac = item.value / pieTotal
+                const r = 70
+                const circ = 2 * Math.PI * r
+                return { ...item, strokeDasharray: `${frac * circ} ${circ}`, strokeDashoffset: -startFrac * circ, pct: ((item.value / pieTotal) * 100).toFixed(0) }
+              }) : []
+
+              const docs = [faz.geoReferenciado, faz.licencaAmbiental, !!faz.matricula, !!faz.carNumero]
+              const docsOk = docs.filter(Boolean).length
+
+              return (
+                <div className="bento-row bento-r3">
+                  <div className="bc bc-metric">
+                    <div className="metric-ico mi-green">
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 18C6 10 14 10 18 18" strokeLinecap="round"/><path d="M10 2c2 4 6 5 8 4-1 3-5 5-8 3-3 2-7 0-8-3 2 1 6 0 8-4z" strokeLinejoin="round"/></svg>
+                    </div>
+                    <div className="metric-lbl">Área Útil</div>
+                    <div className="metric-val">{fmtHa2(areaUtilVal)}</div>
+                    <div className={`metric-chg ${Number(utilizPct) >= 70 ? 'mc-pos' : 'mc-neu'}`}>{utilizPct}% de utilização</div>
+                  </div>
+
+                  <div className="bc bc-metric">
+                    <div className="metric-ico mi-amber">
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="7" height="7" rx="1" strokeLinejoin="round"/><rect x="11" y="2" width="7" height="7" rx="1" strokeLinejoin="round"/><rect x="2" y="11" width="7" height="7" rx="1" strokeLinejoin="round"/><rect x="11" y="11" width="7" height="7" rx="1" strokeLinejoin="round"/></svg>
+                    </div>
+                    <div className="metric-lbl">Talhões</div>
+                    <div className="metric-val">{fazTal.length}</div>
+                    <div className="metric-chg mc-neu">{fmtHa2(somaTal)} mapeados</div>
+                  </div>
+
+                  <div className="bc">
+                    <div className="bc-title">
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 18C6 10 14 10 18 18" strokeLinecap="round"/><path d="M10 2c2 4 6 5 8 4-1 3-5 5-8 3-3 2-7 0-8-3 2 1 6 0 8-4z" strokeLinejoin="round"/></svg>
+                        {faz.nome}
+                      </span>
+                      <button className="bc-title-btn" onClick={() => setSidebarPage('terra')}>Ver Terra</button>
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                      <div ref={dashMiniMapRef} style={{ width: 120, height: 120, borderRadius: '10px', overflow: 'hidden', flexShrink: 0, background: 'var(--bg3)', cursor: 'pointer' }} onClick={() => setSidebarPage('terra')} title="Ver mapa completo" />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        {faz.municipio && <div style={{ fontSize: 'calc(.7rem * var(--fs))', color: 'var(--text)', opacity: .7, marginBottom: '4px' }}>{faz.municipio}{faz.uf ? ` — ${faz.uf}` : ''}</div>}
+                        <div style={{ fontSize: 'calc(.72rem * var(--fs))', color: 'var(--text2)', fontWeight: 600 }}>Área Total: {fmtHa2(faz.areaTotal)}</div>
+                        <div style={{ fontSize: 'calc(.65rem * var(--fs))', color: 'var(--text)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: docsOk === 4 ? 'var(--green)' : docsOk >= 2 ? 'var(--amber)' : 'var(--red)', display: 'inline-block', flexShrink: 0 }} />
+                          Documentação: {docsOk}/4 completo{docsOk !== 1 ? 's' : ''}
+                        </div>
+                        {slices.length > 0 && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 8px', marginTop: '8px' }}>
+                            {slices.slice(0, 5).map((s, i) => (
+                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: 'calc(.6rem * var(--fs))', color: 'var(--text)' }}>
+                                <span style={{ width: 8, height: 8, borderRadius: '2px', background: s.cor, flexShrink: 0 }} />
+                                {s.label} {s.pct}%
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {slices.length > 0 && (
+                        <div style={{ width: 80, height: 80, flexShrink: 0, alignSelf: 'center' }}>
+                          <svg viewBox="0 0 200 200" style={{ width: '100%', height: '100%' }}>
+                            {slices.map((s, i) => (
+                              <circle key={i} cx="100" cy="100" r="70" fill="none" stroke={s.cor} strokeWidth="28" strokeDasharray={s.strokeDasharray} strokeDashoffset={s.strokeDashoffset} transform="rotate(-90 100 100)" />
+                            ))}
+                            <circle cx="100" cy="100" r="56" fill="var(--bg2)" />
+                            <text x="100" y="96" textAnchor="middle" fill="var(--text3)" fontSize="24" fontWeight="700">{slices.length}</text>
+                            <text x="100" y="114" textAnchor="middle" fill="var(--text)" fontSize="11" opacity=".6">usos</text>
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
 
           </main>
         )
