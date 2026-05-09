@@ -5182,6 +5182,7 @@ function TerraPage() {
   const [mapLayer, setMapLayer] = useState<'mapa' | 'satelite' | 'relevo'>('mapa')
   const tileRef = useRef<L.TileLayer | null>(null)
   const [hiddenTalhoes, setHiddenTalhoes] = useState<Set<string>>(new Set())
+  const [terraEditMode, setTerraEditMode] = useState(false)
   const [drawMode, setDrawMode] = useState<'none' | 'perimetro' | 'talhao'>('none')
   const [drawPoints, setDrawPoints] = useState<[number, number][]>([])
   const drawLayerRef = useRef<L.Polyline | null>(null)
@@ -5584,7 +5585,13 @@ function TerraPage() {
             {shareCopied ? 'Link copiado!' : 'Compartilhar Mapa'}
           </button>
         )}
-        {drawMode === 'none' && fazenda && !showQuickTalhao && (
+        {drawMode === 'none' && !editingMapTalhaoId && !showQuickTalhao && (
+          <button className={`terra-btn-draw${terraEditMode ? ' terra-btn-edit-active' : ''}`} onClick={() => setTerraEditMode(v => !v)}>
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 14h3l9-9-3-3-9 9v3z" strokeLinejoin="round"/></svg>
+            {terraEditMode ? 'Sair da Edição' : 'Editar Mapa'}
+          </button>
+        )}
+        {terraEditMode && drawMode === 'none' && fazenda && !showQuickTalhao && (
           <>
             <button className="terra-btn-draw" onClick={() => { setDrawMode('perimetro'); setDrawPoints([]) }}>
               <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="2,14 8,2 14,14" strokeLinejoin="round"/></svg>
@@ -5723,25 +5730,29 @@ function TerraPage() {
                         if (next.has(t.id)) next.delete(t.id); else next.add(t.id)
                         return next
                       })} className="terra-talhao-check" style={{ accentColor: cor }} title={visible ? 'Ocultar' : 'Mostrar'} />
-                      <input type="color" value={cor} onChange={e => setTalhoes(prev => prev.map(x => x.id === t.id ? { ...x, cor: e.target.value } : x))} className="terra-color-swatch" title="Alterar cor" />
-                      {drawMode === 'none' && !showQuickTalhao && !editingMapTalhaoId && (
+                      {terraEditMode && (
                         <>
-                          {drawn && (
-                            <button className="terra-btn-draw-sm terra-btn-edit-map" onClick={() => startEditMapTalhao(t.id)} title="Editar no mapa">
-                              <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 8a6 6 0 1112 0A6 6 0 012 8z"/><circle cx="5" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/><circle cx="11" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>
-                            </button>
+                          <input type="color" value={cor} onChange={e => setTalhoes(prev => prev.map(x => x.id === t.id ? { ...x, cor: e.target.value } : x))} className="terra-color-swatch" title="Alterar cor" />
+                          {drawMode === 'none' && !showQuickTalhao && !editingMapTalhaoId && (
+                            <>
+                              {drawn && (
+                                <button className="terra-btn-draw-sm terra-btn-edit-map" onClick={() => startEditMapTalhao(t.id)} title="Editar no mapa">
+                                  <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 8a6 6 0 1112 0A6 6 0 012 8z"/><circle cx="5" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/><circle cx="11" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>
+                                </button>
+                              )}
+                              <button className="terra-btn-draw-sm" onClick={() => { setDrawTalhaoId(t.id); setDrawMode('talhao'); setDrawPoints([]) }} title={drawn ? 'Redesenhar' : 'Desenhar'}>
+                                <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 2l3 3-9 9H2v-3z" strokeLinejoin="round"/></svg>
+                              </button>
+                              {drawn && (
+                                <button className="terra-btn-draw-sm terra-btn-clear-poly" onClick={() => setTalhoes(prev => prev.map(x => x.id === t.id ? { ...x, poligono: [] } : x))} title="Limpar polígono">
+                                  <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3l10 10M13 3L3 13" strokeLinecap="round"/></svg>
+                                </button>
+                              )}
+                              <button className="terra-btn-draw-sm terra-btn-del-talhao" onClick={() => deleteTalhao(t.id)} title="Excluir">
+                                <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h8v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4zM6 2h4M3 4h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              </button>
+                            </>
                           )}
-                          <button className="terra-btn-draw-sm" onClick={() => { setDrawTalhaoId(t.id); setDrawMode('talhao'); setDrawPoints([]) }} title={drawn ? 'Redesenhar' : 'Desenhar'}>
-                            <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 2l3 3-9 9H2v-3z" strokeLinejoin="round"/></svg>
-                          </button>
-                          {drawn && (
-                            <button className="terra-btn-draw-sm terra-btn-clear-poly" onClick={() => setTalhoes(prev => prev.map(x => x.id === t.id ? { ...x, poligono: [] } : x))} title="Limpar polígono">
-                              <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3l10 10M13 3L3 13" strokeLinecap="round"/></svg>
-                            </button>
-                          )}
-                          <button className="terra-btn-draw-sm terra-btn-del-talhao" onClick={() => deleteTalhao(t.id)} title="Excluir">
-                            <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h8v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4zM6 2h4M3 4h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                          </button>
                         </>
                       )}
                     </div>
@@ -6016,7 +6027,7 @@ function TerraPage() {
   )
 
   return (
-    <div className="terra-page">
+    <div className={`terra-page${tab === 'mapa' ? ' terra-page-fullmap' : ''}`}>
       {fazendas.length > 1 && (
         <div className="terra-fazenda-selector">
           <select value={activeFazendaId || ''} onChange={e => setActiveFazendaId(e.target.value)}>

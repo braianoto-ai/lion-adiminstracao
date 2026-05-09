@@ -5725,6 +5725,10 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 /* ─── Terra Page ────────────────────────────────────────────────────────────── */
 
 .terra-page { display: flex; flex-direction: column; gap: 24px; padding: 24px; max-width: 1200px; margin: 0 auto; width: 100% }
+.terra-page-fullmap { max-width: 100%; padding: 16px 16px 0 }
+.terra-page-fullmap .terra-map-layout { min-height: calc(100vh - 200px) }
+.terra-page-fullmap .terra-map-container { min-height: calc(100vh - 220px) }
+.terra-page-fullmap .terra-map-sidebar { max-height: calc(100vh - 220px) }
 .terra-fazenda-selector select { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 12px; font-size: calc(.82rem * var(--fs)); color: var(--text3); outline: none }
 
 .terra-tabs { display: flex; gap: 4px; background: var(--bg2); border-radius: var(--radius-lg); padding: 4px; border: 1px solid var(--border); flex-wrap: wrap }
@@ -5771,6 +5775,8 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 .terra-btn-draw { display: flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: calc(.78rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all .15s }
 .terra-btn-draw:hover { background: var(--bg3); color: var(--text3) }
 .terra-btn-draw:disabled { opacity: .4; cursor: not-allowed }
+.terra-btn-edit-active { background: var(--purple); color: #fff; border-color: var(--purple); box-shadow: 0 2px 8px rgba(139,92,246,.25) }
+.terra-btn-edit-active:hover { background: #7c3aed; color: #fff }
 .terra-btn-undo { border-color: #f59e0b; color: #f59e0b }
 .terra-draw-select { padding: 6px 10px; font-size: calc(.78rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer }
 .terra-quick-input { padding: 6px 10px; font-size: calc(.78rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg3); color: var(--text3); outline: none; min-width: 180px; transition: border-color .15s }
