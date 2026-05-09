@@ -4618,21 +4618,25 @@ function PatrimonioPage() {
       {/* Summary */}
       <div className="patr-summary">
         <div className="patr-summary-card">
+          <div className="metric-ico mi-blue"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l7-6 7 6v9H3V9z" strokeLinejoin="round"/><path d="M7 18V12h6v6" strokeLinecap="round"/></svg></div>
           <div className="patr-summary-label">Imóveis</div>
           <div className="patr-summary-val">{fmtR(totalImoveis)}</div>
           <div className="patr-summary-sub">{imoveis.length} imóvel{imoveis.length !== 1 ? 's' : ''}</div>
         </div>
         <div className="patr-summary-card">
+          <div className="metric-ico mi-amber"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M5 17h10M6 13h8l1-4H5l1 4zM10 3v2M14 5l-1 1M6 5l1 1" strokeLinecap="round" strokeLinejoin="round"/><rect x="8" y="9" width="4" height="4" rx="1"/></svg></div>
           <div className="patr-summary-label">Veículos</div>
           <div className="patr-summary-val">{fmtR(totalVeiculos)}</div>
           <div className="patr-summary-sub">{vehicles.length} veículo{vehicles.length !== 1 ? 's' : ''}</div>
         </div>
         <div className="patr-summary-card">
+          <div className="metric-ico mi-green"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 7h14M3 7l2-3h10l2 3M3 7v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
           <div className="patr-summary-label">Bens / Produtos</div>
           <div className="patr-summary-val">{fmtR(totalProdutos)}</div>
           <div className="patr-summary-sub">{produtos.length} item{produtos.length !== 1 ? 's' : ''}</div>
         </div>
         <div className="patr-summary-card patr-summary-total">
+          <div className="metric-ico mi-purple"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 2v16M6 6h5.5a2.5 2.5 0 0 1 0 5H6m0 0h6a2.5 2.5 0 0 1 0 5H6" strokeLinecap="round"/></svg></div>
           <div className="patr-summary-label">Patrimônio Total</div>
           <div className="patr-summary-val patr-summary-val-accent">{fmtR(totalGeral)}</div>
           <div className="patr-summary-sub">{imoveis.length + vehicles.length + produtos.length} ativos</div>
@@ -5819,13 +5823,16 @@ export default function App() {
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="7" height="7" rx="1"/><rect x="11" y="2" width="7" height="7" rx="1"/><rect x="2" y="11" width="7" height="7" rx="1"/><rect x="11" y="11" width="7" height="7" rx="1"/></svg>, label: 'Dashboard', action: () => { setSidebarPage('dashboard'); setShowSidebar(false) }, active: sidebarPage === 'dashboard' },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="5" width="16" height="11" rx="2"/><path d="M2 9h16" strokeLinecap="round"/><path d="M5 13h3M11 13h4" strokeLinecap="round"/></svg>, label: 'Hub de Pagamentos', active: sidebarPage === 'payment-hub', action: () => { setSidebarPage('payment-hub'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 2v16M6 6h5.5a2.5 2.5 0 0 1 0 5H6m0 0h6a2.5 2.5 0 0 1 0 5H6" strokeLinecap="round"/></svg>, label: 'Finanças', active: sidebarPage === 'financas', action: () => { setSidebarPage('financas'); setShowSidebar(false) } },
+            { divider: true, label: 'Gestão' },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M4 18a6 6 0 0 1 12 0"/></svg>, label: 'Família', active: sidebarPage === 'family', action: () => { setSidebarPage('family'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="4" width="16" height="14" rx="2"/><path d="M6 2v4M14 2v4M2 9h16" strokeLinecap="round"/></svg>, label: 'Calendário', active: sidebarPage === 'calendar', action: () => { setSidebarPage('calendar'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l7-6 7 6v9H3V9z" strokeLinejoin="round"/><path d="M7 18V12h6v6" strokeLinecap="round"/><rect x="10" y="4" width="6" height="5" rx="1" fill="currentColor" opacity=".2" stroke="none"/></svg>, label: 'Patrimônio', active: sidebarPage === 'patrimonio', action: () => { setSidebarPage('patrimonio'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 16l4-3 3 2 4-5 5 3" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 18h16" strokeLinecap="round"/><circle cx="16" cy="5" r="2" fill="currentColor" opacity=".3" stroke="none"/></svg>, label: 'Terra', active: sidebarPage === 'terra', action: () => { setSidebarPage('terra'); setShowSidebar(false) } },
+            { divider: true, label: 'Sistema' },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="7"/><path d="M10 7v3l2 2" strokeLinecap="round"/><circle cx="10" cy="3" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="17" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="17" cy="10" r="1" fill="currentColor" stroke="none"/></svg>, label: 'Aparência', active: sidebarPage === 'appearance', action: () => { setSidebarPage('appearance'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2h4M10 2v3M7 5h6a1 1 0 0 1 1 1v1H6V6a1 1 0 0 1 1-1zM5 7h10l-1 10H6L5 7z" strokeLinejoin="round"/></svg>, label: 'Configurações', active: sidebarPage === 'settings', action: () => { setSidebarPage('settings'); setShowSidebar(false) } },
-          ] as { icon: React.ReactNode; label: string; active?: boolean; badge?: string; action: () => void }[]).map(item => (
+          ] as { icon?: React.ReactNode; label: string; active?: boolean; badge?: string; action?: () => void; divider?: boolean }[]).map(item => (
+            item.divider ? <div key={item.label} className="sidebar-nav-divider"><span>{item.label}</span></div> :
             <button key={item.label} className={`sidebar-nav-item${item.active ? ' sidebar-nav-active' : ''}`} onClick={item.action}>
               <span className="sidebar-nav-icon">{item.icon}</span>
               <span className="sidebar-nav-label">{item.label}</span>
@@ -5943,10 +5950,13 @@ export default function App() {
       {/* ── Sub-pages (Família, Calendário, etc.) ── */}
       {sidebarPage !== 'dashboard' && (
         <div className={`page-content${sidebarPage === 'settings' ? ' page-content--settings' : ''}`}>
-          <button className="page-back-btn" onClick={() => setSidebarPage('dashboard')}>
-            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M10 4L6 8l4 4"/></svg>
-            Voltar ao Dashboard
-          </button>
+          <nav className="page-breadcrumb">
+            <button className="breadcrumb-link" onClick={() => setSidebarPage('dashboard')}>Dashboard</button>
+            <svg viewBox="0 0 8 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="breadcrumb-sep"><path d="M2 2l4 4-4 4"/></svg>
+            <span className="breadcrumb-current">
+              {{ 'family': 'Família', 'calendar': 'Calendário', 'trips': 'Viagens', 'goals': 'Metas', 'financas': 'Finanças', 'patrimonio': 'Patrimônio', 'terra': 'Terra', 'payment-hub': 'Hub de Pagamentos', 'appearance': 'Aparência', 'settings': 'Configurações' }[sidebarPage] || sidebarPage}
+            </span>
+          </nav>
           {sidebarPage === 'family'     && <FamilyPage />}
           {sidebarPage === 'calendar'   && <CalendarPage />}
           {sidebarPage === 'trips'        && <TripsPage />}
