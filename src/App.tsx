@@ -5629,6 +5629,14 @@ export default function App() {
       .catch(() => {})
   }, [])
 
+  // Toast notification system
+  const [toasts, setToasts] = useState<{ id: string; msg: string; type: 'success' | 'info' | 'error' }[]>([])
+  const toast = (msg: string, type: 'success' | 'info' | 'error' = 'success') => {
+    const id = crypto.randomUUID()
+    setToasts(prev => [...prev, { id, msg, type }])
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3000)
+  }
+
   const [dashData, setDashData] = useState(() => computeDashData())
   const [activity, setActivity] = useState(() => buildActivity())
   const [themeId, setThemeId] = useState(() => localStorage.getItem('lion-theme') || 'dark')
@@ -5636,6 +5644,16 @@ export default function App() {
   const [accentId, setAccentId] = useState(() => localStorage.getItem('lion-accent') || 'blue')
   const [animations, setAnimations] = useState(() => localStorage.getItem('lion-animations') !== 'off')
   const [sidebarFixed, setSidebarFixed] = useState(() => localStorage.getItem('lion-sidebar-fixed') === 'on')
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => localStorage.getItem('lion-sidebar-collapsed') === 'on')
+  const [isOffline, setIsOffline] = useState(!navigator.onLine)
+
+  useEffect(() => {
+    const goOff = () => setIsOffline(true)
+    const goOn = () => { setIsOffline(false); toast('Conexão restaurada', 'success') }
+    window.addEventListener('offline', goOff)
+    window.addEventListener('online', goOn)
+    return () => { window.removeEventListener('offline', goOff); window.removeEventListener('online', goOn) }
+  }, [])
   const [modal, setModal] = useState<ModalType>(null)
   const [showSidebar, setShowSidebar] = useState(false)
   const [sidebarPage, setSidebarPage] = useState<SidebarPage>('dashboard')
@@ -5762,17 +5780,39 @@ export default function App() {
   useEffect(() => {
     let hintTimer: ReturnType<typeof setTimeout>
     const onKey = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement).tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return
       const key = e.key.toLowerCase()
-      const hints: Record<string, string> = { f: 'Finanças', n: 'Notas', c: 'Calculadora', s: 'Simulador', a: 'Alertas', d: 'Documentos', '?': 'Atalhos', escape: 'Fechar' }
+      const tag = (e.target as HTMLElement).tagName
+      const isInput = tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+
+      // Ctrl/Cmd shortcuts work even in inputs
+      if ((e.ctrlKey || e.metaKey) && key === 'k') {
+        e.preventDefault()
+        setSearchOpen(v => !v)
+        setKbHint('Busca rápida'); hintTimer = setTimeout(() => setKbHint(null), 1200)
+        return
+      }
+      if ((e.ctrlKey || e.metaKey) && key === 'n') {
+        e.preventDefault()
+        setSidebarPage('financas'); setShowSidebar(false)
+        setKbHint('Nova transação'); hintTimer = setTimeout(() => setKbHint(null), 1200)
+        return
+      }
+      // Escape always works
+      if (key === 'escape') {
+        e.preventDefault()
+        closeAll(); setShowKbLegend(false); setSearchOpen(false)
+        setKbHint('Fechar'); hintTimer = setTimeout(() => setKbHint(null), 1200)
+        return
+      }
+
+      if (isInput) return
+      const hints: Record<string, string> = { f: 'Finanças', n: 'Notas', c: 'Calculadora', s: 'Simulador', a: 'Alertas', d: 'Documentos', '?': 'Atalhos' }
       if (!hints[key] && key !== '?') return
       e.preventDefault()
       clearTimeout(hintTimer)
       if (key === '?') { setShowKbLegend(v => !v); return }
       setKbHint(hints[key])
       hintTimer = setTimeout(() => setKbHint(null), 1200)
-      if (key === 'escape') { closeAll(); setShowKbLegend(false); return }
       if (key === 'f') toggleFin()
       if (key === 'n') toggleNp()
       if (key === 'c') toggleCalc()
@@ -5793,8 +5833,14 @@ export default function App() {
 
   return (
     <UserCtx.Provider value={user?.id}>
-    <div className={`app${viewMode ? ' view-mode' : ''}${sidebarFixed ? ' sidebar-pinned' : ''}`}>
+    <div className={`app${viewMode ? ' view-mode' : ''}${sidebarFixed ? ' sidebar-pinned' : ''}${sidebarCollapsed ? ' sidebar-collapsed' : ''}`}>
       {kbHint && <div className="kb-toast">{kbHint}</div>}
+      {isOffline && (
+        <div className="offline-banner">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M1 1l14 14M3.5 7.5A7.5 7.5 0 0112.5 5M5.5 10A5 5 0 0111 7.5M8 13a1 1 0 100-2 1 1 0 000 2z" strokeLinecap="round"/></svg>
+          Sem conexão — dados salvos localmente
+        </div>
+      )}
       {showOnboarding && <OnboardingWizard onDone={finishOnboarding} />}
 
       {/* ── Sidebar ── */}
@@ -5809,6 +5855,13 @@ export default function App() {
               </svg>
           }
           <span className="sidebar-brand-name">Lion Admin</span>
+          <button className="sidebar-collapse-btn" onClick={() => { const next = !sidebarCollapsed; setSidebarCollapsed(next); localStorage.setItem('lion-sidebar-collapsed', next ? 'on' : 'off') }} title={sidebarCollapsed ? 'Expandir sidebar' : 'Recolher sidebar'}>
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5">
+              {sidebarCollapsed
+                ? <path d="M6 3l5 5-5 5" strokeLinecap="round" strokeLinejoin="round"/>
+                : <path d="M10 3L5 8l5 5" strokeLinecap="round" strokeLinejoin="round"/>}
+            </svg>
+          </button>
         </div>
         <div className="sidebar-user">
           <div className="sidebar-user-info">
@@ -6008,8 +6061,31 @@ export default function App() {
 
         const momPct = dashData.lastMonthNet !== 0 ? Math.round((dashData.thisMonthNet-dashData.lastMonthNet)/Math.abs(dashData.lastMonthNet)*100) : 0
 
+        const exportCSV = () => {
+          const rows = [['Data', 'Tipo', 'Categoria', 'Descrição', 'Valor']]
+          txsRaw.sort((a, b) => a.date.localeCompare(b.date)).forEach(t => {
+            rows.push([t.date, t.type === 'receita' ? 'Receita' : 'Despesa', t.category || '', t.description || '', String(t.amount)])
+          })
+          const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n')
+          const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' })
+          const a = document.createElement('a')
+          a.href = URL.createObjectURL(blob)
+          a.download = `lion-financeiro-${new Date().toISOString().slice(0, 10)}.csv`
+          a.click()
+          URL.revokeObjectURL(a.href)
+          toast(`${txsRaw.length} transações exportadas`)
+        }
+
         return (
           <main className="dash-content">
+            {/* ── Dashboard header with export ── */}
+            <div className="dash-header">
+              <h2 className="dash-title">Dashboard</h2>
+              <button className="dash-export-btn" onClick={exportCSV} title="Exportar transações em CSV">
+                <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 11v3h12v-3M8 2v8M5 7l3 3 3-3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                Exportar CSV
+              </button>
+            </div>
             {/* ── Row 1: Hero + 3 metrics ── */}
             <div className="bento-row bento-r1">
 
@@ -6075,6 +6151,70 @@ export default function App() {
               </div>
 
             </div>
+
+            {/* ── Patrimony Evolution Chart ── */}
+            {(() => {
+              const imoveis: Imovel[] = (() => { try { return JSON.parse(localStorage.getItem('lion-imoveis') || '[]') } catch { return [] } })()
+              const fazendas: TerraFazenda[] = (() => { try { return JSON.parse(localStorage.getItem('lion-terra') || '[]') } catch { return [] } })()
+
+              const totalImoveis = imoveis.reduce((s, i) => s + (parseFloat(i.valorAtual || i.valor || '0') || 0), 0)
+              const totalTerras = fazendas.reduce((s, f) => s + (parseFloat(f.valorMercado || f.valorVenal || '0') || 0), 0)
+              const totalPatrim = totalImoveis + totalTerras
+
+              // Build 6-month evolution from createdAt dates
+              const months: { label: string; value: number }[] = []
+              for (let i = 5; i >= 0; i--) {
+                const d = new Date(); d.setMonth(d.getMonth() - i)
+                const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+                const label = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')
+                const imVal = imoveis.filter(im => (im.createdAt || '') <= key + '-31').reduce((s, im) => s + (parseFloat(im.valorAtual || im.valor || '0') || 0), 0)
+                const trVal = fazendas.filter(f => (f.createdAt || '') <= key + '-31').reduce((s, f) => s + (parseFloat(f.valorMercado || f.valorVenal || '0') || 0), 0)
+                months.push({ label, value: imVal + trVal })
+              }
+
+              const maxVal = Math.max(...months.map(m => m.value), 1)
+              const categories = [
+                { label: 'Imóveis', value: totalImoveis, color: '#3b82f6' },
+                { label: 'Terras', value: totalTerras, color: '#10b981' },
+              ].filter(c => c.value > 0)
+
+              if (totalPatrim === 0) return null
+
+              return (
+                <div className="bento-row" style={{ gridTemplateColumns: '1fr' }}>
+                  <div className="bc">
+                    <div className="bc-title">
+                      Evolução Patrimonial
+                      <span style={{ fontSize: 'calc(.75rem * var(--fs))', fontWeight: 600, color: 'var(--text3)' }}>{fmt(totalPatrim)}</span>
+                    </div>
+                    {/* Bar chart */}
+                    <div className="patrim-chart">
+                      {months.map((m, i) => (
+                        <div key={i} className="patrim-bar-col">
+                          <div className="patrim-bar-wrap">
+                            <div className="patrim-bar" style={{ height: `${Math.max((m.value / maxVal) * 100, 4)}%` }}>
+                              {i === months.length - 1 && <div className="patrim-bar-val">{fmt(m.value)}</div>}
+                            </div>
+                          </div>
+                          <span className="patrim-bar-lbl">{m.label}</span>
+                        </div>
+                      ))}
+                    </div>
+                    {/* Category breakdown */}
+                    <div className="patrim-cats">
+                      {categories.map(c => (
+                        <div key={c.label} className="patrim-cat">
+                          <span className="patrim-cat-dot" style={{ background: c.color }} />
+                          <span className="patrim-cat-name">{c.label}</span>
+                          <span className="patrim-cat-val">{fmt(c.value)}</span>
+                          <span className="patrim-cat-pct">{Math.round((c.value / totalPatrim) * 100)}%</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
 
             {/* ── Row 2: Activity + Goals + Quick Actions ── */}
             <div className="bento-row bento-r2">
@@ -6226,6 +6366,20 @@ export default function App() {
 
       {/* ── Modals ── */}
       {modal && <NewItemModal type={modal} onClose={() => setModal(null)} onNavigate={(page) => { setSidebarPage(page); setShowSidebar(false) }} />}
+
+      {/* Toast notifications */}
+      {toasts.length > 0 && (
+        <div className="toast-container">
+          {toasts.map(t => (
+            <div key={t.id} className={`toast-item toast-${t.type}`}>
+              {t.type === 'success' && <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 8l4 4 6-7" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+              {t.type === 'error' && <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 4l8 8M12 4l-8 8" strokeLinecap="round"/></svg>}
+              {t.type === 'info' && <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="8" cy="8" r="6"/><path d="M8 5v1M8 8v3" strokeLinecap="round"/></svg>}
+              <span>{t.msg}</span>
+            </div>
+          ))}
+        </div>
+      )}
 
     </div>
     </UserCtx.Provider>
