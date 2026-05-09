@@ -211,6 +211,186 @@ const TALHAO_USOS: { value: TalhaoUso; label: string; cor: string }[] = [
 ]
 const TERRA_CULTURAS = ['Soja','Milho','Café','Cana-de-Açúcar','Trigo','Algodão','Feijão','Arroz','Mandioca','Eucalipto','Pinus','Pastagem (Braquiária)','Pastagem (Tifton)','Outra']
 
+// ─── Public Map Page ─────────────────────────────────────────────────────────
+
+function PublicMapPage() {
+  const [fazendas, setFazendas] = useState<TerraFazenda[]>([])
+  const [talhoes, setTalhoes] = useState<TerraTalhao[]>([])
+  const [loading, setLoading] = useState(true)
+  const [mapLayer, setMapLayer] = useState<'mapa' | 'satelite' | 'relevo'>('mapa')
+  const [hiddenUsos, setHiddenUsos] = useState<Set<string>>(new Set())
+  const mapRef = useRef<HTMLDivElement>(null)
+  const leafletMap = useRef<L.Map | null>(null)
+  const layerGroup = useRef<L.LayerGroup | null>(null)
+  const tileRef = useRef<L.TileLayer | null>(null)
+
+  const fmtHa = (v: number) => v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ha'
+
+  useEffect(() => {
+    const load = async () => {
+      let loaded = false
+      if (supabase) {
+        const hash = window.location.hash
+        const uidMatch = hash.match(/#\/mapa\/([a-f0-9-]+)/i)
+        const uid = uidMatch?.[1]
+        if (uid) {
+          const [fRes, tRes] = await Promise.all([
+            supabase.from('terra_fazendas').select('id, data').eq('user_id', uid),
+            supabase.from('terra_talhoes').select('id, data').eq('user_id', uid),
+          ])
+          if (fRes.data?.length) { setFazendas(fRes.data.map(r => ({ ...(r.data as object), id: r.id }) as TerraFazenda)); loaded = true }
+          if (tRes.data?.length) { setTalhoes(tRes.data.map(r => ({ ...(r.data as object), id: r.id }) as TerraTalhao)); loaded = true }
+        }
+      }
+      if (!loaded) {
+        try {
+          const f = JSON.parse(localStorage.getItem('lion-terra') || '[]') as TerraFazenda[]
+          const t = JSON.parse(localStorage.getItem('lion-talhoes') || '[]') as TerraTalhao[]
+          if (f.length) setFazendas(f)
+          if (t.length) setTalhoes(t)
+        } catch { /* ignore */ }
+      }
+      setLoading(false)
+    }
+    load()
+  }, [])
+
+  const fazenda = fazendas[0] || null
+  const fazTalhoes = fazenda ? talhoes.filter(t => t.fazendaId === fazenda.id) : talhoes
+
+  useEffect(() => {
+    if (loading || !mapRef.current || leafletMap.current) return
+    const center: [number, number] = fazenda ? [fazenda.latitude, fazenda.longitude] : [-15.78, -47.93]
+    const map = L.map(mapRef.current, { zoomControl: false }).setView(center, fazenda ? 14 : 4)
+    L.control.zoom({ position: 'topright' }).addTo(map)
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' })
+    osm.addTo(map)
+    tileRef.current = osm
+    layerGroup.current = L.layerGroup().addTo(map)
+    leafletMap.current = map
+    return () => { map.remove(); leafletMap.current = null }
+  }, [loading])
+
+  useEffect(() => {
+    if (!leafletMap.current || !tileRef.current) return
+    leafletMap.current.removeLayer(tileRef.current)
+    const tiles = {
+      mapa: { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attr: '&copy; OpenStreetMap' },
+      satelite: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr: '&copy; Esri' },
+      relevo: { url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', attr: '&copy; OpenTopoMap' },
+    }
+    const t = tiles[mapLayer]
+    tileRef.current = L.tileLayer(t.url, { attribution: t.attr, maxZoom: 17 }).addTo(leafletMap.current)
+  }, [mapLayer])
+
+  useEffect(() => {
+    if (!leafletMap.current || !layerGroup.current) return
+    layerGroup.current.clearLayers()
+    if (fazenda && fazenda.perimetro.length >= 3) {
+      const perimPoly = L.polygon(fazenda.perimetro, { color: '#dc2626', weight: 3, fillOpacity: 0.04, dashArray: '8 4' })
+      perimPoly.bindPopup(`<div style="font-family:system-ui;min-width:200px"><strong style="font-size:14px">${fazenda.nome}</strong><br/><span style="color:#888">${fazenda.municipio} — ${fazenda.uf}</span><hr style="margin:6px 0;border:0;border-top:1px solid #ddd"/><b>Área Total:</b> ${fmtHa(fazenda.areaTotal)}<br/><b>Área Útil:</b> ${fmtHa(fazenda.areaUtil)}<br/><b>Reserva Legal:</b> ${fmtHa(fazenda.areaReservaLegal)} (${(fazenda.areaReservaLegal / fazenda.areaTotal * 100).toFixed(1)}%)<br/><b>Bioma:</b> ${fazenda.bioma}<br/><b>Relevo:</b> ${fazenda.relevo}</div>`)
+      perimPoly.addTo(layerGroup.current)
+    }
+    fazTalhoes.forEach(t => {
+      if (t.poligono.length >= 3 && !hiddenUsos.has(t.uso)) {
+        const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
+        const cor = t.cor || usoInfo?.cor || '#6b7280'
+        const pctArea = fazenda ? ((t.areaHa / fazenda.areaTotal) * 100).toFixed(1) : '—'
+        const poly = L.polygon(t.poligono, { color: cor, weight: 2.5, fillColor: cor, fillOpacity: 0.4 })
+        poly.bindPopup(`<div style="font-family:system-ui;min-width:180px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="background:${cor};color:#fff;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600">${usoInfo?.label || t.uso}</span></div><strong style="font-size:14px">${t.nome}</strong><hr style="margin:6px 0;border:0;border-top:1px solid #ddd"/><b>Área:</b> ${fmtHa(t.areaHa)} (${pctArea}% da fazenda)${t.cultura ? '<br/><b>Cultura:</b> ' + t.cultura : ''}${t.safra ? '<br/><b>Safra:</b> ' + t.safra : ''}${t.notas ? '<br/><span style="color:#888;font-size:12px">' + t.notas + '</span>' : ''}</div>`)
+        poly.addTo(layerGroup.current!)
+      }
+    })
+    if (fazenda && fazenda.perimetro.length >= 3) {
+      const bounds = L.polygon(fazenda.perimetro).getBounds()
+      leafletMap.current.fitBounds(bounds, { padding: [40, 40] })
+    }
+  }, [fazenda, fazTalhoes, hiddenUsos])
+
+  const usoGroups = useMemo(() => {
+    const map = new Map<string, { label: string; cor: string; count: number; areaHa: number }>()
+    fazTalhoes.forEach(t => {
+      const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
+      const key = t.uso
+      const existing = map.get(key)
+      if (existing) { existing.count++; existing.areaHa += t.areaHa }
+      else map.set(key, { label: usoInfo?.label || t.uso, cor: t.cor || usoInfo?.cor || '#6b7280', count: 1, areaHa: t.areaHa })
+    })
+    return Array.from(map.entries())
+  }, [fazTalhoes])
+
+  const toggleUso = (uso: string) => {
+    setHiddenUsos(prev => {
+      const next = new Set(prev)
+      if (next.has(uso)) next.delete(uso); else next.add(uso)
+      return next
+    })
+  }
+
+  if (loading) return <div className="pub-map-loading"><div className="pub-map-spinner" /><span>Carregando mapa...</span></div>
+
+  return (
+    <div className="pub-map-root">
+      {/* Header */}
+      <div className="pub-map-header">
+        <div className="pub-map-header-left">
+          <svg viewBox="0 0 20 20" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 16l4-3 3 2 4-5 5 3" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 18h16" strokeLinecap="round"/></svg>
+          {fazenda ? (
+            <>
+              <strong>{fazenda.nome}</strong>
+              <span className="pub-map-header-sub">{fazenda.municipio} — {fazenda.uf}</span>
+              <span className="pub-map-header-sub">{fmtHa(fazenda.areaTotal)}</span>
+            </>
+          ) : <strong>Mapa da Propriedade</strong>}
+        </div>
+        <div className="pub-map-header-right">
+          <div className="pub-map-layer-toggle">
+            {(['mapa', 'satelite', 'relevo'] as const).map(l => (
+              <button key={l} className={`pub-map-layer-btn${mapLayer === l ? ' active' : ''}`} onClick={() => setMapLayer(l)}>
+                {l === 'mapa' ? 'Mapa' : l === 'satelite' ? 'Satélite' : 'Relevo'}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Map */}
+      <div ref={mapRef} className="pub-map-container" />
+
+      {/* Legend */}
+      {usoGroups.length > 0 && (
+        <div className="pub-map-legend">
+          <div className="pub-map-legend-title">Talhões</div>
+          {usoGroups.map(([uso, g]) => (
+            <button key={uso} className={`pub-map-legend-item${hiddenUsos.has(uso) ? ' hidden' : ''}`} onClick={() => toggleUso(uso)}>
+              <span className="pub-map-legend-swatch" style={{ background: g.cor, opacity: hiddenUsos.has(uso) ? 0.3 : 1 }} />
+              <span className="pub-map-legend-label">{g.label}</span>
+              <span className="pub-map-legend-info">{g.count}× · {fmtHa(g.areaHa)}</span>
+            </button>
+          ))}
+          {fazenda && fazenda.perimetro.length >= 3 && (
+            <div className="pub-map-legend-item pub-map-legend-perim">
+              <span className="pub-map-legend-swatch" style={{ background: 'transparent', border: '2px dashed #dc2626' }} />
+              <span className="pub-map-legend-label">Perímetro</span>
+              <span className="pub-map-legend-info">{fmtHa(fazenda.areaTotal)}</span>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Info cards */}
+      {fazenda && (
+        <div className="pub-map-info">
+          <div className="pub-map-info-item"><span>Bioma</span><strong>{fazenda.bioma || '—'}</strong></div>
+          <div className="pub-map-info-item"><span>Solo</span><strong>{fazenda.tipoSolo || '—'}</strong></div>
+          <div className="pub-map-info-item"><span>Relevo</span><strong>{fazenda.relevo || '—'}</strong></div>
+          <div className="pub-map-info-item"><span>Utilização</span><strong>{(fazenda.areaUtil / fazenda.areaTotal * 100).toFixed(0)}%</strong></div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 
 type BillStatus = 'em_aberto' | 'pago' | 'vencido' | 'cancelado'
 type BillRecurrence = 'mensal' | 'unica' | 'anual' | 'semanal'
@@ -4986,9 +5166,11 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 // ─── Terra Page ──────────────────────────────────────────────────────────────
 
 function TerraPage() {
+  const userId = useContext(UserCtx)
   const [fazendas, setFazendas] = useCloudTable<TerraFazenda>('terra_fazendas', 'lion-terra')
   const [talhoes, setTalhoes] = useCloudTable<TerraTalhao>('terra_talhoes', 'lion-talhoes')
   const [tab, setTab] = useState<'visao' | 'mapa' | 'talhoes' | 'docs' | 'fazendas'>('visao')
+  const [shareCopied, setShareCopied] = useState(false)
   const [activeFazendaId, setActiveFazendaId] = useState<string | null>(null)
   const [showFazendaForm, setShowFazendaForm] = useState(false)
   const [editFazendaId, setEditFazendaId] = useState<string | null>(null)
@@ -5009,8 +5191,10 @@ function TerraPage() {
   const [quickTalhaoName, setQuickTalhaoName] = useState('')
   const [quickTalhaoUso, setQuickTalhaoUso] = useState<TalhaoUso>('lavoura')
   const [editingMapTalhaoId, setEditingMapTalhaoId] = useState<string | null>(null)
-  const [editCoords, setEditCoords] = useState<[number, number][]>([])
+  const editCoordsRef = useRef<[number, number][]>([])
   const editLayerRef = useRef<L.LayerGroup | null>(null)
+  const editPolyRef = useRef<L.Polygon | null>(null)
+  const [editVersion, setEditVersion] = useState(0)
 
   const emptyFazenda: Omit<TerraFazenda, 'id' | 'createdAt'> = {
     nome: '', municipio: '', uf: 'PR', matricula: '', carNumero: '', itrNumero: '', ccir: '',
@@ -5207,93 +5391,85 @@ function TerraPage() {
     const t = talhoes.find(x => x.id === talhaoId)
     if (!t || t.poligono.length < 3) return
     setEditingMapTalhaoId(talhaoId)
-    setEditCoords([...t.poligono])
+    editCoordsRef.current = [...t.poligono]
+    setEditVersion(v => v + 1)
   }
 
-  const renderEditVertices = useCallback((coords: [number, number][]) => {
+  const buildEditLayer = useCallback(() => {
     const map = leafletMap.current
-    if (!map || !editLayerRef.current) return
+    if (!map) return
+    if (!editLayerRef.current) editLayerRef.current = L.layerGroup().addTo(map)
     editLayerRef.current.clearLayers()
+    editPolyRef.current = null
+    const coords = editCoordsRef.current
+    if (coords.length < 3) return
     const talhao = talhoes.find(t => t.id === editingMapTalhaoId)
     const cor = talhao?.cor || '#f59e0b'
-    const poly = L.polygon(coords, { color: cor, weight: 3, fillColor: cor, fillOpacity: 0.3, dashArray: '6 3' })
+
+    const poly = L.polygon(coords, { color: cor, weight: 3, fillColor: cor, fillOpacity: 0.25, dashArray: '6 3' })
     poly.addTo(editLayerRef.current)
-    coords.forEach((c, i) => {
-      const marker = L.circleMarker(c, {
-        radius: 7, color: '#fff', fillColor: cor, fillOpacity: 1, weight: 2.5,
-        className: 'terra-vertex-marker'
-      })
-      marker.addTo(editLayerRef.current!)
-      let dragging = false
-      let startPos: L.LatLng | null = null
-      marker.on('mousedown', (e: L.LeafletMouseEvent) => {
-        dragging = true
-        startPos = e.latlng
-        map.dragging.disable()
-        L.DomEvent.stopPropagation(e)
-      })
-      const onMove = (e: L.LeafletMouseEvent) => {
-        if (!dragging) return
-        const newCoords = [...coords] as [number, number][]
-        newCoords[i] = [e.latlng.lat, e.latlng.lng]
-        setEditCoords(newCoords)
-      }
-      const onUp = () => {
-        if (!dragging) return
-        dragging = false
-        map.dragging.enable()
-      }
-      map.on('mousemove', onMove)
-      map.on('mouseup', onUp)
-      ;(marker as any)._editCleanup = () => { map.off('mousemove', onMove); map.off('mouseup', onUp) }
+    editPolyRef.current = poly
+
+    const vertexIcon = (color: string) => L.divIcon({
+      className: 'terra-vertex-icon',
+      html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);cursor:grab"></div>`,
+      iconSize: [14, 14], iconAnchor: [7, 7]
     })
-    // midpoint markers to add new vertices
+    const midIcon = (color: string) => L.divIcon({
+      className: 'terra-mid-icon',
+      html: `<div style="width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid ${color};opacity:.7;cursor:copy"></div>`,
+      iconSize: [10, 10], iconAnchor: [5, 5]
+    })
+
+    coords.forEach((c, i) => {
+      const m = L.marker(c, { draggable: true, icon: vertexIcon(cor), zIndexOffset: 1000 })
+      m.addTo(editLayerRef.current!)
+      m.on('drag', () => {
+        const pos = m.getLatLng()
+        editCoordsRef.current = editCoordsRef.current.map((cc, j) => j === i ? [pos.lat, pos.lng] as [number, number] : cc)
+        editPolyRef.current?.setLatLngs(editCoordsRef.current)
+      })
+      m.on('dragend', () => { setEditVersion(v => v + 1) })
+    })
+
     coords.forEach((c, i) => {
       const next = coords[(i + 1) % coords.length]
       const mid: [number, number] = [(c[0] + next[0]) / 2, (c[1] + next[1]) / 2]
-      const midMarker = L.circleMarker(mid, {
-        radius: 4, color: cor, fillColor: '#fff', fillOpacity: 0.8, weight: 2,
-        className: 'terra-mid-marker'
-      })
-      midMarker.addTo(editLayerRef.current!)
-      midMarker.on('mousedown', (e: L.LeafletMouseEvent) => {
-        L.DomEvent.stopPropagation(e)
-        const newCoords = [...coords] as [number, number][]
-        newCoords.splice(i + 1, 0, mid)
-        setEditCoords(newCoords)
+      const mm = L.marker(mid, { icon: midIcon(cor), zIndexOffset: 900 })
+      mm.addTo(editLayerRef.current!)
+      mm.on('click', () => {
+        editCoordsRef.current = [...editCoordsRef.current.slice(0, i + 1), mid, ...editCoordsRef.current.slice(i + 1)]
+        setEditVersion(v => v + 1)
       })
     })
   }, [editingMapTalhaoId, talhoes])
 
   useEffect(() => {
     if (!leafletMap.current) return
-    if (editingMapTalhaoId && !editLayerRef.current) {
-      editLayerRef.current = L.layerGroup().addTo(leafletMap.current)
-    }
-    if (editingMapTalhaoId && editCoords.length >= 3) {
-      renderEditVertices(editCoords)
-    }
-    if (!editingMapTalhaoId && editLayerRef.current) {
-      editLayerRef.current.eachLayer((l: any) => { if (l._editCleanup) l._editCleanup() })
+    if (editingMapTalhaoId) {
+      buildEditLayer()
+    } else if (editLayerRef.current) {
       editLayerRef.current.clearLayers()
       leafletMap.current.removeLayer(editLayerRef.current)
       editLayerRef.current = null
+      editPolyRef.current = null
     }
-  }, [editingMapTalhaoId, editCoords, renderEditVertices])
+  }, [editingMapTalhaoId, editVersion, buildEditLayer])
 
   const saveEditMapTalhao = () => {
-    if (!editingMapTalhaoId || editCoords.length < 3) return
-    setTalhoes(prev => prev.map(t => t.id === editingMapTalhaoId ? { ...t, poligono: editCoords } : t))
+    if (!editingMapTalhaoId || editCoordsRef.current.length < 3) return
+    setTalhoes(prev => prev.map(t => t.id === editingMapTalhaoId ? { ...t, poligono: [...editCoordsRef.current] } : t))
     setEditingMapTalhaoId(null)
-    setEditCoords([])
+    editCoordsRef.current = []
   }
   const cancelEditMapTalhao = () => {
     setEditingMapTalhaoId(null)
-    setEditCoords([])
+    editCoordsRef.current = []
   }
   const deleteEditVertex = () => {
-    if (editCoords.length <= 3) return
-    setEditCoords(prev => prev.slice(0, -1))
+    if (editCoordsRef.current.length <= 3) return
+    editCoordsRef.current = editCoordsRef.current.slice(0, -1)
+    setEditVersion(v => v + 1)
   }
 
   // ─── Pie chart SVG (land use distribution)
@@ -5398,6 +5574,16 @@ function TerraPage() {
           </button>
         ))}
         <div className="terra-map-spacer" />
+        {drawMode === 'none' && !editingMapTalhaoId && (
+          <button className={`terra-btn-draw terra-btn-share${shareCopied ? ' copied' : ''}`} onClick={() => {
+            const base = window.location.origin + window.location.pathname
+            const url = userId ? `${base}#/mapa/${userId}` : `${base}#/mapa`
+            navigator.clipboard.writeText(url).then(() => { setShareCopied(true); setTimeout(() => setShareCopied(false), 2500) })
+          }}>
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="3" r="2"/><circle cx="4" cy="8" r="2"/><circle cx="12" cy="13" r="2"/><path d="M5.8 9l4.4 3M5.8 7l4.4-3"/></svg>
+            {shareCopied ? 'Link copiado!' : 'Compartilhar Mapa'}
+          </button>
+        )}
         {drawMode === 'none' && fazenda && !showQuickTalhao && (
           <>
             <button className="terra-btn-draw" onClick={() => { setDrawMode('perimetro'); setDrawPoints([]) }}>
@@ -5457,7 +5643,7 @@ function TerraPage() {
               <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 14h3l9-9-3-3-9 9v3z" strokeLinejoin="round"/></svg>
               Editando <strong>{talhoes.find(t => t.id === editingMapTalhaoId)?.nome}</strong> — arraste os vértices para mover/redimensionar
             </span>
-            <button className="terra-btn-draw terra-btn-undo" onClick={deleteEditVertex} disabled={editCoords.length <= 3}>Remover Vértice</button>
+            <button className="terra-btn-draw terra-btn-undo" onClick={deleteEditVertex} disabled={editCoordsRef.current.length <= 3}>Remover Vértice</button>
             <button className="terra-btn-primary" onClick={saveEditMapTalhao}>Salvar</button>
             <button className="terra-btn-secondary" onClick={cancelEditMapTalhao}>Cancelar</button>
           </div>
@@ -6547,6 +6733,10 @@ export default function App() {
   }, [showCalc, showNp, showFin, showSim, showDocs, showAlerts])
 
   if (!authReady) return null
+
+  // Public map route — no auth required
+  if (window.location.hash.startsWith('#/mapa')) return <PublicMapPage />
+
   if (supabase && !user) return <LoginPage />
 
   return (
