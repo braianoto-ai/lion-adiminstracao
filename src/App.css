@@ -5789,6 +5789,11 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 .terra-map-talhao-info span { font-size: calc(.66rem * var(--fs)); color: var(--text) }
 .terra-btn-draw-sm { background: none; border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 6px; cursor: pointer; color: var(--text); transition: all .15s; flex-shrink: 0 }
 .terra-btn-draw-sm:hover { background: var(--bg3); color: var(--text3); border-color: var(--text) }
+.terra-btn-clear-poly:hover { color: #f59e0b; border-color: #f59e0b }
+.terra-btn-del-talhao:hover { color: #ef4444; border-color: #ef4444 }
+.terra-talhao-sidebar-actions { display: flex; gap: 2px; flex-shrink: 0 }
+.terra-btn-danger { color: #ef4444 !important; border-color: #ef4444 !important }
+.terra-btn-danger:hover { background: #ef4444 !important; color: #fff !important }
 .terra-map-drawn-badge { color: #22c55e; font-size: 14px; flex-shrink: 0 }
 .terra-btn-overlay { background: none; border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 10px; font-size: calc(.72rem * var(--fs)); cursor: pointer; color: var(--text); transition: all .15s; display: flex; align-items: center; gap: 5px }
 .terra-btn-overlay:hover { background: var(--bg3); color: var(--text3); border-color: var(--text) }
