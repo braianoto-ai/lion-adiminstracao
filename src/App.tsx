@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useContext, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import './App.css'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
@@ -7,16 +7,12 @@ import LoginPage from './LoginPage'
 import type { User } from '@supabase/supabase-js'
 import emailjs from '@emailjs/browser'
 import { UserCtx, DATA_KEYS, CLOUD_BUS } from './context'
-import { useCloudTable, useSyncStatus } from './hooks'
+import { useCloudTable } from './hooks'
 import type { ModalType, SidebarPage, TerraFazenda, TalhaoUso, TerraTalhao, Imovel, Produto, Note, Folder } from './types'
 import TerraPage from './pages/TerraPage'
 
 // ─── Terra constants ─────────────────────────────────────────────────────────
 
-const TERRA_BIOMAS = ['Mata Atlântica', 'Cerrado', 'Amazônia', 'Caatinga', 'Pampa', 'Pantanal']
-const TERRA_RELEVOS = ['Plano', 'Suave Ondulado', 'Ondulado', 'Forte Ondulado', 'Montanhoso']
-const TERRA_SOLOS = ['Latossolo Vermelho', 'Latossolo Amarelo', 'Argissolo', 'Neossolo', 'Cambissolo', 'Gleissolo', 'Nitossolo', 'Outro']
-const TERRA_UFS = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
 const TALHAO_USOS: { value: TalhaoUso; label: string; cor: string }[] = [
   { value: 'lavoura', label: 'Lavoura', cor: '#f59e0b' },
   { value: 'pastagem', label: 'Pastagem', cor: '#22c55e' },
@@ -27,8 +23,6 @@ const TALHAO_USOS: { value: TalhaoUso; label: string; cor: string }[] = [
   { value: 'sede', label: 'Sede/Moradia', cor: '#ef4444' },
   { value: 'outro', label: 'Outro', cor: '#6b7280' },
 ]
-const TERRA_CULTURAS = ['Soja','Milho','Café','Cana-de-Açúcar','Trigo','Algodão','Feijão','Arroz','Mandioca','Eucalipto','Pinus','Pastagem (Braquiária)','Pastagem (Tifton)','Outra']
-
 // ─── Public Map Page ─────────────────────────────────────────────────────────
 
 function PublicMapPage() {
@@ -5716,12 +5710,6 @@ export default function App() {
   }
 
   const displayName = user?.user_metadata?.full_name ?? user?.email ?? ''
-  const initials = displayName
-    .split(/\s|@/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((s: string) => s[0].toUpperCase())
-    .join('')
 
   const closeAll = () => { setShowCalc(false); setShowNp(false); setShowFin(false); setShowSim(false); setShowDocs(false); setShowAlerts(false); setShowShare(false) }
 
