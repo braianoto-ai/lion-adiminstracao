@@ -225,7 +225,7 @@ function PublicMapPage() {
   const [loading, setLoading] = useState(true)
   const [pubTab, setPubTab] = useState<'mapa' | 'talhoes'>('mapa')
   const [mapLayer, setMapLayer] = useState<'mapa' | 'satelite' | 'relevo'>('mapa')
-  const [hiddenUsos, setHiddenUsos] = useState<Set<string>>(new Set())
+  const hiddenUsos = useMemo(() => new Set<string>(), [])
   const [showSidebar, setShowSidebar] = useState(true)
   const [hiddenTalhoes, setHiddenTalhoes] = useState<Set<string>>(new Set())
   const [talhaoOpacity, setTalhaoOpacity] = useState(0.1)
