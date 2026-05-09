@@ -3207,10 +3207,10 @@ function computeDashData() {
 // ─── Appearance constants ──────────────────────────────────────────────────────
 
 const THEMES = [
-  { id: 'dark',     label: 'Noite',    swatch: '#0a0a0a', bg: '#141414' },
-  { id: 'charcoal', label: 'Carvão',   swatch: '#111111', bg: '#191919' },
-  { id: 'slate',    label: 'Ardósia',  swatch: '#0c1017', bg: '#131a24' },
-  { id: 'light',    label: 'Claro',    swatch: '#f5f5f5', bg: '#e5e5e5' },
+  { id: 'dark',     label: 'Meia-Noite', swatch: '#050505', bg: '#0f0f0f' },
+  { id: 'charcoal', label: 'Grafite',    swatch: '#1a1a1a', bg: '#242424' },
+  { id: 'slate',    label: 'Oceano',     swatch: '#0a1628', bg: '#152236' },
+  { id: 'light',    label: 'Claro',      swatch: '#f5f5f5', bg: '#e5e5e5' },
 ]
 
 const FONT_SIZES = [
@@ -5795,8 +5795,17 @@ export default function App() {
       {/* ── Sidebar ── */}
       {showSidebar && <div className="sidebar-overlay" onClick={() => setShowSidebar(false)} />}
       <aside className={`sidebar${showSidebar ? ' sidebar-open' : ''}`}>
+        <div className="sidebar-brand">
+          {customLogo
+            ? <img src={customLogo} alt="Logo" className="sidebar-brand-img" />
+            : <svg viewBox="0 0 32 32" fill="none" className="sidebar-brand-logo">
+                <rect width="32" height="32" rx="10" fill="#1a1a1a"/>
+                <text x="16" y="22" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="18" fill="white" letterSpacing="-1">L<tspan fill="#3b82f6">I</tspan></text>
+              </svg>
+          }
+          <span className="sidebar-brand-name">Lion Admin</span>
+        </div>
         <div className="sidebar-user">
-          <div className="sidebar-avatar">{initials || '?'}</div>
           <div className="sidebar-user-info">
             <div className="sidebar-user-name">{displayName.split('@')[0]}</div>
             <div className="sidebar-user-email">{user?.email || ''}</div>
@@ -6061,7 +6070,11 @@ export default function App() {
                   <button className="bc-title-btn" onClick={e => { e.stopPropagation(); setSidebarPage('financas') }}>+ Transação</button>
                 </div>
                 {activityOpen && (activity.length === 0 ? (
-                  <div className="feed-empty">Nenhuma atividade. Adicione transações, metas ou imóveis.</div>
+                  <div className="feed-empty">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ width: 32, height: 32, opacity: .3, marginBottom: 6 }}><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12h8M12 8v8" strokeLinecap="round"/></svg>
+                    <span>Nenhuma atividade ainda</span>
+                    <button className="feed-empty-btn" onClick={() => setSidebarPage('financas')}>Adicionar transação</button>
+                  </div>
                 ) : activity.slice(0,6).map(a => (
                   <div key={a.id} className="feed-row">
                     <div className="feed-dot" style={{ background: a.color === 'green' ? 'var(--green)' : a.color === 'red' ? 'var(--red)' : a.color === 'amber' ? 'var(--amber)' : 'var(--blue)' }}/>
@@ -6093,7 +6106,11 @@ export default function App() {
                       <button className="bc-title-btn" onClick={() => setSidebarPage('payment-hub')}>Ver todas</button>
                     </div>
                     {monthBills.length === 0 ? (
-                      <div className="feed-empty">Nenhuma conta este mês.</div>
+                      <div className="feed-empty">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ width: 32, height: 32, opacity: .3, marginBottom: 6 }}><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20" strokeLinecap="round"/><path d="M6 15h4" strokeLinecap="round"/></svg>
+                        <span>Nenhuma conta este mês</span>
+                        <button className="feed-empty-btn" onClick={() => setSidebarPage('payment-hub')}>Adicionar conta</button>
+                      </div>
                     ) : (
                       <>
                         <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
