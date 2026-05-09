@@ -228,6 +228,7 @@ function PublicMapPage() {
   const [hiddenUsos, setHiddenUsos] = useState<Set<string>>(new Set())
   const [showSidebar, setShowSidebar] = useState(true)
   const [hiddenTalhoes, setHiddenTalhoes] = useState<Set<string>>(new Set())
+  const [talhaoOpacity, setTalhaoOpacity] = useState(0.1)
   const mapRef = useRef<HTMLDivElement>(null)
   const leafletMap = useRef<L.Map | null>(null)
   const layerGroup = useRef<L.LayerGroup | null>(null)
@@ -306,7 +307,7 @@ function PublicMapPage() {
         const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
         const cor = t.cor || usoInfo?.cor || '#6b7280'
         const pctArea = fazenda ? ((t.areaHa / fazenda.areaTotal) * 100).toFixed(1) : '—'
-        const poly = L.polygon(t.poligono, { color: cor, weight: 2.5, fillColor: cor, fillOpacity: 0.4 })
+        const poly = L.polygon(t.poligono, { color: cor, weight: 1.5, fillColor: cor, fillOpacity: talhaoOpacity })
         poly.bindPopup(`<div style="font-family:system-ui;min-width:180px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="background:${cor};color:#fff;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600">${usoInfo?.label || t.uso}</span></div><strong style="font-size:14px">${t.nome}</strong><hr style="margin:6px 0;border:0;border-top:1px solid #ddd"/><b>Área:</b> ${fmtHa(t.areaHa)} (${pctArea}% da fazenda)${t.cultura ? '<br/><b>Cultura:</b> ' + t.cultura : ''}${t.safra ? '<br/><b>Safra:</b> ' + t.safra : ''}${t.notas ? '<br/><span style="color:#888;font-size:12px">' + t.notas + '</span>' : ''}</div>`)
         poly.addTo(layerGroup.current!)
       }
@@ -315,7 +316,7 @@ function PublicMapPage() {
       const bounds = L.polygon(fazenda.perimetro).getBounds()
       leafletMap.current.fitBounds(bounds, { padding: [40, 40] })
     }
-  }, [fazenda, fazTalhoes, hiddenUsos, hiddenTalhoes])
+  }, [fazenda, fazTalhoes, hiddenUsos, hiddenTalhoes, talhaoOpacity])
 
 
 
@@ -414,6 +415,10 @@ function PublicMapPage() {
                     <div className="pub-terra-elev-labels"><span>200m</span><span>400m</span><span>600m</span><span>800m</span><span>1000m+</span></div>
                   </div>
                 )}
+                <div className="terra-opacity-slider">
+                  <label>Opacidade <span>{Math.round(talhaoOpacity * 100)}%</span></label>
+                  <input type="range" min="0" max="100" value={Math.round(talhaoOpacity * 100)} onChange={e => setTalhaoOpacity(Number(e.target.value) / 100)} />
+                </div>
               </div>
             )}
           </div>
@@ -5237,6 +5242,7 @@ function TerraPage() {
   const [tab, setTab] = useState<'visao' | 'mapa' | 'talhoes' | 'docs' | 'fazendas'>('visao')
   const [shareCopied, setShareCopied] = useState(false)
   const [syncing, setSyncing] = useState(false)
+  const [showValores, setShowValores] = useState(false)
   const [syncDone, setSyncDone] = useState(false)
   const forceSync = async () => {
     if (!supabase || !userId || syncing) return
@@ -5264,6 +5270,7 @@ function TerraPage() {
   const [hiddenTalhoes, setHiddenTalhoes] = useState<Set<string>>(new Set())
   const [terraEditMode, setTerraEditMode] = useState(false)
   const [showMapSidebar, setShowMapSidebar] = useState(true)
+  const [adminTalhaoOpacity, setAdminTalhaoOpacity] = useState(0.1)
   const [drawMode, setDrawMode] = useState<'none' | 'perimetro' | 'talhao'>('none')
   const [drawPoints, setDrawPoints] = useState<[number, number][]>([])
   const drawLayerRef = useRef<L.Polyline | null>(null)
@@ -5403,7 +5410,7 @@ function TerraPage() {
         const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
         const cor = t.cor || usoInfo?.cor || '#6b7280'
         const pctArea = fazenda ? ((t.areaHa / fazenda.areaTotal) * 100).toFixed(1) : '—'
-        const poly = L.polygon(t.poligono, { color: cor, weight: 2.5, fillColor: cor, fillOpacity: 0.4, interactive: !isDrawing && !editingMapTalhaoId })
+        const poly = L.polygon(t.poligono, { color: cor, weight: 1.5, fillColor: cor, fillOpacity: adminTalhaoOpacity, interactive: !isDrawing && !editingMapTalhaoId })
         if (!isDrawing && !editingMapTalhaoId) poly.bindPopup(`<div style="font-family:system-ui;min-width:180px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="background:${cor};color:#fff;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600">${usoInfo?.label || t.uso}</span></div><strong style="font-size:14px">${t.nome}</strong><hr style="margin:6px 0;border:0;border-top:1px solid #ddd"/><b>Área:</b> ${fmtHa(t.areaHa)} (${pctArea}% da fazenda)${t.cultura ? '<br/><b>Cultura:</b> ' + t.cultura : ''}${t.safra ? '<br/><b>Safra:</b> ' + t.safra : ''}${t.notas ? '<br/><span style="color:#888;font-size:12px">' + t.notas + '</span>' : ''}</div>`)
         poly.addTo(layerGroup.current!)
       }
@@ -5412,7 +5419,7 @@ function TerraPage() {
       leafletMap.current.setView([fazenda.latitude, fazenda.longitude], 14)
       initialViewSet.current = true
     }
-  }, [fazenda, fazTalhoes, tab, hiddenTalhoes, drawMode, editingMapTalhaoId])
+  }, [fazenda, fazTalhoes, tab, hiddenTalhoes, drawMode, editingMapTalhaoId, adminTalhaoOpacity])
 
   // Draw mode: click handler
   useEffect(() => {
@@ -5561,6 +5568,12 @@ function TerraPage() {
   // ─── Pie chart SVG (land use distribution)
   const pieData = useMemo(() => {
     if (!fazenda) return []
+    if (fazTalhoes.length > 0) {
+      return fazTalhoes.map(t => {
+        const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
+        return { label: t.nome, value: t.areaHa, cor: t.cor || usoInfo?.cor || '#6b7280' }
+      }).filter(i => i.value > 0)
+    }
     const items: { label: string; value: number; cor: string }[] = [
       { label: 'Lavoura', value: fazenda.areaLavoura, cor: '#f59e0b' },
       { label: 'Pastagem', value: fazenda.areaPastagem, cor: '#22c55e' },
@@ -5570,7 +5583,7 @@ function TerraPage() {
       { label: 'Benfeitorias', value: fazenda.areaBenfeitorias, cor: '#8b5cf6' },
     ].filter(i => i.value > 0)
     return items
-  }, [fazenda])
+  }, [fazenda, fazTalhoes])
 
   const pieSlices = useMemo(() => {
     const total = pieData.reduce((s, i) => s + i.value, 0)
@@ -5642,8 +5655,18 @@ function TerraPage() {
 
         {(fazenda.valorVenal || fazenda.valorMercado) && (
           <div className="terra-valor-row">
-            {fazenda.valorVenal && <div className="terra-card-stat"><span className="terra-stat-label">Valor Venal</span><span className="terra-stat-value">R$ {fazenda.valorVenal}</span></div>}
-            {fazenda.valorMercado && <div className="terra-card-stat"><span className="terra-stat-label">Valor de Mercado</span><span className="terra-stat-value">R$ {fazenda.valorMercado}</span></div>}
+            {fazenda.valorVenal && (
+              <div className="terra-card-stat">
+                <span className="terra-stat-label">Valor Venal <button className="terra-eye-toggle" onClick={() => setShowValores(v => !v)} title={showValores ? 'Ocultar valores' : 'Mostrar valores'}><svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5">{showValores ? <><path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><circle cx="10" cy="10" r="3"/></> : <><path d="M1 10s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><path d="M3 17L17 3" strokeLinecap="round"/></>}</svg></button></span>
+                <span className="terra-stat-value">{showValores ? `R$ ${fazenda.valorVenal}` : '••••••'}</span>
+              </div>
+            )}
+            {fazenda.valorMercado && (
+              <div className="terra-card-stat">
+                <span className="terra-stat-label">Valor de Mercado</span>
+                <span className="terra-stat-value">{showValores ? `R$ ${fazenda.valorMercado}` : '••••••'}</span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -5873,6 +5896,10 @@ function TerraPage() {
             </>
           )}
           {!fazTalhoes.length && fazenda && <p className="terra-muted" style={{ padding: '8px 0', fontSize: 'calc(.75rem * var(--fs))' }}>Nenhum talhão cadastrado.</p>}
+          <div className="terra-opacity-slider">
+            <label>Opacidade <span>{Math.round(adminTalhaoOpacity * 100)}%</span></label>
+            <input type="range" min="0" max="100" value={Math.round(adminTalhaoOpacity * 100)} onChange={e => setAdminTalhaoOpacity(Number(e.target.value) / 100)} />
+          </div>
         </div>}
       </div>
       {!fazenda && <p className="terra-muted" style={{ marginTop: 12 }}>Cadastre uma fazenda com coordenadas para ver no mapa.</p>}
