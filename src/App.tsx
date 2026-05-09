@@ -217,6 +217,7 @@ function PublicMapPage() {
   const [fazendas, setFazendas] = useState<TerraFazenda[]>([])
   const [talhoes, setTalhoes] = useState<TerraTalhao[]>([])
   const [loading, setLoading] = useState(true)
+  const [pubTab, setPubTab] = useState<'mapa' | 'talhoes'>('mapa')
   const [mapLayer, setMapLayer] = useState<'mapa' | 'satelite' | 'relevo'>('mapa')
   const [hiddenUsos, setHiddenUsos] = useState<Set<string>>(new Set())
   const mapRef = useRef<HTMLDivElement>(null)
@@ -257,9 +258,10 @@ function PublicMapPage() {
 
   const fazenda = fazendas[0] || null
   const fazTalhoes = fazenda ? talhoes.filter(t => t.fazendaId === fazenda.id) : talhoes
+  const somaTalhoes = fazTalhoes.reduce((s, t) => s + t.areaHa, 0)
 
   useEffect(() => {
-    if (loading || !mapRef.current || leafletMap.current) return
+    if (loading || pubTab !== 'mapa' || !mapRef.current || leafletMap.current) return
     const center: [number, number] = fazenda ? [fazenda.latitude, fazenda.longitude] : [-15.78, -47.93]
     const map = L.map(mapRef.current, { zoomControl: false }).setView(center, fazenda ? 14 : 4)
     L.control.zoom({ position: 'topright' }).addTo(map)
@@ -269,7 +271,7 @@ function PublicMapPage() {
     layerGroup.current = L.layerGroup().addTo(map)
     leafletMap.current = map
     return () => { map.remove(); leafletMap.current = null }
-  }, [loading])
+  }, [loading, pubTab])
 
   useEffect(() => {
     if (!leafletMap.current || !tileRef.current) return
@@ -330,61 +332,109 @@ function PublicMapPage() {
   if (loading) return <div className="pub-map-loading"><div className="pub-map-spinner" /><span>Carregando mapa...</span></div>
 
   return (
-    <div className="pub-map-root">
-      {/* Header */}
-      <div className="pub-map-header">
-        <div className="pub-map-header-left">
+    <div className="pub-terra-root">
+      <div className="pub-terra-header">
+        <div className="pub-terra-header-left">
           <svg viewBox="0 0 20 20" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 16l4-3 3 2 4-5 5 3" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 18h16" strokeLinecap="round"/></svg>
           {fazenda ? (
             <>
               <strong>{fazenda.nome}</strong>
-              <span className="pub-map-header-sub">{fazenda.municipio} — {fazenda.uf}</span>
-              <span className="pub-map-header-sub">{fmtHa(fazenda.areaTotal)}</span>
+              <span className="pub-terra-sub">{fazenda.municipio} — {fazenda.uf} · {fmtHa(fazenda.areaTotal)}</span>
             </>
-          ) : <strong>Mapa da Propriedade</strong>}
+          ) : <strong>Propriedade Rural</strong>}
         </div>
-        <div className="pub-map-header-right">
-          <div className="pub-map-layer-toggle">
+        <div className="pub-terra-tabs">
+          <button className={`pub-terra-tab${pubTab === 'mapa' ? ' active' : ''}`} onClick={() => setPubTab('mapa')}>Mapa</button>
+          <button className={`pub-terra-tab${pubTab === 'talhoes' ? ' active' : ''}`} onClick={() => setPubTab('talhoes')}>Talhões</button>
+        </div>
+      </div>
+
+      {pubTab === 'mapa' && (
+        <div className="pub-terra-map-wrap">
+          <div className="pub-terra-map-controls">
             {(['mapa', 'satelite', 'relevo'] as const).map(l => (
               <button key={l} className={`pub-map-layer-btn${mapLayer === l ? ' active' : ''}`} onClick={() => setMapLayer(l)}>
                 {({ mapa: 'Mapa', satelite: 'Satélite', relevo: 'Relevo' } as Record<string,string>)[l]}
               </button>
             ))}
           </div>
-        </div>
-      </div>
-
-      {/* Map */}
-      <div ref={mapRef} className="pub-map-container" />
-
-      {/* Legend */}
-      {usoGroups.length > 0 && (
-        <div className="pub-map-legend">
-          <div className="pub-map-legend-title">Talhões</div>
-          {usoGroups.map(([uso, g]) => (
-            <button key={uso} className={`pub-map-legend-item${hiddenUsos.has(uso) ? ' hidden' : ''}`} onClick={() => toggleUso(uso)}>
-              <span className="pub-map-legend-swatch" style={{ background: g.cor, opacity: hiddenUsos.has(uso) ? 0.3 : 1 }} />
-              <span className="pub-map-legend-label">{g.label}</span>
-              <span className="pub-map-legend-info">{g.count}× · {fmtHa(g.areaHa)}</span>
-            </button>
-          ))}
-          {fazenda && fazenda.perimetro.length >= 3 && (
-            <div className="pub-map-legend-item pub-map-legend-perim">
-              <span className="pub-map-legend-swatch" style={{ background: 'transparent', border: '2px dashed #dc2626' }} />
-              <span className="pub-map-legend-label">Perímetro</span>
-              <span className="pub-map-legend-info">{fmtHa(fazenda.areaTotal)}</span>
+          <div className="pub-terra-map-layout">
+            <div ref={mapRef} className="pub-terra-map-container" />
+            <div className="pub-terra-map-sidebar">
+              {fazenda && (
+                <div className="pub-terra-fazenda-info">
+                  <div className="pub-terra-stats">
+                    <div className="pub-terra-stat"><span className="pub-terra-stat-val">{fmtHa(fazenda.areaTotal)}</span><span className="pub-terra-stat-lbl">Área Total</span></div>
+                    <div className="pub-terra-stat"><span className="pub-terra-stat-val">{fmtHa(fazenda.areaUtil)}</span><span className="pub-terra-stat-lbl">Área Útil</span></div>
+                    <div className="pub-terra-stat"><span className="pub-terra-stat-val">{fmtHa(fazenda.areaReservaLegal + fazenda.areaApp)}</span><span className="pub-terra-stat-lbl">Reserva + APP</span></div>
+                  </div>
+                  {fazenda.areaTotal > 0 && (
+                    <div className="pub-terra-utiliz">
+                      <div className="pub-terra-utiliz-bar"><div className="pub-terra-utiliz-fill" style={{ width: `${Math.min(100, (fazenda.areaUtil / fazenda.areaTotal) * 100)}%` }} /></div>
+                      <span className="pub-terra-utiliz-lbl">{((fazenda.areaUtil / fazenda.areaTotal) * 100).toFixed(0)}% utilização</span>
+                    </div>
+                  )}
+                  <div className="pub-terra-meta">
+                    {fazenda.bioma && <span>{fazenda.bioma}</span>}
+                    {fazenda.tipoSolo && <span>{fazenda.tipoSolo}</span>}
+                    {fazenda.relevo && <span>{fazenda.relevo}</span>}
+                  </div>
+                </div>
+              )}
+              {fazTalhoes.length > 0 && (
+                <>
+                  <div className="pub-terra-talhoes-title">Talhões ({fazTalhoes.length})<span className="pub-terra-talhoes-mapped">{fmtHa(somaTalhoes)} mapeados</span></div>
+                  {usoGroups.map(([uso, g]) => (
+                    <button key={uso} className={`pub-map-legend-item${hiddenUsos.has(uso) ? ' hidden' : ''}`} onClick={() => toggleUso(uso)}>
+                      <span className="pub-map-legend-swatch" style={{ background: g.cor, opacity: hiddenUsos.has(uso) ? 0.3 : 1 }} />
+                      <span className="pub-map-legend-label">{g.label}</span>
+                      <span className="pub-map-legend-info">{g.count}× · {fmtHa(g.areaHa)}</span>
+                    </button>
+                  ))}
+                </>
+              )}
+              {mapLayer === 'relevo' && (
+                <div className="pub-terra-elev-legend">
+                  <div className="pub-terra-elev-title">Elevação</div>
+                  <div className="pub-terra-elev-bar" />
+                  <div className="pub-terra-elev-labels"><span>200m</span><span>400m</span><span>600m</span><span>800m</span><span>1000m+</span></div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       )}
 
-      {/* Info cards */}
-      {fazenda && (
-        <div className="pub-map-info">
-          <div className="pub-map-info-item"><span>Bioma</span><strong>{fazenda.bioma || '—'}</strong></div>
-          <div className="pub-map-info-item"><span>Solo</span><strong>{fazenda.tipoSolo || '—'}</strong></div>
-          <div className="pub-map-info-item"><span>Relevo</span><strong>{fazenda.relevo || '—'}</strong></div>
-          <div className="pub-map-info-item"><span>Utilização</span><strong>{(fazenda.areaUtil / fazenda.areaTotal * 100).toFixed(0)}%</strong></div>
+      {pubTab === 'talhoes' && (
+        <div className="pub-terra-talhoes-content">
+          {fazenda && fazenda.areaTotal > 0 && (
+            <div className="pub-terra-talhoes-summary">
+              <span>{fazTalhoes.length} talhões · {fmtHa(somaTalhoes)} mapeados de {fmtHa(fazenda.areaTotal)} ({((somaTalhoes / fazenda.areaTotal) * 100).toFixed(0)}%)</span>
+            </div>
+          )}
+          <div className="pub-terra-talhao-grid">
+            {fazTalhoes.map(t => {
+              const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
+              const cor = t.cor || usoInfo?.cor || '#6b7280'
+              const pct = fazenda && fazenda.areaTotal > 0 ? ((t.areaHa / fazenda.areaTotal) * 100).toFixed(1) : null
+              return (
+                <div key={t.id} className="pub-terra-talhao-card">
+                  <div className="pub-terra-talhao-color" style={{ background: cor }} />
+                  <div className="pub-terra-talhao-body">
+                    <div className="pub-terra-talhao-top">
+                      <span className="pub-terra-talhao-badge" style={{ background: cor }}>{usoInfo?.label || t.uso}</span>
+                      <span className="pub-terra-talhao-area">{fmtHa(t.areaHa)}</span>
+                    </div>
+                    <div className="pub-terra-talhao-name">{t.nome}</div>
+                    {pct && <div className="pub-terra-talhao-pct">{pct}% da área total</div>}
+                    {t.cultura && <div className="pub-terra-talhao-detail">{t.cultura}{t.safra ? ` · Safra ${t.safra}` : ''}</div>}
+                    {t.notas && <div className="pub-terra-talhao-notes">{t.notas}</div>}
+                  </div>
+                </div>
+              )
+            })}
+            {!fazTalhoes.length && <p className="pub-terra-empty">Nenhum talhão cadastrado.</p>}
+          </div>
         </div>
       )}
     </div>
