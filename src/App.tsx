@@ -7,7 +7,7 @@ import LoginPage from './LoginPage'
 import type { User } from '@supabase/supabase-js'
 import emailjs from '@emailjs/browser'
 import { UserCtx, DATA_KEYS, CLOUD_BUS } from './context'
-import { useCloudTable } from './hooks'
+import { useCloudTable, useSyncError } from './hooks'
 import type { ModalType, SidebarPage, TerraFazenda, TerraTalhao, Imovel, Produto, Note, Folder, TerraNote } from './types'
 import { NOTA_CATEGORIAS } from './constants'
 import TerraPage from './pages/TerraPage'
@@ -1075,6 +1075,7 @@ export default function App() {
   const [viewOwner, setViewOwner] = useState('')
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('lion-onboarded'))
   const finishOnboarding = () => { localStorage.setItem('lion-onboarded', '1'); setShowOnboarding(false) }
+  const syncError = useSyncError()
 
   interface FxRate { code: string; bid: string; pct: string }
   const [fxRates, setFxRates] = useState<FxRate[]>([])
@@ -1265,6 +1266,13 @@ export default function App() {
     <div className={`app${viewMode ? ' view-mode' : ''}${sidebarFixed ? ' sidebar-pinned' : ''}`}>
       {kbHint && <div className="kb-toast">{kbHint}</div>}
       {showOnboarding && <OnboardingWizard onDone={finishOnboarding} />}
+
+      {syncError && (
+        <div className="sync-error-toast">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="8" cy="8" r="7"/><path d="M8 4v5M8 11v1" strokeLinecap="round"/></svg>
+          <span>{syncError}</span>
+        </div>
+      )}
 
       {/* ── Sidebar ── */}
       {showSidebar && <div className="sidebar-overlay" onClick={() => setShowSidebar(false)} />}

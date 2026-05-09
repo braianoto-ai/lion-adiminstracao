@@ -12,3 +12,4 @@ export const DATA_KEYS = [
 
 export const CLOUD_BUS = new EventTarget()
 export const SYNC_STATUS = new Map<string, boolean>()
+export const SYNC_ERRORS = new Map<string, string>()
