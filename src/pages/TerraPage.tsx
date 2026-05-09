@@ -21,7 +21,7 @@ export default function TerraPage() {
   const mapRef = useRef<HTMLDivElement>(null)
   const leafletMap = useRef<L.Map | null>(null)
   const layerGroup = useRef<L.LayerGroup | null>(null)
-  const [mapLayer, setMapLayer] = useState<'mapa' | 'satelite' | 'relevo'>('satelite')
+  const [mapLayer, setMapLayer] = useState<'mapa' | 'satelite' | 'relevo'>('mapa')
   const tileRef = useRef<L.TileLayer | null>(null)
   const [hiddenTalhoes, setHiddenTalhoes] = useState<Set<string>>(new Set())
   const [terraEditMode, setTerraEditMode] = useState(false)
@@ -52,7 +52,7 @@ export default function TerraPage() {
   const [fazForm, setFazForm] = useState(emptyFazenda)
 
   const emptyTalhao: Omit<TerraTalhao, 'id' | 'createdAt'> = {
-    fazendaId: '', nome: '', uso: 'lavoura', areaHa: 0, cultura: '', safra: '', poligono: [], cor: '#f59e0b', notas: '',
+    fazendaId: '', nome: '', uso: 'lavoura', areaHa: 0, cultura: '', safra: '', poligono: [], cor: '#f59e0b', notas: '', publico: true,
   }
   const [talForm, setTalForm] = useState(emptyTalhao)
 
@@ -498,14 +498,14 @@ export default function TerraPage() {
           <div className="terra-draw-bar" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
             <span style={{ fontSize: 'calc(.78rem * var(--fs))', color: 'var(--text2)', marginBottom: 2 }}>Digite o nome e clique em "Iniciar Desenho":</span>
             <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <input className="terra-quick-input" autoFocus placeholder="Nome do talhão (ex: Talhão 1)" value={quickTalhaoName} onChange={e => setQuickTalhaoName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && quickTalhaoName.trim() && fazenda) { const cor = TALHAO_USOS.find(u => u.value === quickTalhaoUso)?.cor || '#6b7280'; const nt: TerraTalhao = { id: crypto.randomUUID(), fazendaId: fazenda.id, nome: quickTalhaoName.trim(), uso: quickTalhaoUso, areaHa: 0, cultura: '', safra: '', poligono: [], cor, notas: '', createdAt: new Date().toISOString() }; setTalhoes(prev => [...prev, nt]); setDrawTalhaoId(nt.id); setDrawMode('talhao'); setDrawPoints([]); setShowQuickTalhao(false) } }} />
+              <input className="terra-quick-input" autoFocus placeholder="Nome do talhão (ex: Talhão 1)" value={quickTalhaoName} onChange={e => setQuickTalhaoName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && quickTalhaoName.trim() && fazenda) { const cor = TALHAO_USOS.find(u => u.value === quickTalhaoUso)?.cor || '#6b7280'; const nt: TerraTalhao = { id: crypto.randomUUID(), fazendaId: fazenda.id, nome: quickTalhaoName.trim(), uso: quickTalhaoUso, areaHa: 0, cultura: '', safra: '', poligono: [], cor, notas: '', publico: true, createdAt: new Date().toISOString() }; setTalhoes(prev => [...prev, nt]); setDrawTalhaoId(nt.id); setDrawMode('talhao'); setDrawPoints([]); setShowQuickTalhao(false) } }} />
               <select className="terra-draw-select" value={quickTalhaoUso} onChange={e => setQuickTalhaoUso(e.target.value as TalhaoUso)}>
                 {TALHAO_USOS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
               </select>
               <button className="terra-btn-primary" disabled={!quickTalhaoName.trim()} onClick={() => {
                 if (!quickTalhaoName.trim() || !fazenda) return
                 const cor = TALHAO_USOS.find(u => u.value === quickTalhaoUso)?.cor || '#6b7280'
-                const nt: TerraTalhao = { id: crypto.randomUUID(), fazendaId: fazenda.id, nome: quickTalhaoName.trim(), uso: quickTalhaoUso, areaHa: 0, cultura: '', safra: '', poligono: [], cor, notas: '', createdAt: new Date().toISOString() }
+                const nt: TerraTalhao = { id: crypto.randomUUID(), fazendaId: fazenda.id, nome: quickTalhaoName.trim(), uso: quickTalhaoUso, areaHa: 0, cultura: '', safra: '', poligono: [], cor, notas: '', publico: true, createdAt: new Date().toISOString() }
                 setTalhoes(prev => [...prev, nt])
                 setDrawTalhaoId(nt.id)
                 setDrawMode('talhao')
@@ -689,6 +689,7 @@ export default function TerraPage() {
             {talForm.uso === 'lavoura' && renderField('Safra', <input value={talForm.safra} onChange={e => setTalForm(p => ({ ...p, safra: e.target.value }))} placeholder="Ex: 2025/26" />)}
             {renderField('Coordenadas (lat,lng por linha)', <textarea rows={3} value={talForm.poligono.map(p => p.join(',')).join('\n')} onChange={e => setTalForm(p => ({ ...p, poligono: e.target.value.split('\n').filter(l => l.includes(',')).map(l => { const [a, b] = l.split(',').map(Number); return [a, b] as [number, number] }) }))} placeholder="-23.55,-51.43&#10;-23.56,-51.44&#10;-23.55,-51.45" />, true)}
             {renderField('Notas', <textarea rows={2} value={talForm.notas} onChange={e => setTalForm(p => ({ ...p, notas: e.target.value }))} />, true)}
+            {renderField('Visível no link público', <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={talForm.publico ?? true} onChange={e => setTalForm(p => ({ ...p, publico: e.target.checked }))} /><span style={{ fontSize: 13, color: '#aaa' }}>Aparece no mapa compartilhável</span></label>)}
           </div>
           <div className="terra-form-actions">
             <button className="terra-btn-primary" onClick={saveTalhao}>Salvar</button>
@@ -714,6 +715,7 @@ export default function TerraPage() {
                 {t.cultura && <div className="terra-talhao-detail"><svg className="terra-talhao-detail-icon" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2v12M4 6c2-2 6-2 8 0M4 10c2 2 6 2 8 0" strokeLinecap="round"/></svg>{t.cultura}</div>}
                 {t.safra && <div className="terra-talhao-detail"><svg className="terra-talhao-detail-icon" viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M2 7h12M5 1v4M11 1v4" strokeLinecap="round"/></svg>{t.safra}</div>}
                 {t.notas && <div className="terra-talhao-detail terra-muted">{t.notas}</div>}
+                {t.publico === false && <div className="terra-talhao-detail terra-muted" style={{ fontSize: 11, opacity: 0.7 }}>🔒 Oculto no link público</div>}
                 <div className="terra-talhao-actions">
                   <button onClick={() => editTalhao(t)}>Editar</button>
                   <button onClick={() => deleteTalhao(t.id)}>Excluir</button>

@@ -83,6 +83,7 @@ export interface TerraTalhao {
   poligono: [number, number][]
   cor: string
   notas: string
+  publico: boolean
   createdAt: string
 }
 
