@@ -1307,82 +1307,6 @@
 .act-time  { font-size: calc(11px * var(--fs, 1)); color: var(--text); flex-shrink: 0 }
 
 /* ═══════════════════════════════════════════════════════════
-   FLOATING BUTTONS
-═══════════════════════════════════════════════════════════ */
-
-.floats {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 6px;
-  z-index: 200;
-}
-
-.float-btn {
-  width: 44px;
-  height: 44px;
-  padding: 0;
-  border-radius: var(--radius);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  box-shadow: 0 4px 16px rgba(0,0,0,.45), inset 0 1px 0 rgba(255,255,255,.07);
-  transition: transform .15s ease, box-shadow .15s, background .15s;
-  position: relative;
-}
-
-.float-btn svg { width: 20px; height: 20px; flex-shrink: 0 }
-
-.float-btn:hover { transform: scale(1.08); box-shadow: 0 6px 22px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.1) }
-.float-btn:active { transform: scale(.94) }
-
-/* ── Per-button styles ── */
-.float-docs {
-  background: rgba(14,21,37,.82);
-  color: #7dd3fc;
-  border: 1px solid rgba(56,189,248,.22);
-}
-.float-docs:hover  { background: rgba(14,21,37,.95); box-shadow: 0 8px 28px rgba(56,189,248,.18), 0 4px 20px rgba(0,0,0,.5) }
-.float-docs.float-active { background: rgba(2,132,199,.85); color: #fff; border-color: rgba(56,189,248,.6); box-shadow: 0 4px 24px rgba(56,189,248,.3) }
-
-.float-sim {
-  background: rgba(28,21,14,.82);
-  color: #fcd34d;
-  border: 1px solid rgba(245,158,11,.22);
-}
-.float-sim:hover  { background: rgba(28,21,14,.95); box-shadow: 0 8px 28px rgba(245,158,11,.18), 0 4px 20px rgba(0,0,0,.5) }
-.float-sim.float-active { background: rgba(180,83,9,.85); color: #fff; border-color: rgba(245,158,11,.6); box-shadow: 0 4px 24px rgba(245,158,11,.3) }
-
-.float-fin {
-  background: rgba(5,20,12,.82);
-  color: #6ee7b7;
-  border: 1px solid rgba(16,185,129,.22);
-}
-.float-fin:hover  { background: rgba(5,20,12,.95); box-shadow: 0 8px 28px rgba(16,185,129,.18), 0 4px 20px rgba(0,0,0,.5) }
-.float-fin.float-active { background: rgba(4,120,87,.85); color: #fff; border-color: rgba(16,185,129,.6); box-shadow: 0 4px 24px rgba(16,185,129,.3) }
-
-.float-np {
-  background: rgba(8,18,28,.82);
-  color: #67e8f9;
-  border: 1px solid rgba(6,182,212,.22);
-}
-.float-np:hover  { background: rgba(8,18,28,.95); box-shadow: 0 8px 28px rgba(6,182,212,.18), 0 4px 20px rgba(0,0,0,.5) }
-.float-np.float-active { background: rgba(14,116,144,.85); color: #fff; border-color: rgba(6,182,212,.6); box-shadow: 0 4px 24px rgba(6,182,212,.3) }
-
-.float-calc {
-  background: rgba(24,8,8,.82);
-  color: #fca5a5;
-  border: 1px solid rgba(192,57,43,.3);
-}
-.float-calc:hover  { background: rgba(24,8,8,.95); box-shadow: 0 8px 28px rgba(192,57,43,.2), 0 4px 20px rgba(0,0,0,.5) }
-.float-calc.float-active { background: rgba(153,27,27,.85); color: #fff; border-color: rgba(239,68,68,.6); box-shadow: 0 4px 24px rgba(192,57,43,.3) }
-
-/* ═══════════════════════════════════════════════════════════
    FLOAT PANELS
 ═══════════════════════════════════════════════════════════ */
 
@@ -3554,8 +3478,6 @@ button, a, [role="button"] { touch-action: manipulation }
   .header { padding: 9px 12px }
   .brand-sub { display: none }
   .brand-name { font-size: calc(14px * var(--fs, 1)) }
-  /* Float buttons: tighter corner */
-  .floats { bottom: 14px; right: 12px; gap: 5px; flex-wrap: wrap-reverse; justify-content: flex-end; max-width: calc(100vw - 24px) }
   /* Float panels: near-fullscreen */
   .float-panel {
     right: 0 !important;
@@ -3663,14 +3585,8 @@ button, a, [role="button"] { touch-action: manipulation }
   /* Main */
   .main { padding: 10px; gap: 8px }
   .card { padding: 12px 10px }
-  /* Dash content: add bottom clearance for floats */
   .dash-content { padding-bottom: 80px }
   .page-content { padding-bottom: 80px }
-  /* Floats: smaller buttons, same row */
-  .floats { bottom: 10px; right: 10px; gap: 5px }
-  .float-btn { width: 40px; height: 40px }
-  .float-btn svg { width: 18px; height: 18px }
-  /* Theme footer: bottom-left clear of floats */
   .theme-footer { left: 10px; bottom: 10px }
   .goals-page-summary { grid-template-columns: 1fr 1fr }
   .sim-table-wrap { overflow-x: auto }
@@ -3695,9 +3611,6 @@ button, a, [role="button"] { touch-action: manipulation }
   .card { padding: 10px 8px }
   .card-value { font-size: calc(16px * var(--fs, 1)) }
   .dash-content { padding: 8px 8px 80px }
-  .float-btn { width: 38px; height: 38px }
-  .float-btn svg { width: 16px; height: 16px }
-  .floats { right: 8px; bottom: 8px; gap: 4px }
   .theme-footer { left: 8px; bottom: 8px }
   .goals-page-summary { grid-template-columns: 1fr }
   .section-title { font-size: calc(11px * var(--fs,1)) }
@@ -3734,8 +3647,6 @@ html[data-theme="light"] .qa-bento-item { background: var(--bg3) }
 html[data-theme="light"] .card { box-shadow: 0 2px 12px rgba(0,0,0,.06) }
 
 html[data-theme="light"] .float-panel { background: #fff; border-color: var(--border2); box-shadow: 0 8px 40px rgba(0,0,0,.14) }
-
-html[data-theme="light"] .float-btn { box-shadow: 0 4px 16px rgba(0,0,0,.12) }
 
 html[data-theme="light"] .goal-card,
 html[data-theme="light"] .rental-item,
@@ -3945,7 +3856,6 @@ html[data-theme="light"] .share-file-btn { background: var(--bg3); border-color:
 
   /* hide everything interactive */
   .header,
-  .floats,
   .float-panel,
   .overlay,
   .modal,
