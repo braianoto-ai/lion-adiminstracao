@@ -5852,7 +5852,9 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 .terra-page-fullmap { max-width: 100%; padding: 0; gap: 0 }
 .terra-page-fullmap .terra-tabs { margin: 4px 8px 0; width: auto }
 .terra-page-fullmap .terra-mapa { gap: 0; flex: 1 }
-.terra-page-fullmap .terra-map-controls { padding: 4px 8px }
+.terra-page-fullmap .terra-map-overlay-tl { top: 6px; left: 66px }
+.terra-page-fullmap .terra-map-overlay-tr { top: 6px; right: 46px }
+.terra-page-fullmap .terra-map-overlay-bottom { bottom: 14px }
 .terra-page-fullmap .terra-map-layout { min-height: calc(100vh - 90px); gap: 0 }
 .terra-page-fullmap .terra-map-container { min-height: calc(100vh - 100px); border-radius: 0; border: none; position: relative }
 .terra-page-fullmap .terra-map-sidebar { max-height: calc(100vh - 100px); width: 280px; padding: 10px; border-radius: 0; border-left: 1px solid var(--border); border-top: none; border-bottom: none; border-right: none }
@@ -5910,11 +5912,14 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 
 /* Map */
 .terra-mapa { display: flex; flex-direction: column; gap: 10px }
-.terra-map-controls { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; padding-bottom: 4px }
+.terra-map-overlay-tl { position: absolute; top: 10px; left: 70px; z-index: 999; display: flex; gap: 4px; background: rgba(24,24,27,.85); backdrop-filter: blur(8px); border-radius: var(--radius); padding: 4px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,.2) }
+.terra-map-overlay-tr { position: absolute; top: 10px; right: 50px; z-index: 999; display: flex; gap: 6px; align-items: center; background: rgba(24,24,27,.85); backdrop-filter: blur(8px); border-radius: var(--radius); padding: 4px 8px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,.2) }
+.terra-map-overlay-bottom { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 999; background: rgba(24,24,27,.9); backdrop-filter: blur(8px); border-radius: var(--radius); padding: 8px 12px; border: 1px solid var(--border); box-shadow: 0 2px 12px rgba(0,0,0,.3); max-width: calc(100% - 40px) }
+.terra-map-overlay-tl .terra-map-toggle { padding: 5px 12px; font-size: calc(.72rem * var(--fs)) }
 .terra-map-toggle { padding: 7px 16px; font-size: calc(.78rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all .2s; font-weight: 500 }
 .terra-map-toggle:hover { border-color: var(--purple); color: var(--text3) }
 .terra-map-toggle.active { background: var(--purple); color: #fff; border-color: var(--purple); box-shadow: 0 2px 8px rgba(139,92,246,.25) }
-.terra-map-spacer { flex: 1 }
+.terra-sidebar-action-sep { width: 1px; height: 16px; background: var(--border); margin: 0 2px; flex-shrink: 0 }
 .terra-btn-draw { display: flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: calc(.78rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all .15s }
 .terra-btn-draw:hover { background: var(--bg3); color: var(--text3) }
 .terra-btn-draw:disabled { opacity: .4; cursor: not-allowed }
@@ -5931,7 +5936,7 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 .terra-draw-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100% }
 .terra-draw-label { font-size: calc(.75rem * var(--fs)); color: var(--text2); flex: 1; min-width: 200px }
 .terra-map-layout { display: flex; gap: 14px; min-height: 640px }
-.terra-map-container { flex: 1; min-height: 600px; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border); box-shadow: 0 4px 24px rgba(0,0,0,.12) }
+.terra-map-container { flex: 1; min-height: 600px; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border); box-shadow: 0 4px 24px rgba(0,0,0,.12); position: relative }
 .terra-map-sidebar { width: 340px; flex-shrink: 0; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; max-height: 640px }
 .terra-sidebar-fazenda { padding: 12px; background: var(--bg3); border-radius: var(--radius); margin-bottom: 4px }
 .terra-sidebar-fazenda-name { font-size: calc(.9rem * var(--fs)); font-weight: 700; color: var(--text3); margin-bottom: 2px }
@@ -5966,8 +5971,8 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 .terra-sidebar-area { font-size: calc(.72rem * var(--fs)); color: var(--text3); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums }
 .terra-sidebar-row2 { display: flex; align-items: center; gap: 6px }
 .terra-sidebar-pct { font-size: calc(.62rem * var(--fs)); color: var(--text); opacity: .7 }
-.terra-sidebar-row3 { display: flex; align-items: center; gap: 3px; margin-top: 2px }
-.terra-btn-draw-sm { background: none; border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 6px; cursor: pointer; color: var(--text); transition: all .15s; flex-shrink: 0 }
+.terra-sidebar-row3 { display: flex; align-items: center; gap: 4px; margin-top: 2px }
+.terra-btn-draw-sm { background: none; border: 1px solid var(--border); border-radius: var(--radius); padding: 5px 7px; cursor: pointer; color: var(--text); transition: all .15s; flex-shrink: 0 }
 .terra-btn-draw-sm:hover { background: var(--bg3); color: var(--text3); border-color: var(--text) }
 .terra-btn-clear-poly:hover { color: #f59e0b; border-color: #f59e0b }
 .terra-btn-del-talhao:hover { color: #ef4444; border-color: #ef4444 }
@@ -6121,6 +6126,8 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
   .terra-map-layout { flex-direction: column }
   .terra-map-sidebar { width: 100%; max-height: 240px }
   .terra-map-container { height: 400px; min-height: 400px }
+  .terra-map-overlay-tr { right: 10px; top: auto; bottom: 10px }
+  .terra-map-overlay-bottom { max-width: calc(100% - 20px); font-size: calc(.7rem * var(--fs)) }
   .terra-talhao-grid { grid-template-columns: 1fr }
 }
 
@@ -6135,6 +6142,9 @@ html[data-theme="light"] .terra-fazenda-card,
 html[data-theme="light"] .terra-map-sidebar { background: #fff; border-color: var(--border2) }
 html[data-theme="light"] .terra-tabs { background: #f3f4f6; border-color: var(--border2) }
 html[data-theme="light"] .terra-map-container { box-shadow: 0 4px 24px rgba(0,0,0,.06) }
+html[data-theme="light"] .terra-map-overlay-tl,
+html[data-theme="light"] .terra-map-overlay-tr,
+html[data-theme="light"] .terra-map-overlay-bottom { background: rgba(255,255,255,.9); border-color: var(--border2) }
 html[data-theme="light"] .terra-field input,
 html[data-theme="light"] .terra-field select,
 html[data-theme="light"] .terra-field textarea { background: var(--bg2) }
