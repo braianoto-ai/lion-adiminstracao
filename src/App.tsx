@@ -3568,7 +3568,8 @@ function CalendarPage() {
         </div>
 
         {/* Day panel */}
-        <div className="cal-sidebar">
+        {selectedDate && <div className="cal-day-overlay" onClick={() => setSelectedDate(null)} />}
+        <div className={`cal-sidebar${selectedDate ? ' cal-day-open' : ''}`}>
           {!selectedDate ? (
             <div className="cal-no-day">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" width="32" height="32" style={{ opacity: .2 }}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round"/></svg>
@@ -5652,6 +5653,7 @@ export default function App() {
   }, [])
   const [searchQ, setSearchQ] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [npTarget, setNpTarget] = useState<{ folderId: string; noteId: string } | null>(null)
   const searchResults = searchOpen && searchQ.trim().length >= 2 ? buildSearchIndex(searchQ) : []
 
@@ -5871,7 +5873,12 @@ export default function App() {
           </div>
           <div className="topbar-brand-name">Lion Admin</div>
         </div>
-        <div className="header-search-wrap topbar-search-wrap">
+        <button className="mobile-search-btn" onClick={() => setMobileSearchOpen(v => !v)} title="Buscar">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="9" cy="9" r="6"/><path d="M15 15l3 3" strokeLinecap="round"/>
+          </svg>
+        </button>
+        <div className={`header-search-wrap topbar-search-wrap${mobileSearchOpen ? ' mobile-search-open' : ''}`}>
           <div className={`header-search${searchOpen ? ' search-active' : ''}`}>
             <svg className="search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="9" cy="9" r="6"/><path d="M15 15l3 3" strokeLinecap="round"/>
@@ -5889,6 +5896,9 @@ export default function App() {
                 <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
               </button>
             )}
+            <button className="mobile-search-close" onClick={() => { setMobileSearchOpen(false); setSearchQ(''); setSearchOpen(false) }}>
+              <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            </button>
           </div>
           {searchOpen && searchResults.length > 0 && (
             <div className="search-dropdown">

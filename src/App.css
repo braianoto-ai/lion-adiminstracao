@@ -916,6 +916,30 @@
 }
 .hamburger-btn:hover { background: var(--bg3); color: var(--text3) }
 
+.mobile-search-btn {
+  display: none;
+  align-items: center; justify-content: center;
+  width: 40px; height: 40px;
+  border-radius: var(--radius);
+  color: var(--text2);
+  flex-shrink: 0;
+  transition: background .15s, color .15s;
+}
+.mobile-search-btn svg { width: 18px; height: 18px }
+.mobile-search-btn:hover { background: var(--bg3); color: var(--text3) }
+
+.mobile-search-close {
+  display: none;
+  align-items: center; justify-content: center;
+  width: 36px; height: 36px;
+  border-radius: var(--radius);
+  color: var(--text2);
+  flex-shrink: 0;
+  transition: background .15s, color .15s;
+}
+.mobile-search-close svg { width: 16px; height: 16px }
+.mobile-search-close:hover { background: var(--bg3); color: var(--text3) }
+
 .user-avatar-btn { background: none; border: none; cursor: pointer; padding: 0 }
 
 /* Overlay */
@@ -2432,6 +2456,7 @@
 .cal-day-title { font-size: 13px; font-weight: 700; color: var(--text3); text-transform: capitalize }
 .cal-day-count { font-size: 11px; color: var(--text); margin-top: 2px }
 .cal-empty-day { font-size: 12px; color: var(--text); text-align: center; padding: 16px 0 }
+.cal-day-overlay { display: none }
 
 .cal-form-date-label {
   display: flex; align-items: center; gap: 6px;
@@ -3487,7 +3512,21 @@ button, a, [role="button"] { touch-action: manipulation }
   .veh-list     { grid-template-columns: 1fr }
   .header-date { display: none }
   .usd-ticker { display: none }
-  .header-search-wrap { display: none }
+  .header-search-wrap {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    padding: 10px 14px;
+    background: var(--bg);
+    z-index: 200;
+    border-bottom: 1px solid var(--border);
+    box-shadow: var(--shadow);
+  }
+  .header-search-wrap.mobile-search-open {
+    display: block;
+  }
+  .mobile-search-btn { display: flex }
+  .mobile-search-close { display: flex }
   .card-value { font-size: calc(15px * var(--fs, 1)) }
   /* Notes: stack sidebar above viewer */
   .notes-db-layout { grid-template-columns: 1fr; min-height: unset }
@@ -3566,10 +3605,41 @@ button, a, [role="button"] { touch-action: manipulation }
   .gp-span2 { grid-column: span 1 }
   /* Calendar */
   .cal-layout { grid-template-columns: 1fr }
-  .cal-day-panel { display: none }
+  .cal-sidebar {
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    max-height: 70vh;
+    overflow-y: auto;
+    border-radius: 16px 16px 0 0;
+    z-index: 100;
+    transform: translateY(100%);
+    transition: transform .25s ease;
+    box-shadow: var(--shadow-lg);
+    min-height: 200px;
+  }
+  .cal-sidebar.cal-day-open { transform: translateY(0) }
+  .cal-day-overlay {
+    display: block;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.45);
+    z-index: 99;
+  }
   /* Page content */
   .page-content { padding: 12px }
   .page-back-btn { font-size: calc(12px * var(--fs,1)); padding: 7px 12px }
+  .rentals-form-grid { grid-template-columns: 1fr }
+  .import-table-wrap,
+  .sim-table-wrap { position: relative }
+  .import-table-wrap::after,
+  .sim-table-wrap::after {
+    content: '';
+    position: absolute;
+    right: 0; top: 0; bottom: 0;
+    width: 24px;
+    background: linear-gradient(to right, transparent, var(--bg));
+    pointer-events: none;
+    border-radius: 0 var(--radius) var(--radius) 0;
+  }
 }
 
 /* ── 480px — standard mobile ── */
@@ -3604,6 +3674,12 @@ button, a, [role="button"] { touch-action: manipulation }
   .theme-footer { left: 10px; bottom: 10px }
   .goals-page-summary { grid-template-columns: 1fr 1fr }
   .sim-table-wrap { overflow-x: auto }
+  .ph-summary { grid-template-columns: 1fr }
+  .ph-monthly-stats { grid-template-columns: 1fr }
+  .patr-summary { grid-template-columns: 1fr }
+  .patr-summary-total { grid-column: span 1 }
+  .patr-page { padding: 12px }
+  .page-content--settings { padding-inline: 12px }
 }
 
 /* ── 360px — small phones ── */
@@ -3628,6 +3704,19 @@ button, a, [role="button"] { touch-action: manipulation }
   /* Bento: tighter */
   .bc { border-radius: 8px }
   .bento-row { gap: 8px }
+}
+
+/* ── Touch devices: reveal hover-gated actions ── */
+@media (hover: none) {
+  .ph-bill-actions,
+  .doc-item-actions,
+  .rental-actions,
+  .goal-action-btn,
+  .np-folder-del,
+  .np-note-del,
+  .fin-del { opacity: 1 }
+  .ph-icon-btn { width: 36px; height: 36px }
+  .patr-icon-btn { width: 36px; height: 36px }
 }
 
 /* ═══════════════════════════════════════════════════════════
@@ -5608,13 +5697,19 @@ html[data-theme="light"] .ap-accent-btn:hover { background: var(--bg4) }
   .ph-collectors-header { display: none }
   .ph-collector-item { flex-direction: column; align-items: center; text-align: center; padding: 8px; min-width: 72px; gap: 4px }
   .ph-collector-info { align-items: center }
-  .ph-collector-meta, .ph-collector-total { display: none }
+  .ph-collector-meta { display: none }
+  .ph-collector-total { font-size: calc(.68rem * var(--fs)) }
   .ph-collector-actions { display: none !important }
   .ph-summary { grid-template-columns: repeat(2, 1fr) }
   .ph-bills-header { flex-direction: column; align-items: flex-start }
   .ph-form-row { grid-template-columns: 1fr }
   .ph-monthly-stats { grid-template-columns: repeat(2, 1fr) }
   .ph-monthly-day { min-width: 36px; padding-right: 6px }
+}
+
+@media (max-width: 480px) {
+  .ph-summary { grid-template-columns: 1fr }
+  .ph-monthly-stats { grid-template-columns: 1fr }
 }
 
 html[data-theme="light"] .ph-summary-card,
@@ -5733,6 +5828,14 @@ html[data-theme="light"] .ph-monthly-arrow { background: #fff; border-color: var
   .patr-summary-total { grid-column: span 2 }
   .patr-fields { grid-template-columns: 1fr }
   .patr-span2 { grid-column: span 1 }
+  .patr-card { flex-direction: column }
+  .patr-card-addr { max-width: 100% }
+}
+
+@media (max-width: 480px) {
+  .patr-summary { grid-template-columns: 1fr }
+  .patr-summary-total { grid-column: span 1 }
+  .patr-page { padding: 12px }
 }
 
 html[data-theme="light"] .patr-summary-card,
