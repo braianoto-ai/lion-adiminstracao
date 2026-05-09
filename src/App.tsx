@@ -20,6 +20,18 @@ const DATA_KEYS = [
 ]
 
 const CLOUD_BUS = new EventTarget()
+const SYNC_STATUS = new Map<string, boolean>()
+
+function useSyncStatus(...keys: string[]): boolean {
+  const [syncing, setSyncing] = useState(false)
+  useEffect(() => {
+    const handler = () => setSyncing(keys.some(k => SYNC_STATUS.get(k)))
+    keys.forEach(k => CLOUD_BUS.addEventListener(`${k}:status`, handler))
+    return () => keys.forEach(k => CLOUD_BUS.removeEventListener(`${k}:status`, handler))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  return syncing
+}
 
 function useCloudTable<T extends { id: string }>(
   tableName: string,
@@ -87,24 +99,37 @@ function useCloudTable<T extends { id: string }>(
     _setData(next)
     if (supabase && userIdRef.current) {
       if (syncTimer.current) clearTimeout(syncTimer.current)
+      SYNC_STATUS.set(lsKey, true)
+      CLOUD_BUS.dispatchEvent(new Event(`${lsKey}:status`))
       syncTimer.current = setTimeout(async () => {
         const uid = userIdRef.current
         if (!uid || !supabase) return
-        if (next.length > 0) {
-          await supabase.from(tableName).upsert(
-            next.map(item => ({ id: item.id, user_id: ownerMap.current.get(item.id) || uid, data: item })),
-            { onConflict: 'id' }
-          )
-          const keepIds = next.map(i => i.id)
-          await supabase.from(tableName).delete()
-            .eq('user_id', uid)
-            .not('id', 'in', `(${keepIds.join(',')})`)
-        } else {
-          await supabase.from(tableName).delete().eq('user_id', uid)
+        try {
+          if (next.length > 0) {
+            await supabase.from(tableName).upsert(
+              next.map(item => ({ id: item.id, user_id: ownerMap.current.get(item.id) || uid, data: item })),
+              { onConflict: 'id' }
+            )
+            const keepIds = next.map(i => i.id)
+            await supabase.from(tableName).delete()
+              .eq('user_id', uid)
+              .not('id', 'in', `(${keepIds.join(',')})`)
+          } else {
+            await supabase.from(tableName).delete().eq('user_id', uid)
+          }
+        } finally {
+          SYNC_STATUS.set(lsKey, false)
+          CLOUD_BUS.dispatchEvent(new Event(`${lsKey}:status`))
         }
       }, 2000)
     }
   }, [tableName, lsKey])
+
+  useEffect(() => {
+    const warn = (e: BeforeUnloadEvent) => { if (syncTimer.current) e.preventDefault() }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [])
 
   return [data, setData]
 }
@@ -224,7 +249,7 @@ function PublicMapPage() {
   const [talhoes, setTalhoes] = useState<TerraTalhao[]>([])
   const [loading, setLoading] = useState(true)
   const [pubTab, setPubTab] = useState<'mapa' | 'talhoes'>('mapa')
-  const [mapLayer, setMapLayer] = useState<'mapa' | 'satelite' | 'relevo'>('mapa')
+  const [mapLayer, setMapLayer] = useState<'mapa' | 'satelite' | 'relevo'>('satelite')
   const hiddenUsos = useMemo(() => new Set<string>(), [])
   const [showSidebar, setShowSidebar] = useState(true)
   const [hiddenTalhoes, setHiddenTalhoes] = useState<Set<string>>(new Set())
@@ -5241,22 +5266,8 @@ function TerraPage() {
   const [talhoes, setTalhoes] = useCloudTable<TerraTalhao>('terra_talhoes', 'lion-talhoes', { shared: true })
   const [tab, setTab] = useState<'visao' | 'mapa' | 'talhoes' | 'docs' | 'fazendas'>('visao')
   const [shareCopied, setShareCopied] = useState(false)
-  const [syncing, setSyncing] = useState(false)
   const [showValores, setShowValores] = useState(false)
-  const [syncDone, setSyncDone] = useState(false)
-  const forceSync = async () => {
-    if (!supabase || !userId || syncing) return
-    setSyncing(true)
-    try {
-      const localF: TerraFazenda[] = (() => { try { return JSON.parse(localStorage.getItem('lion-terra') || '[]') } catch { return [] } })()
-      const localT: TerraTalhao[] = (() => { try { return JSON.parse(localStorage.getItem('lion-talhoes') || '[]') } catch { return [] } })()
-      if (localF.length) await supabase.from('terra_fazendas').upsert(localF.map(f => ({ id: f.id, user_id: userId, data: f })), { onConflict: 'id' })
-      if (localT.length) await supabase.from('terra_talhoes').upsert(localT.map(t => ({ id: t.id, user_id: userId, data: t })), { onConflict: 'id' })
-      setSyncDone(true)
-      setTimeout(() => setSyncDone(false), 3000)
-    } catch { /* ignore */ }
-    setSyncing(false)
-  }
+  const isSyncing = useSyncStatus('lion-terra', 'lion-talhoes')
   const [activeFazendaId, setActiveFazendaId] = useState<string | null>(null)
   const [showFazendaForm, setShowFazendaForm] = useState(false)
   const [editFazendaId, setEditFazendaId] = useState<string | null>(null)
@@ -5265,7 +5276,7 @@ function TerraPage() {
   const mapRef = useRef<HTMLDivElement>(null)
   const leafletMap = useRef<L.Map | null>(null)
   const layerGroup = useRef<L.LayerGroup | null>(null)
-  const [mapLayer, setMapLayer] = useState<'mapa' | 'satelite' | 'relevo'>('mapa')
+  const [mapLayer, setMapLayer] = useState<'mapa' | 'satelite' | 'relevo'>('satelite')
   const tileRef = useRef<L.TileLayer | null>(null)
   const [hiddenTalhoes, setHiddenTalhoes] = useState<Set<string>>(new Set())
   const [terraEditMode, setTerraEditMode] = useState(false)
@@ -5685,10 +5696,19 @@ function TerraPage() {
         <div className="terra-map-spacer" />
         {drawMode === 'none' && !editingMapTalhaoId && (
           <>
-            <button className={`terra-btn-draw terra-btn-sync${syncDone ? ' copied' : ''}`} onClick={forceSync} disabled={syncing}>
-              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" className={syncing ? 'terra-spin' : ''}><path d="M2 8a6 6 0 0110.47-4M14 8a6 6 0 01-10.47 4" strokeLinecap="round"/><path d="M12 1v4h-4M4 15v-4h4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              {syncing ? 'Sincronizando...' : syncDone ? 'Sincronizado!' : 'Sincronizar'}
-            </button>
+            <span className={`terra-sync-status${isSyncing ? ' syncing' : ''}`}>
+              {isSyncing ? (
+                <>
+                  <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5" className="terra-spin"><path d="M2 8a6 6 0 0110.47-4M14 8a6 6 0 01-10.47 4" strokeLinecap="round"/></svg>
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <svg viewBox="0 0 14 14" width="12" height="12" fill="none"><path d="M2 7l4 4 6-6" stroke="#0f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  Salvo
+                </>
+              )}
+            </span>
             <button className={`terra-btn-draw terra-btn-share${shareCopied ? ' copied' : ''}`} onClick={() => {
               const base = window.location.origin + window.location.pathname
               const url = userId ? `${base}#/mapa/${userId}` : `${base}#/mapa`
@@ -5698,12 +5718,6 @@ function TerraPage() {
               {shareCopied ? 'Link copiado!' : 'Compartilhar Mapa'}
             </button>
           </>
-        )}
-        {drawMode === 'none' && !editingMapTalhaoId && !showQuickTalhao && (
-          <button className={`terra-btn-draw${terraEditMode ? ' terra-btn-edit-active' : ''}`} onClick={() => setTerraEditMode(v => !v)}>
-            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 14h3l9-9-3-3-9 9v3z" strokeLinejoin="round"/></svg>
-            {terraEditMode ? 'Sair da Edição' : 'Editar Mapa'}
-          </button>
         )}
         {drawMode === 'none' && !editingMapTalhaoId && !showQuickTalhao && (
           <button className={`terra-btn-draw${terraEditMode ? ' terra-btn-edit-active' : ''}`} onClick={() => setTerraEditMode(v => !v)}>
@@ -5736,22 +5750,25 @@ function TerraPage() {
           </>
         )}
         {showQuickTalhao && drawMode === 'none' && (
-          <div className="terra-draw-bar">
-            <input className="terra-quick-input" placeholder="Nome do talhão (ex: Talhão 1)" value={quickTalhaoName} onChange={e => setQuickTalhaoName(e.target.value)} />
-            <select className="terra-draw-select" value={quickTalhaoUso} onChange={e => setQuickTalhaoUso(e.target.value as TalhaoUso)}>
-              {TALHAO_USOS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
-            </select>
-            <button className="terra-btn-primary" disabled={!quickTalhaoName.trim()} onClick={() => {
-              if (!quickTalhaoName.trim() || !fazenda) return
-              const cor = TALHAO_USOS.find(u => u.value === quickTalhaoUso)?.cor || '#6b7280'
-              const nt: TerraTalhao = { id: crypto.randomUUID(), fazendaId: fazenda.id, nome: quickTalhaoName.trim(), uso: quickTalhaoUso, areaHa: 0, cultura: '', safra: '', poligono: [], cor, notas: '', createdAt: new Date().toISOString() }
-              setTalhoes(prev => [...prev, nt])
-              setDrawTalhaoId(nt.id)
-              setDrawMode('talhao')
-              setDrawPoints([])
-              setShowQuickTalhao(false)
-            }}>Iniciar Desenho</button>
-            <button className="terra-btn-secondary" onClick={() => setShowQuickTalhao(false)}>Cancelar</button>
+          <div className="terra-draw-bar" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+            <span style={{ fontSize: 'calc(.78rem * var(--fs))', color: 'var(--text2)', marginBottom: 2 }}>Digite o nome e clique em "Iniciar Desenho":</span>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input className="terra-quick-input" autoFocus placeholder="Nome do talhão (ex: Talhão 1)" value={quickTalhaoName} onChange={e => setQuickTalhaoName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && quickTalhaoName.trim() && fazenda) { const cor = TALHAO_USOS.find(u => u.value === quickTalhaoUso)?.cor || '#6b7280'; const nt: TerraTalhao = { id: crypto.randomUUID(), fazendaId: fazenda.id, nome: quickTalhaoName.trim(), uso: quickTalhaoUso, areaHa: 0, cultura: '', safra: '', poligono: [], cor, notas: '', createdAt: new Date().toISOString() }; setTalhoes(prev => [...prev, nt]); setDrawTalhaoId(nt.id); setDrawMode('talhao'); setDrawPoints([]); setShowQuickTalhao(false) } }} />
+              <select className="terra-draw-select" value={quickTalhaoUso} onChange={e => setQuickTalhaoUso(e.target.value as TalhaoUso)}>
+                {TALHAO_USOS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+              </select>
+              <button className="terra-btn-primary" disabled={!quickTalhaoName.trim()} onClick={() => {
+                if (!quickTalhaoName.trim() || !fazenda) return
+                const cor = TALHAO_USOS.find(u => u.value === quickTalhaoUso)?.cor || '#6b7280'
+                const nt: TerraTalhao = { id: crypto.randomUUID(), fazendaId: fazenda.id, nome: quickTalhaoName.trim(), uso: quickTalhaoUso, areaHa: 0, cultura: '', safra: '', poligono: [], cor, notas: '', createdAt: new Date().toISOString() }
+                setTalhoes(prev => [...prev, nt])
+                setDrawTalhaoId(nt.id)
+                setDrawMode('talhao')
+                setDrawPoints([])
+                setShowQuickTalhao(false)
+              }}>Iniciar Desenho</button>
+              <button className="terra-btn-secondary" onClick={() => setShowQuickTalhao(false)}>Cancelar</button>
+            </div>
           </div>
         )}
         {drawMode !== 'none' && (
