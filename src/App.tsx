@@ -5210,8 +5210,8 @@ function TerraPage() {
       const dLat = e.latlng.lat - overlayDragStart.current.lat
       const dLng = e.latlng.lng - overlayDragStart.current.lng
       overlayDragStart.current = { lat: e.latlng.lat, lng: e.latlng.lng }
-      setOverlayOffsetLat(p => p + dLat)
-      setOverlayOffsetLng(p => p + dLng)
+      setOverlayOffsetLat((p: number) => p + dLat)
+      setOverlayOffsetLng((p: number) => p + dLng)
     }
     const onUp = () => { overlayDragStart.current = null }
     map.on('mousedown', onDown)
@@ -5508,44 +5508,44 @@ function TerraPage() {
           <div className="terra-overlay-row">
             <span className="terra-overlay-label">Posição:</span>
             <div className="terra-overlay-arrows">
-              <button className="terra-ov-arrow" onClick={() => { pushOverlayHistory(); setOverlayOffsetLat(p => p + 0.001) }} title="Mover Norte">▲</button>
+              <button className="terra-ov-arrow" onClick={() => { pushOverlayHistory(); setOverlayOffsetLat((p: number) => p + 0.001) }} title="Mover Norte">▲</button>
               <div className="terra-ov-arrow-row">
-                <button className="terra-ov-arrow" onClick={() => { pushOverlayHistory(); setOverlayOffsetLng(p => p - 0.001) }} title="Mover Oeste">◄</button>
+                <button className="terra-ov-arrow" onClick={() => { pushOverlayHistory(); setOverlayOffsetLng((p: number) => p - 0.001) }} title="Mover Oeste">◄</button>
                 <button className="terra-ov-arrow terra-ov-center" onClick={() => { pushOverlayHistory(); setOverlayOffsetLat(0); setOverlayOffsetLng(0) }} title="Centralizar">●</button>
-                <button className="terra-ov-arrow" onClick={() => { pushOverlayHistory(); setOverlayOffsetLng(p => p + 0.001) }} title="Mover Leste">►</button>
+                <button className="terra-ov-arrow" onClick={() => { pushOverlayHistory(); setOverlayOffsetLng((p: number) => p + 0.001) }} title="Mover Leste">►</button>
               </div>
-              <button className="terra-ov-arrow" onClick={() => { pushOverlayHistory(); setOverlayOffsetLat(p => p - 0.001) }} title="Mover Sul">▼</button>
+              <button className="terra-ov-arrow" onClick={() => { pushOverlayHistory(); setOverlayOffsetLat((p: number) => p - 0.001) }} title="Mover Sul">▼</button>
             </div>
-            <button className={`terra-ov-drag-btn ${overlayDrag ? 'active' : ''}`} onClick={() => { if (!overlayDrag) pushOverlayHistory(); setOverlayDrag(p => !p) }} title="Arrastar imagem com o mouse">
+            <button className={`terra-ov-drag-btn ${overlayDrag ? 'active' : ''}`} onClick={() => { if (!overlayDrag) pushOverlayHistory(); setOverlayDrag((p: boolean) => !p) }} title="Arrastar imagem com o mouse">
               {overlayDrag ? '🔒 Arrastando' : '✋ Arrastar'}
             </button>
           </div>
           <div className="terra-overlay-row">
             <span className="terra-overlay-label">Tamanho:</span>
-            <button className={`terra-ov-lock ${overlayLockRatio ? 'active' : ''}`} onClick={() => setOverlayLockRatio(p => !p)} title={overlayLockRatio ? 'Proporcional (clique para independente)' : 'Independente (clique para proporcional)'}>
+            <button className={`terra-ov-lock ${overlayLockRatio ? 'active' : ''}`} onClick={() => setOverlayLockRatio((p: boolean) => !p)} title={overlayLockRatio ? 'Proporcional (clique para independente)' : 'Independente (clique para proporcional)'}>
               {overlayLockRatio ? '🔗' : '🔓'}
             </button>
             {overlayLockRatio ? (
               <>
-                <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); const d = -0.05; setOverlayScaleX(p => Math.max(0.3, p + d)); setOverlayScaleY(p => Math.max(0.3, p + d)) }}>−</button>
+                <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); const d = -0.05; setOverlayScaleX((p: number) => Math.max(0.3, p + d)); setOverlayScaleY((p: number) => Math.max(0.3, p + d)) }}>−</button>
                 <input type="range" min="30" max="300" value={Math.round(overlayScaleX * 100)} onChange={e => { pushOverlayHistory(); const v = parseInt(e.target.value) / 100; setOverlayScaleX(v); setOverlayScaleY(v) }} className="terra-overlay-slider" />
-                <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); const d = 0.05; setOverlayScaleX(p => Math.min(3, p + d)); setOverlayScaleY(p => Math.min(3, p + d)) }}>+</button>
+                <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); const d = 0.05; setOverlayScaleX((p: number) => Math.min(3, p + d)); setOverlayScaleY((p: number) => Math.min(3, p + d)) }}>+</button>
                 <span className="terra-overlay-pct">{Math.round(overlayScaleX * 100)}%</span>
               </>
             ) : (
               <div className="terra-ov-size-split">
                 <div className="terra-overlay-row">
                   <span className="terra-ov-sublabel">L:</span>
-                  <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); setOverlayScaleX(p => Math.max(0.3, p - 0.05)) }}>−</button>
+                  <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); setOverlayScaleX((p: number) => Math.max(0.3, p - 0.05)) }}>−</button>
                   <input type="range" min="30" max="300" value={Math.round(overlayScaleX * 100)} onChange={e => { pushOverlayHistory(); setOverlayScaleX(parseInt(e.target.value) / 100) }} className="terra-overlay-slider" />
-                  <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); setOverlayScaleX(p => Math.min(3, p + 0.05)) }}>+</button>
+                  <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); setOverlayScaleX((p: number) => Math.min(3, p + 0.05)) }}>+</button>
                   <span className="terra-overlay-pct">{Math.round(overlayScaleX * 100)}%</span>
                 </div>
                 <div className="terra-overlay-row">
                   <span className="terra-ov-sublabel">A:</span>
-                  <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); setOverlayScaleY(p => Math.max(0.3, p - 0.05)) }}>−</button>
+                  <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); setOverlayScaleY((p: number) => Math.max(0.3, p - 0.05)) }}>−</button>
                   <input type="range" min="30" max="300" value={Math.round(overlayScaleY * 100)} onChange={e => { pushOverlayHistory(); setOverlayScaleY(parseInt(e.target.value) / 100) }} className="terra-overlay-slider" />
-                  <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); setOverlayScaleY(p => Math.min(3, p + 0.05)) }}>+</button>
+                  <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); setOverlayScaleY((p: number) => Math.min(3, p + 0.05)) }}>+</button>
                   <span className="terra-overlay-pct">{Math.round(overlayScaleY * 100)}%</span>
                 </div>
               </div>
