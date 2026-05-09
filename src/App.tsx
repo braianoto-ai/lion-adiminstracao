@@ -5171,6 +5171,21 @@ function TerraPage() {
   const [talhoes, setTalhoes] = useCloudTable<TerraTalhao>('terra_talhoes', 'lion-talhoes')
   const [tab, setTab] = useState<'visao' | 'mapa' | 'talhoes' | 'docs' | 'fazendas'>('visao')
   const [shareCopied, setShareCopied] = useState(false)
+  const [syncing, setSyncing] = useState(false)
+  const [syncDone, setSyncDone] = useState(false)
+  const forceSync = async () => {
+    if (!supabase || !userId || syncing) return
+    setSyncing(true)
+    try {
+      const localF: TerraFazenda[] = (() => { try { return JSON.parse(localStorage.getItem('lion-terra') || '[]') } catch { return [] } })()
+      const localT: TerraTalhao[] = (() => { try { return JSON.parse(localStorage.getItem('lion-talhoes') || '[]') } catch { return [] } })()
+      if (localF.length) await supabase.from('terra_fazendas').upsert(localF.map(f => ({ id: f.id, user_id: userId, data: f })), { onConflict: 'id' })
+      if (localT.length) await supabase.from('terra_talhoes').upsert(localT.map(t => ({ id: t.id, user_id: userId, data: t })), { onConflict: 'id' })
+      setSyncDone(true)
+      setTimeout(() => setSyncDone(false), 3000)
+    } catch { /* ignore */ }
+    setSyncing(false)
+  }
   const [activeFazendaId, setActiveFazendaId] = useState<string | null>(null)
   const [showFazendaForm, setShowFazendaForm] = useState(false)
   const [editFazendaId, setEditFazendaId] = useState<string | null>(null)
@@ -5183,6 +5198,7 @@ function TerraPage() {
   const tileRef = useRef<L.TileLayer | null>(null)
   const [hiddenTalhoes, setHiddenTalhoes] = useState<Set<string>>(new Set())
   const [terraEditMode, setTerraEditMode] = useState(false)
+  const [showMapSidebar, setShowMapSidebar] = useState(true)
   const [drawMode, setDrawMode] = useState<'none' | 'perimetro' | 'talhao'>('none')
   const [drawPoints, setDrawPoints] = useState<[number, number][]>([])
   const drawLayerRef = useRef<L.Polyline | null>(null)
@@ -5576,13 +5592,25 @@ function TerraPage() {
         ))}
         <div className="terra-map-spacer" />
         {drawMode === 'none' && !editingMapTalhaoId && (
-          <button className={`terra-btn-draw terra-btn-share${shareCopied ? ' copied' : ''}`} onClick={() => {
-            const base = window.location.origin + window.location.pathname
-            const url = userId ? `${base}#/mapa/${userId}` : `${base}#/mapa`
-            navigator.clipboard.writeText(url).then(() => { setShareCopied(true); setTimeout(() => setShareCopied(false), 2500) })
-          }}>
-            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="3" r="2"/><circle cx="4" cy="8" r="2"/><circle cx="12" cy="13" r="2"/><path d="M5.8 9l4.4 3M5.8 7l4.4-3"/></svg>
-            {shareCopied ? 'Link copiado!' : 'Compartilhar Mapa'}
+          <>
+            <button className={`terra-btn-draw terra-btn-sync${syncDone ? ' copied' : ''}`} onClick={forceSync} disabled={syncing}>
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" className={syncing ? 'terra-spin' : ''}><path d="M2 8a6 6 0 0110.47-4M14 8a6 6 0 01-10.47 4" strokeLinecap="round"/><path d="M12 1v4h-4M4 15v-4h4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              {syncing ? 'Sincronizando...' : syncDone ? 'Sincronizado!' : 'Sincronizar'}
+            </button>
+            <button className={`terra-btn-draw terra-btn-share${shareCopied ? ' copied' : ''}`} onClick={() => {
+              const base = window.location.origin + window.location.pathname
+              const url = userId ? `${base}#/mapa/${userId}` : `${base}#/mapa`
+              navigator.clipboard.writeText(url).then(() => { setShareCopied(true); setTimeout(() => setShareCopied(false), 2500) })
+            }}>
+              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="3" r="2"/><circle cx="4" cy="8" r="2"/><circle cx="12" cy="13" r="2"/><path d="M5.8 9l4.4 3M5.8 7l4.4-3"/></svg>
+              {shareCopied ? 'Link copiado!' : 'Compartilhar Mapa'}
+            </button>
+          </>
+        )}
+        {drawMode === 'none' && !editingMapTalhaoId && !showQuickTalhao && (
+          <button className={`terra-btn-draw${terraEditMode ? ' terra-btn-edit-active' : ''}`} onClick={() => setTerraEditMode(v => !v)}>
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 14h3l9-9-3-3-9 9v3z" strokeLinejoin="round"/></svg>
+            {terraEditMode ? 'Sair da Edição' : 'Editar Mapa'}
           </button>
         )}
         {drawMode === 'none' && !editingMapTalhaoId && !showQuickTalhao && (
@@ -5657,8 +5685,16 @@ function TerraPage() {
         )}
       </div>
       <div className="terra-map-layout">
-        <div ref={mapRef} className="terra-map-container" />
-        <div className="terra-map-sidebar">
+        <div ref={mapRef} className="terra-map-container">
+          <button className="terra-sidebar-toggle" onClick={() => setShowMapSidebar(v => !v)} title={showMapSidebar ? 'Ocultar painel' : 'Mostrar painel'}>
+            <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5">
+              {showMapSidebar
+                ? <path d="M10 3l5 5-5 5M1 3v10M4 8h11" strokeLinecap="round" strokeLinejoin="round"/>
+                : <path d="M6 3L1 8l5 5M15 3v10M12 8H1" strokeLinecap="round" strokeLinejoin="round"/>}
+            </svg>
+          </button>
+        </div>
+        {showMapSidebar && <div className="terra-map-sidebar">
           {fazenda && (
             <div className="terra-sidebar-fazenda">
               <div className="terra-sidebar-fazenda-name">{fazenda.nome}</div>
@@ -5768,7 +5804,7 @@ function TerraPage() {
             </>
           )}
           {!fazTalhoes.length && fazenda && <p className="terra-muted" style={{ padding: '8px 0', fontSize: 'calc(.75rem * var(--fs))' }}>Nenhum talhão cadastrado.</p>}
-        </div>
+        </div>}
       </div>
       {!fazenda && <p className="terra-muted" style={{ marginTop: 12 }}>Cadastre uma fazenda com coordenadas para ver no mapa.</p>}
     </div>
