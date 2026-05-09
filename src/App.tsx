@@ -36,7 +36,7 @@ function PublicMapPage() {
   const [talhoes, setTalhoes] = useState<TerraTalhao[]>([])
   const [loading, setLoading] = useState(true)
   const [pubTab, setPubTab] = useState<'mapa' | 'talhoes'>('mapa')
-  const [mapLayer, setMapLayer] = useState<'mapa' | 'satelite' | 'relevo'>('satelite')
+  const [mapLayer, setMapLayer] = useState<'mapa' | 'satelite' | 'relevo'>('mapa')
   const hiddenUsos = useMemo(() => new Set<string>(), [])
   const [showSidebar, setShowSidebar] = useState(true)
   const [hiddenTalhoes, setHiddenTalhoes] = useState<Set<string>>(new Set())
@@ -78,7 +78,7 @@ function PublicMapPage() {
   }, [])
 
   const fazenda = fazendas[0] || null
-  const fazTalhoes = fazenda ? talhoes.filter(t => t.fazendaId === fazenda.id) : talhoes
+  const fazTalhoes = (fazenda ? talhoes.filter(t => t.fazendaId === fazenda.id) : talhoes).filter(t => t.publico !== false)
   const somaTalhoes = fazTalhoes.reduce((s, t) => s + t.areaHa, 0)
 
   useEffect(() => {
