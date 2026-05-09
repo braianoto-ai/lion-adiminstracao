@@ -21,6 +21,8 @@ export default function TerraPage() {
   const [editTalhaoId, setEditTalhaoId] = useState<string | null>(null)
   const mapRef = useRef<HTMLDivElement>(null)
   const leafletMap = useRef<L.Map | null>(null)
+  const miniMapRef = useRef<HTMLDivElement>(null)
+  const miniMapInstance = useRef<L.Map | null>(null)
   const layerGroup = useRef<L.LayerGroup | null>(null)
   const [mapLayer, setMapLayer] = useState<'mapa' | 'satelite' | 'relevo'>('mapa')
   const tileRef = useRef<L.TileLayer | null>(null)
@@ -208,6 +210,32 @@ export default function TerraPage() {
       initialViewSet.current = true
     }
   }, [fazenda, fazTalhoes, tab, hiddenTalhoes, drawMode, editingMapTalhaoId, adminTalhaoOpacity])
+
+  useEffect(() => {
+    if (tab !== 'visao' || !fazenda || !miniMapRef.current) return
+    if (miniMapInstance.current) { miniMapInstance.current.remove(); miniMapInstance.current = null }
+    const map = L.map(miniMapRef.current, {
+      zoomControl: false, dragging: false, scrollWheelZoom: false,
+      doubleClickZoom: false, touchZoom: false, boxZoom: false,
+      keyboard: false, attributionControl: false,
+    })
+    L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map)
+    if (fazenda.perimetro.length >= 3) {
+      const perim = L.polygon(fazenda.perimetro, { color: '#dc2626', weight: 2, fillOpacity: 0.08, dashArray: '6 3' }).addTo(map)
+      fazTalhoes.forEach(t => {
+        if (t.poligono.length >= 3) {
+          const cor = t.cor || TALHAO_USOS.find(u => u.value === t.uso)?.cor || '#6b7280'
+          L.polygon(t.poligono, { color: cor, weight: 1, fillColor: cor, fillOpacity: 0.15 }).addTo(map)
+        }
+      })
+      map.fitBounds(perim.getBounds(), { padding: [10, 10] })
+    } else {
+      map.setView([fazenda.latitude, fazenda.longitude], 14)
+    }
+    miniMapInstance.current = map
+    setTimeout(() => map.invalidateSize(), 150)
+    return () => { map.remove(); miniMapInstance.current = null }
+  }, [tab, fazenda, fazTalhoes])
 
   // Render note markers
   useEffect(() => {
@@ -485,6 +513,14 @@ export default function TerraPage() {
             <div className="terra-info-row"><span>Bioma:</span> <strong>{fazenda.bioma || '—'}</strong></div>
             <div className="terra-info-row"><span>Solo:</span> <strong>{fazenda.tipoSolo || '—'}</strong></div>
             <div className="terra-info-row"><span>Relevo:</span> <strong>{fazenda.relevo || '—'}</strong></div>
+          </div>
+        </div>
+
+        <div className="terra-minimap-card" onClick={() => setTab('mapa')} title="Clique para abrir o mapa completo">
+          <div className="terra-minimap-container" ref={miniMapRef} />
+          <div className="terra-minimap-overlay">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><path d="M10 2a6 6 0 00-6 6c0 4.5 6 10 6 10s6-5.5 6-10a6 6 0 00-6-6zm0 8.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>
+            Ver mapa completo
           </div>
         </div>
 
