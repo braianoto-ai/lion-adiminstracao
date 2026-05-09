@@ -271,21 +271,16 @@ function PublicMapPage() {
     return () => { map.remove(); leafletMap.current = null }
   }, [loading])
 
-  const pubOverlayRef = useRef<L.TileLayer | null>(null)
   useEffect(() => {
     if (!leafletMap.current || !tileRef.current) return
     leafletMap.current.removeLayer(tileRef.current)
-    if (pubOverlayRef.current) { leafletMap.current.removeLayer(pubOverlayRef.current); pubOverlayRef.current = null }
     const tiles = {
-      mapa: { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attr: '&copy; OpenStreetMap' },
+      mapa: { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attr: '&copy; OpenStreetMap', maxZ: 19 },
       satelite: { url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', attr: '&copy; Google', maxZ: 20 },
-      relevo: { url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', attr: '&copy; Google + OpenTopoMap', maxZ: 20 },
+      relevo: { url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', attr: '&copy; OpenTopoMap', maxZ: 17 },
     }
     const t = tiles[mapLayer]
-    tileRef.current = L.tileLayer(t.url, { attribution: t.attr, maxZoom: t.maxZ || 18 }).addTo(leafletMap.current)
-    if (mapLayer === 'relevo') {
-      pubOverlayRef.current = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '', maxZoom: 17, opacity: 0.55 }).addTo(leafletMap.current)
-    }
+    tileRef.current = L.tileLayer(t.url, { attribution: t.attr, maxZoom: t.maxZ }).addTo(leafletMap.current)
   }, [mapLayer])
 
   useEffect(() => {
@@ -5294,21 +5289,16 @@ function TerraPage() {
     return () => { map.remove(); leafletMap.current = null; drawMarkersRef.current = null }
   }, [tab])
 
-  const overlayRef = useRef<L.TileLayer | null>(null)
   useEffect(() => {
     if (!leafletMap.current || !tileRef.current) return
     leafletMap.current.removeLayer(tileRef.current)
-    if (overlayRef.current) { leafletMap.current.removeLayer(overlayRef.current); overlayRef.current = null }
     const tiles = {
-      mapa: { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attr: '&copy; OpenStreetMap' },
+      mapa: { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attr: '&copy; OpenStreetMap', maxZ: 19 },
       satelite: { url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', attr: '&copy; Google', maxZ: 20 },
-      relevo: { url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', attr: '&copy; Google + OpenTopoMap', maxZ: 20 },
+      relevo: { url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', attr: '&copy; OpenTopoMap', maxZ: 17 },
     }
     const t = tiles[mapLayer]
-    tileRef.current = L.tileLayer(t.url, { attribution: t.attr, maxZoom: t.maxZ || 18 }).addTo(leafletMap.current)
-    if (mapLayer === 'relevo') {
-      overlayRef.current = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '', maxZoom: 17, opacity: 0.55 }).addTo(leafletMap.current)
-    }
+    tileRef.current = L.tileLayer(t.url, { attribution: t.attr, maxZoom: t.maxZ }).addTo(leafletMap.current)
   }, [mapLayer])
 
 
