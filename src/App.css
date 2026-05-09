@@ -5858,6 +5858,12 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 .terra-page-fullmap .terra-map-sidebar { max-height: calc(100vh - 100px); width: 280px; padding: 10px; border-radius: 0; border-left: 1px solid var(--border); border-top: none; border-bottom: none; border-right: none }
 .terra-sidebar-toggle { position: absolute; top: 10px; right: 10px; z-index: 999; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text2); transition: all .15s; box-shadow: 0 2px 8px rgba(0,0,0,.2) }
 .terra-sidebar-toggle:hover { background: var(--bg3); color: var(--text3) }
+
+/* Floating action buttons on map */
+.terra-map-fab { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; gap: 6px; background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 6px; box-shadow: var(--shadow) }
+.terra-fab-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 14px; border-radius: var(--radius); background: none; border: 1px solid transparent; color: var(--text); cursor: pointer; transition: all .15s; font-size: calc(.68rem * var(--fs)); font-weight: 500 }
+.terra-fab-btn:hover { background: var(--bg3); color: var(--text3); border-color: var(--border2) }
+.terra-fab-btn svg { flex-shrink: 0 }
 .terra-fazenda-selector select { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); padding: 7px 12px; font-size: calc(.82rem * var(--fs)); color: var(--text3); outline: none }
 
 .terra-tabs { display: flex; gap: 4px; background: var(--bg2); border-radius: var(--radius-lg); padding: 4px; border: 1px solid var(--border); flex-wrap: wrap }

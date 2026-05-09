@@ -549,42 +549,6 @@ export default function TerraPage() {
             {terraEditMode ? 'Sair da Edição' : 'Editar Mapa'}
           </button>
         )}
-        {drawMode === 'none' && !editingMapTalhaoId && !showQuickTalhao && fazenda && (
-          <button className="terra-btn-draw" onClick={() => { setDrawMode('nota'); setDrawPoints([]) }}>
-            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 1C5.24 1 3 3.24 3 6c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5z" strokeLinejoin="round"/><circle cx="8" cy="6" r="1.5"/></svg>
-            Adicionar Nota
-          </button>
-        )}
-        {terraEditMode && drawMode === 'none' && fazenda && !showQuickTalhao && (
-          <>
-            <button className="terra-btn-draw" onClick={() => { setDrawMode('perimetro'); setDrawPoints([]) }}>
-              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="2,14 8,2 14,14" strokeLinejoin="round"/></svg>
-              {fazenda && fazenda.perimetro.length >= 3 ? 'Redesenhar Perímetro' : 'Desenhar Perímetro'}
-            </button>
-            {fazenda && fazenda.perimetro.length >= 3 && (
-              <button className="terra-btn-draw terra-btn-edit-active" onClick={() => startEditMapTalhao(PERIM_EDIT_ID)}>
-                <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 8a6 6 0 1112 0A6 6 0 012 8z"/><circle cx="5" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/><circle cx="11" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>
-                Editar Perímetro
-              </button>
-            )}
-            {fazenda && fazenda.perimetro.length >= 3 && (
-              <button className="terra-btn-draw terra-btn-danger" onClick={() => { if (window.confirm('Limpar o perímetro atual? Os talhões não serão afetados.')) setFazendas(prev => prev.map(f => f.id === fazenda.id ? { ...f, perimetro: [] } : f)) }} title="Limpar perímetro desenhado">
-                <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3l10 10M13 3L3 13" strokeLinecap="round"/></svg>
-                Limpar Perímetro
-              </button>
-            )}
-            <button className="terra-btn-draw" onClick={() => { setShowQuickTalhao(true); setQuickTalhaoName(''); setQuickTalhaoUso('lavoura') }}>
-              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="12" height="12" rx="2" strokeLinejoin="round"/><path d="M8 5v6M5 8h6" strokeLinecap="round"/></svg>
-              Desenhar Talhão
-            </button>
-            {fazTalhoes.length > 0 && (
-              <select className="terra-draw-select" value="" onChange={e => { if (e.target.value) { setDrawTalhaoId(e.target.value); setDrawMode('talhao'); setDrawPoints([]) } }}>
-                <option value="">Redesenhar Talhão...</option>
-                {fazTalhoes.map(t => <option key={t.id} value={t.id}>{t.nome}{t.poligono.length >= 3 ? ' ✓' : ''}</option>)}
-              </select>
-            )}
-          </>
-        )}
         {showQuickTalhao && drawMode === 'none' && (
           <div className="terra-draw-bar" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
             <span style={{ fontSize: 'calc(.78rem * var(--fs))', color: 'var(--text2)', marginBottom: 2 }}>Digite o nome e clique em "Iniciar Desenho":</span>
@@ -646,6 +610,29 @@ export default function TerraPage() {
                 : <path d="M6 3L1 8l5 5M15 3v10M12 8H1" strokeLinecap="round" strokeLinejoin="round"/>}
             </svg>
           </button>
+          {/* Floating action buttons on map */}
+          {drawMode === 'none' && !editingMapTalhaoId && !showQuickTalhao && fazenda && (
+            <div className="terra-map-fab">
+              <button className="terra-fab-btn" onClick={() => { setDrawMode('nota'); setDrawPoints([]) }} title="Adicionar Nota">
+                <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 1C5.24 1 3 3.24 3 6c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5z" strokeLinejoin="round"/><circle cx="8" cy="6" r="1.5"/></svg>
+                <span>Nota</span>
+              </button>
+              <button className="terra-fab-btn" onClick={() => { setDrawMode('perimetro'); setDrawPoints([]) }} title={fazenda.perimetro.length >= 3 ? 'Redesenhar Perímetro' : 'Desenhar Perímetro'}>
+                <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="2,14 8,2 14,14" strokeLinejoin="round"/></svg>
+                <span>Perímetro</span>
+              </button>
+              {fazenda.perimetro.length >= 3 && (
+                <button className="terra-fab-btn" onClick={() => startEditMapTalhao(PERIM_EDIT_ID)} title="Editar Perímetro">
+                  <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 8a6 6 0 1112 0A6 6 0 012 8z"/><circle cx="5" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/><circle cx="11" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>
+                  <span>Editar Per.</span>
+                </button>
+              )}
+              <button className="terra-fab-btn" onClick={() => { setShowQuickTalhao(true); setQuickTalhaoName(''); setQuickTalhaoUso('lavoura') }} title="Desenhar Talhão">
+                <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="12" height="12" rx="2" strokeLinejoin="round"/><path d="M8 5v6M5 8h6" strokeLinecap="round"/></svg>
+                <span>Talhão</span>
+              </button>
+            </div>
+          )}
           {showNotaForm && (
             <div className="terra-nota-modal" onClick={e => { if (e.target === e.currentTarget) { setShowNotaForm(false); setEditNotaId(null); setPendingNotaLatLng(null) } }}>
               <div className="terra-nota-form">
