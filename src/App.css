@@ -5903,6 +5903,23 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 .terra-valor-row { display: flex; gap: 12px }
 .terra-valor-row .terra-card-stat { flex: 1 }
 
+.terra-visao-fazendas { margin-top: 4px }
+.terra-visao-fazendas-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px }
+.terra-visao-fazendas-header h4 { font-size: calc(.88rem * var(--fs)); font-weight: 700; color: var(--text3); margin: 0 }
+.terra-btn-link { background: none; border: none; color: var(--purple); font-size: calc(.78rem * var(--fs)); font-weight: 600; cursor: pointer; padding: 4px 8px; border-radius: var(--radius); transition: background .15s }
+.terra-btn-link:hover { background: rgba(139,92,246,.1) }
+.terra-visao-fazendas-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px }
+.terra-visao-faz-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; cursor: pointer; transition: border-color .2s, box-shadow .2s }
+.terra-visao-faz-card:hover { border-color: var(--text); }
+.terra-visao-faz-active { border-color: var(--purple); box-shadow: 0 0 0 1px var(--purple) }
+.terra-visao-faz-top { margin-bottom: 12px }
+.terra-visao-faz-top strong { display: block; font-size: calc(.85rem * var(--fs)); color: var(--text3); margin-bottom: 2px }
+.terra-visao-faz-loc { font-size: calc(.72rem * var(--fs)); color: var(--text) }
+.terra-visao-faz-stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px }
+.terra-visao-faz-stats div { display: flex; flex-direction: column; gap: 2px }
+.terra-visao-faz-stats span { font-size: calc(.82rem * var(--fs)); font-weight: 600; color: var(--text3) }
+.terra-visao-faz-stats small { font-size: calc(.65rem * var(--fs)); color: var(--text); text-transform: uppercase; letter-spacing: .3px }
+
 .terra-minimap-card { position: relative; border-radius: var(--radius-lg); border: 1px solid var(--border); overflow: hidden; cursor: pointer; transition: border-color .2s, box-shadow .2s; height: 220px }
 .terra-minimap-card:hover { border-color: var(--purple); box-shadow: 0 4px 20px rgba(139,92,246,.15) }
 .terra-minimap-container { width: 100%; height: 100% }
@@ -6118,13 +6135,16 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
   .terra-span2 { grid-column: span 1 }
   .terra-valor-row { flex-direction: column }
   .terra-minimap-card { height: 160px }
+  .terra-visao-fazendas-grid { grid-template-columns: 1fr }
   .terra-map-layout { flex-direction: column }
   .terra-map-sidebar { width: 100%; max-height: 240px }
   .terra-map-container { height: 400px; min-height: 400px }
   .terra-talhao-grid { grid-template-columns: 1fr }
 }
 
-html[data-theme="light"] .terra-minimap-card { border-color: var(--border2) }
+html[data-theme="light"] .terra-minimap-card,
+html[data-theme="light"] .terra-visao-faz-card { border-color: var(--border2) }
+html[data-theme="light"] .terra-visao-faz-card { background: #fff }
 html[data-theme="light"] .terra-card-stat,
 html[data-theme="light"] .terra-chart-card,
 html[data-theme="light"] .terra-form,

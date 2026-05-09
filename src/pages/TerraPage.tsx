@@ -550,6 +550,33 @@ export default function TerraPage() {
             )}
           </div>
         )}
+
+        {fazendas.length > 0 && (
+          <div className="terra-visao-fazendas">
+            <div className="terra-visao-fazendas-header">
+              <h4>Fazendas</h4>
+              <button className="terra-btn-link" onClick={() => setTab('fazendas')}>Ver todas</button>
+            </div>
+            <div className="terra-visao-fazendas-grid">
+              {fazendas.map(f => {
+                const fTalhoes = talhoes.filter(t => t.fazendaId === f.id)
+                return (
+                  <div key={f.id} className={`terra-visao-faz-card${f.id === activeFazendaId ? ' terra-visao-faz-active' : ''}`} onClick={() => setActiveFazendaId(f.id)} onDoubleClick={() => setTab('fazendas')}>
+                    <div className="terra-visao-faz-top">
+                      <strong>{f.nome}</strong>
+                      <span className="terra-visao-faz-loc">{f.municipio}{f.uf ? ` — ${f.uf}` : ''}</span>
+                    </div>
+                    <div className="terra-visao-faz-stats">
+                      <div><span>{fmtHa(f.areaTotal)}</span><small>Área Total</small></div>
+                      <div><span>{fTalhoes.length}</span><small>Talhões</small></div>
+                      <div><span>{f.bioma || '—'}</span><small>Bioma</small></div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
     )
   }
