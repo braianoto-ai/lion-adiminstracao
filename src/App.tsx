@@ -5750,22 +5750,25 @@ function TerraPage() {
           </>
         )}
         {showQuickTalhao && drawMode === 'none' && (
-          <div className="terra-draw-bar">
-            <input className="terra-quick-input" placeholder="Nome do talhão (ex: Talhão 1)" value={quickTalhaoName} onChange={e => setQuickTalhaoName(e.target.value)} />
-            <select className="terra-draw-select" value={quickTalhaoUso} onChange={e => setQuickTalhaoUso(e.target.value as TalhaoUso)}>
-              {TALHAO_USOS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
-            </select>
-            <button className="terra-btn-primary" disabled={!quickTalhaoName.trim()} onClick={() => {
-              if (!quickTalhaoName.trim() || !fazenda) return
-              const cor = TALHAO_USOS.find(u => u.value === quickTalhaoUso)?.cor || '#6b7280'
-              const nt: TerraTalhao = { id: crypto.randomUUID(), fazendaId: fazenda.id, nome: quickTalhaoName.trim(), uso: quickTalhaoUso, areaHa: 0, cultura: '', safra: '', poligono: [], cor, notas: '', createdAt: new Date().toISOString() }
-              setTalhoes(prev => [...prev, nt])
-              setDrawTalhaoId(nt.id)
-              setDrawMode('talhao')
-              setDrawPoints([])
-              setShowQuickTalhao(false)
-            }}>Iniciar Desenho</button>
-            <button className="terra-btn-secondary" onClick={() => setShowQuickTalhao(false)}>Cancelar</button>
+          <div className="terra-draw-bar" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+            <span style={{ fontSize: 'calc(.78rem * var(--fs))', color: 'var(--text2)', marginBottom: 2 }}>Digite o nome e clique em "Iniciar Desenho":</span>
+            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input className="terra-quick-input" autoFocus placeholder="Nome do talhão (ex: Talhão 1)" value={quickTalhaoName} onChange={e => setQuickTalhaoName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && quickTalhaoName.trim() && fazenda) { const cor = TALHAO_USOS.find(u => u.value === quickTalhaoUso)?.cor || '#6b7280'; const nt: TerraTalhao = { id: crypto.randomUUID(), fazendaId: fazenda.id, nome: quickTalhaoName.trim(), uso: quickTalhaoUso, areaHa: 0, cultura: '', safra: '', poligono: [], cor, notas: '', createdAt: new Date().toISOString() }; setTalhoes(prev => [...prev, nt]); setDrawTalhaoId(nt.id); setDrawMode('talhao'); setDrawPoints([]); setShowQuickTalhao(false) } }} />
+              <select className="terra-draw-select" value={quickTalhaoUso} onChange={e => setQuickTalhaoUso(e.target.value as TalhaoUso)}>
+                {TALHAO_USOS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+              </select>
+              <button className="terra-btn-primary" disabled={!quickTalhaoName.trim()} onClick={() => {
+                if (!quickTalhaoName.trim() || !fazenda) return
+                const cor = TALHAO_USOS.find(u => u.value === quickTalhaoUso)?.cor || '#6b7280'
+                const nt: TerraTalhao = { id: crypto.randomUUID(), fazendaId: fazenda.id, nome: quickTalhaoName.trim(), uso: quickTalhaoUso, areaHa: 0, cultura: '', safra: '', poligono: [], cor, notas: '', createdAt: new Date().toISOString() }
+                setTalhoes(prev => [...prev, nt])
+                setDrawTalhaoId(nt.id)
+                setDrawMode('talhao')
+                setDrawPoints([])
+                setShowQuickTalhao(false)
+              }}>Iniciar Desenho</button>
+              <button className="terra-btn-secondary" onClick={() => setShowQuickTalhao(false)}>Cancelar</button>
+            </div>
           </div>
         )}
         {drawMode !== 'none' && (
