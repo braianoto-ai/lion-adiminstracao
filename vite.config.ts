@@ -2,6 +2,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { VitePWA } from 'vite-plugin-pwa'
 
+const base = process.env.VERCEL ? '/' : '/lion-adiminstracao/'
+
 export default defineConfig({
   plugins: [
     react(),
@@ -16,8 +18,8 @@ export default defineConfig({
         background_color: '#0a0a0a',
         display: 'standalone',
         orientation: 'portrait',
-        start_url: '/lion-adiminstracao/',
-        scope: '/lion-adiminstracao/',
+        start_url: base,
+        scope: base,
         icons: [
           { src: 'pwa-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'pwa-512.png', sizes: '512x512', type: 'image/png', purpose: 'any maskable' },
@@ -35,5 +37,5 @@ export default defineConfig({
       },
     }),
   ],
-  base: '/lion-adiminstracao/',
+  base,
 })
