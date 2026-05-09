@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback, useContext, useMemo } from 'react'
+import { useState, useEffect, useRef, useMemo } from 'react'
 import './App.css'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
@@ -7,33 +7,20 @@ import LoginPage from './LoginPage'
 import type { User } from '@supabase/supabase-js'
 import emailjs from '@emailjs/browser'
 import { UserCtx, DATA_KEYS, CLOUD_BUS } from './context'
-import { useCloudTable, useSyncStatus } from './hooks'
-import type { ModalType, SidebarPage, TerraFazenda, TalhaoUso, TerraTalhao, Imovel, Produto, Note, Folder } from './types'
+import { useCloudTable } from './hooks'
+import type { ModalType, SidebarPage, TerraFazenda, TerraTalhao, Imovel, Produto, Note, Folder, TerraNote } from './types'
+import { NOTA_CATEGORIAS } from './constants'
 import TerraPage from './pages/TerraPage'
 
-// ─── Terra constants ─────────────────────────────────────────────────────────
-
-const TERRA_BIOMAS = ['Mata Atlântica', 'Cerrado', 'Amazônia', 'Caatinga', 'Pampa', 'Pantanal']
-const TERRA_RELEVOS = ['Plano', 'Suave Ondulado', 'Ondulado', 'Forte Ondulado', 'Montanhoso']
-const TERRA_SOLOS = ['Latossolo Vermelho', 'Latossolo Amarelo', 'Argissolo', 'Neossolo', 'Cambissolo', 'Gleissolo', 'Nitossolo', 'Outro']
-const TERRA_UFS = ['AC','AL','AM','AP','BA','CE','DF','ES','GO','MA','MG','MS','MT','PA','PB','PE','PI','PR','RJ','RN','RO','RR','RS','SC','SE','SP','TO']
-const TALHAO_USOS: { value: TalhaoUso; label: string; cor: string }[] = [
-  { value: 'lavoura', label: 'Lavoura', cor: '#f59e0b' },
-  { value: 'pastagem', label: 'Pastagem', cor: '#22c55e' },
-  { value: 'reserva_legal', label: 'Reserva Legal', cor: '#166534' },
-  { value: 'app', label: 'APP', cor: '#0d9488' },
-  { value: 'reflorestamento', label: 'Reflorestamento', cor: '#65a30d' },
-  { value: 'benfeitorias', label: 'Benfeitorias', cor: '#8b5cf6' },
-  { value: 'sede', label: 'Sede/Moradia', cor: '#ef4444' },
-  { value: 'outro', label: 'Outro', cor: '#6b7280' },
-]
-const TERRA_CULTURAS = ['Soja','Milho','Café','Cana-de-Açúcar','Trigo','Algodão','Feijão','Arroz','Mandioca','Eucalipto','Pinus','Pastagem (Braquiária)','Pastagem (Tifton)','Outra']
+// ─── Terra constants (used by PublicMapPage) ─────────────────────────────────
+import { TALHAO_USOS } from './constants'
 
 // ─── Public Map Page ─────────────────────────────────────────────────────────
 
 function PublicMapPage() {
   const [fazendas, setFazendas] = useState<TerraFazenda[]>([])
   const [talhoes, setTalhoes] = useState<TerraTalhao[]>([])
+  const [pubNotas, setPubNotas] = useState<TerraNote[]>([])
   const [loading, setLoading] = useState(true)
   const [pubTab, setPubTab] = useState<'mapa' | 'talhoes'>('mapa')
   const [mapLayer, setMapLayer] = useState<'mapa' | 'satelite' | 'relevo'>('mapa')
@@ -56,20 +43,24 @@ function PublicMapPage() {
         const uidMatch = hash.match(/#\/mapa\/([a-f0-9-]+)/i)
         const uid = uidMatch?.[1]
         if (uid) {
-          const [fRes, tRes] = await Promise.all([
+          const [fRes, tRes, nRes] = await Promise.all([
             supabase.from('terra_fazendas').select('id, data').eq('user_id', uid),
             supabase.from('terra_talhoes').select('id, data').eq('user_id', uid),
+            supabase.from('terra_notas').select('id, data').eq('user_id', uid),
           ])
           if (fRes.data?.length) { setFazendas(fRes.data.map(r => ({ ...(r.data as object), id: r.id }) as TerraFazenda)); loaded = true }
           if (tRes.data?.length) { setTalhoes(tRes.data.map(r => ({ ...(r.data as object), id: r.id }) as TerraTalhao)); loaded = true }
+          if (nRes.data?.length) { setPubNotas(nRes.data.map(r => ({ ...(r.data as object), id: r.id }) as TerraNote)) }
         }
       }
       if (!loaded) {
         try {
           const f = JSON.parse(localStorage.getItem('lion-terra') || '[]') as TerraFazenda[]
           const t = JSON.parse(localStorage.getItem('lion-talhoes') || '[]') as TerraTalhao[]
+          const n = JSON.parse(localStorage.getItem('lion-notas') || '[]') as TerraNote[]
           if (f.length) setFazendas(f)
           if (t.length) setTalhoes(t)
+          if (n.length) setPubNotas(n)
         } catch { /* ignore */ }
       }
       setLoading(false)
@@ -124,11 +115,25 @@ function PublicMapPage() {
         poly.addTo(layerGroup.current!)
       }
     })
+    const pubFazNotas = pubNotas.filter(n => n.fazendaId === fazenda?.id)
+    pubFazNotas.forEach(n => {
+      const catInfo = NOTA_CATEGORIAS.find(c => c.value === n.icone)
+      const cor = n.cor || catInfo?.cor || '#6b7280'
+      const emoji = catInfo?.emoji || '📝'
+      const icon = L.divIcon({
+        className: 'terra-nota-icon',
+        html: `<div style="width:28px;height:28px;border-radius:50% 50% 50% 0;background:${cor};transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.3);border:2px solid #fff"><span style="transform:rotate(45deg);font-size:12px">${emoji}</span></div>`,
+        iconSize: [28, 28], iconAnchor: [14, 28], popupAnchor: [0, -30],
+      })
+      const marker = L.marker([n.lat, n.lng], { icon })
+      marker.bindPopup(`<div style="font-family:system-ui;min-width:160px"><span style="background:${cor};color:#fff;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600">${catInfo?.label || n.icone}</span><br/><strong>${n.titulo}</strong>${n.conteudo ? `<hr style="margin:6px 0;border:0;border-top:1px solid #ddd"/><span style="color:#666;font-size:12px">${n.conteudo}</span>` : ''}${n.fotoUrl ? `<hr style="margin:6px 0;border:0;border-top:1px solid #ddd"/><img src="${n.fotoUrl}" style="max-width:180px;max-height:120px;border-radius:6px"/>` : ''}</div>`)
+      marker.addTo(layerGroup.current!)
+    })
     if (fazenda && fazenda.perimetro.length >= 3) {
       const bounds = L.polygon(fazenda.perimetro).getBounds()
       leafletMap.current.fitBounds(bounds, { padding: [40, 40] })
     }
-  }, [fazenda, fazTalhoes, hiddenUsos, hiddenTalhoes, talhaoOpacity])
+  }, [fazenda, fazTalhoes, hiddenUsos, hiddenTalhoes, talhaoOpacity, pubNotas])
 
 
 
@@ -3568,7 +3573,8 @@ function CalendarPage() {
         </div>
 
         {/* Day panel */}
-        <div className="cal-sidebar">
+        {selectedDate && <div className="cal-day-overlay" onClick={() => setSelectedDate(null)} />}
+        <div className={`cal-sidebar${selectedDate ? ' cal-day-open' : ''}`}>
           {!selectedDate ? (
             <div className="cal-no-day">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" width="32" height="32" style={{ opacity: .2 }}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18" strokeLinecap="round"/></svg>
@@ -5652,6 +5658,7 @@ export default function App() {
   }, [])
   const [searchQ, setSearchQ] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
+  const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
   const [npTarget, setNpTarget] = useState<{ folderId: string; noteId: string } | null>(null)
   const searchResults = searchOpen && searchQ.trim().length >= 2 ? buildSearchIndex(searchQ) : []
 
@@ -5714,12 +5721,6 @@ export default function App() {
   }
 
   const displayName = user?.user_metadata?.full_name ?? user?.email ?? ''
-  const initials = displayName
-    .split(/\s|@/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((s: string) => s[0].toUpperCase())
-    .join('')
 
   const closeAll = () => { setShowCalc(false); setShowNp(false); setShowFin(false); setShowSim(false); setShowDocs(false); setShowAlerts(false); setShowShare(false) }
 
@@ -5871,7 +5872,12 @@ export default function App() {
           </div>
           <div className="topbar-brand-name">Lion Admin</div>
         </div>
-        <div className="header-search-wrap topbar-search-wrap">
+        <button className="mobile-search-btn" onClick={() => setMobileSearchOpen(v => !v)} title="Buscar">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <circle cx="9" cy="9" r="6"/><path d="M15 15l3 3" strokeLinecap="round"/>
+          </svg>
+        </button>
+        <div className={`header-search-wrap topbar-search-wrap${mobileSearchOpen ? ' mobile-search-open' : ''}`}>
           <div className={`header-search${searchOpen ? ' search-active' : ''}`}>
             <svg className="search-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5">
               <circle cx="9" cy="9" r="6"/><path d="M15 15l3 3" strokeLinecap="round"/>
@@ -5889,6 +5895,9 @@ export default function App() {
                 <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
               </button>
             )}
+            <button className="mobile-search-close" onClick={() => { setMobileSearchOpen(false); setSearchQ(''); setSearchOpen(false) }}>
+              <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+            </button>
           </div>
           {searchOpen && searchResults.length > 0 && (
             <div className="search-dropdown">

@@ -7,7 +7,7 @@ export const DATA_KEYS = [
   'lion-vehicles','lion-revisions','lion-calendar','lion-trips',
   'lion-family','lion-collectors','lion-bills','np-folders',
   'lion-docs-meta','lion-imoveis','lion-produtos',
-  'lion-terra','lion-talhoes',
+  'lion-terra','lion-talhoes','lion-notas',
 ]
 
 export const CLOUD_BUS = new EventTarget()

@@ -87,6 +87,21 @@ export interface TerraTalhao {
   createdAt: string
 }
 
+export type NotaCategoria = 'alerta' | 'observacao' | 'tarefa' | 'lembrete' | 'problema' | 'geral'
+
+export interface TerraNote {
+  id: string
+  fazendaId: string
+  lat: number
+  lng: number
+  titulo: string
+  conteudo: string
+  cor: string
+  icone: NotaCategoria
+  fotoUrl: string
+  createdAt: string
+}
+
 export type BillStatus = 'em_aberto' | 'pago' | 'vencido' | 'cancelado'
 export type BillRecurrence = 'mensal' | 'unica' | 'anual' | 'semanal'
 

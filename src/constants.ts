@@ -1,4 +1,4 @@
-import type { TalhaoUso, BillStatus, BillRecurrence, CalEvent, Trip, EmailJSConfig } from './types'
+import type { TalhaoUso, BillStatus, BillRecurrence, CalEvent, Trip, EmailJSConfig, NotaCategoria } from './types'
 
 // ─── Terra ──────────────────────────────────────────────────────────────────
 
@@ -17,6 +17,33 @@ export const TALHAO_USOS: { value: TalhaoUso; label: string; cor: string }[] = [
   { value: 'outro', label: 'Outro', cor: '#6b7280' },
 ]
 export const TERRA_CULTURAS = ['Soja','Milho','Café','Cana-de-Açúcar','Trigo','Algodão','Feijão','Arroz','Mandioca','Eucalipto','Pinus','Pastagem (Braquiária)','Pastagem (Tifton)','Outra']
+
+export const NOTA_CATEGORIAS: { value: NotaCategoria; label: string; cor: string; emoji: string }[] = [
+  { value: 'alerta', label: 'Alerta', cor: '#ef4444', emoji: '⚠️' },
+  { value: 'observacao', label: 'Observação', cor: '#3b82f6', emoji: '👁️' },
+  { value: 'tarefa', label: 'Tarefa', cor: '#f59e0b', emoji: '✅' },
+  { value: 'lembrete', label: 'Lembrete', cor: '#8b5cf6', emoji: '📌' },
+  { value: 'problema', label: 'Problema', cor: '#dc2626', emoji: '🔴' },
+  { value: 'geral', label: 'Geral', cor: '#6b7280', emoji: '📝' },
+]
+
+export const compressImage = (file: File, maxW = 800, quality = 0.6): Promise<string> =>
+  new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = () => {
+      const img = new Image()
+      img.onload = () => {
+        const ratio = Math.min(1, maxW / img.width)
+        const canvas = document.createElement('canvas')
+        canvas.width = img.width * ratio
+        canvas.height = img.height * ratio
+        canvas.getContext('2d')!.drawImage(img, 0, 0, canvas.width, canvas.height)
+        resolve(canvas.toDataURL('image/webp', quality))
+      }
+      img.src = reader.result as string
+    }
+    reader.readAsDataURL(file)
+  })
 
 // ─── Bills ──────────────────────────────────────────────────────────────────
 
