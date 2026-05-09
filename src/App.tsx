@@ -20,6 +20,18 @@ const DATA_KEYS = [
 ]
 
 const CLOUD_BUS = new EventTarget()
+const SYNC_STATUS = new Map<string, boolean>()
+
+function useSyncStatus(...keys: string[]): boolean {
+  const [syncing, setSyncing] = useState(false)
+  useEffect(() => {
+    const handler = () => setSyncing(keys.some(k => SYNC_STATUS.get(k)))
+    keys.forEach(k => CLOUD_BUS.addEventListener(`${k}:status`, handler))
+    return () => keys.forEach(k => CLOUD_BUS.removeEventListener(`${k}:status`, handler))
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+  return syncing
+}
 
 function useCloudTable<T extends { id: string }>(
   tableName: string,
@@ -87,24 +99,37 @@ function useCloudTable<T extends { id: string }>(
     _setData(next)
     if (supabase && userIdRef.current) {
       if (syncTimer.current) clearTimeout(syncTimer.current)
+      SYNC_STATUS.set(lsKey, true)
+      CLOUD_BUS.dispatchEvent(new Event(`${lsKey}:status`))
       syncTimer.current = setTimeout(async () => {
         const uid = userIdRef.current
         if (!uid || !supabase) return
-        if (next.length > 0) {
-          await supabase.from(tableName).upsert(
-            next.map(item => ({ id: item.id, user_id: ownerMap.current.get(item.id) || uid, data: item })),
-            { onConflict: 'id' }
-          )
-          const keepIds = next.map(i => i.id)
-          await supabase.from(tableName).delete()
-            .eq('user_id', uid)
-            .not('id', 'in', `(${keepIds.join(',')})`)
-        } else {
-          await supabase.from(tableName).delete().eq('user_id', uid)
+        try {
+          if (next.length > 0) {
+            await supabase.from(tableName).upsert(
+              next.map(item => ({ id: item.id, user_id: ownerMap.current.get(item.id) || uid, data: item })),
+              { onConflict: 'id' }
+            )
+            const keepIds = next.map(i => i.id)
+            await supabase.from(tableName).delete()
+              .eq('user_id', uid)
+              .not('id', 'in', `(${keepIds.join(',')})`)
+          } else {
+            await supabase.from(tableName).delete().eq('user_id', uid)
+          }
+        } finally {
+          SYNC_STATUS.set(lsKey, false)
+          CLOUD_BUS.dispatchEvent(new Event(`${lsKey}:status`))
         }
       }, 2000)
     }
   }, [tableName, lsKey])
+
+  useEffect(() => {
+    const warn = (e: BeforeUnloadEvent) => { if (syncTimer.current) e.preventDefault() }
+    window.addEventListener('beforeunload', warn)
+    return () => window.removeEventListener('beforeunload', warn)
+  }, [])
 
   return [data, setData]
 }
@@ -5241,22 +5266,8 @@ function TerraPage() {
   const [talhoes, setTalhoes] = useCloudTable<TerraTalhao>('terra_talhoes', 'lion-talhoes', { shared: true })
   const [tab, setTab] = useState<'visao' | 'mapa' | 'talhoes' | 'docs' | 'fazendas'>('visao')
   const [shareCopied, setShareCopied] = useState(false)
-  const [syncing, setSyncing] = useState(false)
   const [showValores, setShowValores] = useState(false)
-  const [syncDone, setSyncDone] = useState(false)
-  const forceSync = async () => {
-    if (!supabase || !userId || syncing) return
-    setSyncing(true)
-    try {
-      const localF: TerraFazenda[] = (() => { try { return JSON.parse(localStorage.getItem('lion-terra') || '[]') } catch { return [] } })()
-      const localT: TerraTalhao[] = (() => { try { return JSON.parse(localStorage.getItem('lion-talhoes') || '[]') } catch { return [] } })()
-      if (localF.length) await supabase.from('terra_fazendas').upsert(localF.map(f => ({ id: f.id, user_id: userId, data: f })), { onConflict: 'id' })
-      if (localT.length) await supabase.from('terra_talhoes').upsert(localT.map(t => ({ id: t.id, user_id: userId, data: t })), { onConflict: 'id' })
-      setSyncDone(true)
-      setTimeout(() => setSyncDone(false), 3000)
-    } catch { /* ignore */ }
-    setSyncing(false)
-  }
+  const isSyncing = useSyncStatus('lion-terra', 'lion-talhoes')
   const [activeFazendaId, setActiveFazendaId] = useState<string | null>(null)
   const [showFazendaForm, setShowFazendaForm] = useState(false)
   const [editFazendaId, setEditFazendaId] = useState<string | null>(null)
@@ -5685,10 +5696,19 @@ function TerraPage() {
         <div className="terra-map-spacer" />
         {drawMode === 'none' && !editingMapTalhaoId && (
           <>
-            <button className={`terra-btn-draw terra-btn-sync${syncDone ? ' copied' : ''}`} onClick={forceSync} disabled={syncing}>
-              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" className={syncing ? 'terra-spin' : ''}><path d="M2 8a6 6 0 0110.47-4M14 8a6 6 0 01-10.47 4" strokeLinecap="round"/><path d="M12 1v4h-4M4 15v-4h4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              {syncing ? 'Sincronizando...' : syncDone ? 'Sincronizado!' : 'Sincronizar'}
-            </button>
+            <span className={`terra-sync-status${isSyncing ? ' syncing' : ''}`}>
+              {isSyncing ? (
+                <>
+                  <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5" className="terra-spin"><path d="M2 8a6 6 0 0110.47-4M14 8a6 6 0 01-10.47 4" strokeLinecap="round"/></svg>
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <svg viewBox="0 0 14 14" width="12" height="12" fill="none"><path d="M2 7l4 4 6-6" stroke="#0f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  Salvo
+                </>
+              )}
+            </span>
             <button className={`terra-btn-draw terra-btn-share${shareCopied ? ' copied' : ''}`} onClick={() => {
               const base = window.location.origin + window.location.pathname
               const url = userId ? `${base}#/mapa/${userId}` : `${base}#/mapa`

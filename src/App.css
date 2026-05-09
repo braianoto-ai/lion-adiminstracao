@@ -5783,7 +5783,8 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 .terra-btn-draw:disabled { opacity: .4; cursor: not-allowed }
 .terra-btn-edit-active { background: var(--purple); color: #fff; border-color: var(--purple); box-shadow: 0 2px 8px rgba(139,92,246,.25) }
 .terra-btn-edit-active:hover { background: #7c3aed; color: #fff }
-.terra-btn-sync.copied { border-color: #22c55e; color: #22c55e }
+.terra-sync-status { display: inline-flex; align-items: center; gap: 5px; font-size: calc(.72rem * var(--fs)); color: var(--text3); padding: 5px 12px; border-radius: var(--radius); background: var(--bg2); border: 1px solid var(--border); opacity: .85; transition: opacity .3s, color .3s }
+.terra-sync-status.syncing { color: #f59e0b }
 @keyframes terra-spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
 .terra-spin { animation: terra-spin .8s linear infinite }
 .terra-btn-undo { border-color: #f59e0b; color: #f59e0b }
