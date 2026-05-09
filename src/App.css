@@ -5985,37 +5985,70 @@ html[data-theme="light"] .terra-field select,
 html[data-theme="light"] .terra-field textarea { background: var(--bg2) }
 
 /* ─── Public Map ─────────────────────────────────────────────────────────── */
-.pub-map-root { position: fixed; inset: 0; display: flex; flex-direction: column; background: #0f1419; font-family: system-ui, -apple-system, sans-serif }
-.pub-map-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; background: rgba(15,20,25,.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,.08); z-index: 1000; gap: 16px; flex-shrink: 0 }
-.pub-map-header-left { display: flex; align-items: center; gap: 10px; color: #e7e9ea; min-width: 0 }
-.pub-map-header-left svg { color: #22c55e; flex-shrink: 0 }
-.pub-map-header-left strong { font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
-.pub-map-header-sub { color: #71767b; font-size: 13px; white-space: nowrap }
-.pub-map-header-sub::before { content: '·'; margin-right: 6px }
-.pub-map-header-right { display: flex; align-items: center; gap: 12px; flex-shrink: 0 }
-.pub-map-layer-toggle { display: flex; background: rgba(255,255,255,.06); border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,.08) }
-.pub-map-layer-btn { padding: 6px 14px; background: none; border: none; color: #71767b; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s; text-transform: capitalize }
+.pub-terra-root { position: fixed; inset: 0; display: flex; flex-direction: column; background: #0f1419; font-family: system-ui, -apple-system, sans-serif; color: #e7e9ea }
+.pub-terra-header { display: flex; align-items: center; justify-content: space-between; padding: 10px 20px; background: rgba(15,20,25,.95); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,.08); z-index: 1000; gap: 16px; flex-shrink: 0 }
+.pub-terra-header-left { display: flex; align-items: center; gap: 10px; min-width: 0 }
+.pub-terra-header-left svg { color: #22c55e; flex-shrink: 0 }
+.pub-terra-header-left strong { font-size: 15px; white-space: nowrap }
+.pub-terra-sub { color: #71767b; font-size: 13px; white-space: nowrap }
+.pub-terra-tabs { display: flex; background: rgba(255,255,255,.06); border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,.08) }
+.pub-terra-tab { padding: 7px 18px; background: none; border: none; color: #71767b; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s }
+.pub-terra-tab:hover { color: #e7e9ea }
+.pub-terra-tab.active { background: rgba(34,197,94,.15); color: #22c55e }
+.pub-terra-map-wrap { flex: 1; display: flex; flex-direction: column; min-height: 0; position: relative }
+.pub-terra-map-controls { display: flex; gap: 0; padding: 8px 16px; background: rgba(15,20,25,.8); border-bottom: 1px solid rgba(255,255,255,.06) }
+.pub-map-layer-btn { padding: 6px 14px; background: none; border: 1px solid rgba(255,255,255,.08); color: #71767b; font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s }
+.pub-map-layer-btn:first-child { border-radius: 6px 0 0 6px }
+.pub-map-layer-btn:last-child { border-radius: 0 6px 6px 0 }
 .pub-map-layer-btn:hover { color: #e7e9ea }
-.pub-map-layer-btn.active { background: rgba(34,197,94,.15); color: #22c55e }
-.pub-map-container { flex: 1; min-height: 0 }
-.pub-map-legend { position: absolute; bottom: 24px; left: 20px; background: rgba(15,20,25,.92); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.1); border-radius: 12px; padding: 12px 14px; z-index: 1000; min-width: 180px; max-width: 260px }
-.pub-map-legend-title { color: #71767b; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px }
-.pub-map-legend-item { display: flex; align-items: center; gap: 8px; padding: 4px 0; cursor: pointer; background: none; border: none; color: #e7e9ea; font-size: 13px; width: 100%; text-align: left; transition: opacity .15s }
+.pub-map-layer-btn.active { background: rgba(34,197,94,.15); color: #22c55e; border-color: rgba(34,197,94,.3) }
+.pub-terra-map-layout { flex: 1; display: flex; min-height: 0 }
+.pub-terra-map-container { flex: 1; min-height: 0 }
+.pub-terra-map-sidebar { width: 300px; flex-shrink: 0; background: rgba(15,20,25,.95); border-left: 1px solid rgba(255,255,255,.08); padding: 14px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px }
+.pub-terra-fazenda-info { padding: 10px; background: rgba(255,255,255,.04); border-radius: 8px; border: 1px solid rgba(255,255,255,.06) }
+.pub-terra-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin-bottom: 8px }
+.pub-terra-stat { text-align: center; padding: 6px 4px; background: rgba(255,255,255,.03); border-radius: 6px }
+.pub-terra-stat-val { display: block; font-size: 12px; font-weight: 700; color: #e7e9ea; white-space: nowrap }
+.pub-terra-stat-lbl { display: block; font-size: 9px; color: #71767b; text-transform: uppercase; letter-spacing: .03em; margin-top: 1px }
+.pub-terra-utiliz { display: flex; align-items: center; gap: 8px; margin-bottom: 6px }
+.pub-terra-utiliz-bar { flex: 1; height: 4px; background: rgba(255,255,255,.08); border-radius: 2px; overflow: hidden }
+.pub-terra-utiliz-fill { height: 100%; background: #22c55e; border-radius: 2px }
+.pub-terra-utiliz-lbl { font-size: 11px; color: #22c55e; font-weight: 600; white-space: nowrap }
+.pub-terra-meta { display: flex; flex-wrap: wrap; gap: 4px }
+.pub-terra-meta span { font-size: 10px; padding: 2px 7px; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.06); border-radius: 10px; color: #71767b }
+.pub-terra-talhoes-title { font-size: 11px; font-weight: 600; color: #71767b; text-transform: uppercase; letter-spacing: .05em; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,.06); display: flex; justify-content: space-between; align-items: center }
+.pub-terra-talhoes-mapped { font-size: 10px; font-weight: 400; text-transform: none; letter-spacing: 0 }
+.pub-map-legend-item { display: flex; align-items: center; gap: 8px; padding: 5px 0; cursor: pointer; background: none; border: none; color: #e7e9ea; font-size: 13px; width: 100%; text-align: left; transition: opacity .15s }
 .pub-map-legend-item.hidden { opacity: .4 }
-.pub-map-legend-item.pub-map-legend-perim { cursor: default; margin-top: 6px; padding-top: 8px; border-top: 1px solid rgba(255,255,255,.06) }
 .pub-map-legend-swatch { width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0 }
 .pub-map-legend-label { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
 .pub-map-legend-info { color: #71767b; font-size: 11px; white-space: nowrap }
-.pub-map-info { position: absolute; bottom: 24px; right: 20px; display: flex; gap: 8px; z-index: 1000 }
-.pub-map-info-item { background: rgba(15,20,25,.92); backdrop-filter: blur(12px); border: 1px solid rgba(255,255,255,.1); border-radius: 10px; padding: 8px 14px; display: flex; flex-direction: column; align-items: center; gap: 2px }
-.pub-map-info-item span { color: #71767b; font-size: 10px; text-transform: uppercase; letter-spacing: .5px }
-.pub-map-info-item strong { color: #e7e9ea; font-size: 13px }
+.pub-terra-elev-legend { padding: 10px; background: rgba(255,255,255,.04); border-radius: 8px; border: 1px solid rgba(255,255,255,.06); margin-top: 4px }
+.pub-terra-elev-title { font-size: 10px; font-weight: 600; color: #71767b; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 6px }
+.pub-terra-elev-bar { height: 10px; border-radius: 4px; background: linear-gradient(to right, #2d6a4f, #52b788, #b7e4c7, #f4a261, #e76f51, #9b2226); margin-bottom: 4px }
+.pub-terra-elev-labels { display: flex; justify-content: space-between; font-size: 9px; color: #71767b }
+.pub-terra-talhoes-content { flex: 1; overflow-y: auto; padding: 20px }
+.pub-terra-talhoes-summary { font-size: 13px; color: #71767b; margin-bottom: 16px; padding: 10px 14px; background: rgba(255,255,255,.04); border-radius: 8px; border: 1px solid rgba(255,255,255,.06) }
+.pub-terra-talhao-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px }
+.pub-terra-talhao-card { display: flex; background: rgba(255,255,255,.04); border: 1px solid rgba(255,255,255,.06); border-radius: 10px; overflow: hidden; transition: border-color .15s }
+.pub-terra-talhao-card:hover { border-color: rgba(255,255,255,.12) }
+.pub-terra-talhao-color { width: 5px; flex-shrink: 0 }
+.pub-terra-talhao-body { padding: 12px 14px; flex: 1; display: flex; flex-direction: column; gap: 4px }
+.pub-terra-talhao-top { display: flex; justify-content: space-between; align-items: center }
+.pub-terra-talhao-badge { color: #fff; font-size: 10px; font-weight: 600; padding: 2px 8px; border-radius: 8px }
+.pub-terra-talhao-area { font-size: 14px; font-weight: 700; font-variant-numeric: tabular-nums }
+.pub-terra-talhao-name { font-size: 15px; font-weight: 600 }
+.pub-terra-talhao-pct { font-size: 12px; color: #71767b }
+.pub-terra-talhao-detail { font-size: 12px; color: #a8b3cf }
+.pub-terra-talhao-notes { font-size: 11px; color: #71767b; font-style: italic }
+.pub-terra-empty { color: #71767b; text-align: center; padding: 40px }
 .pub-map-loading { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; gap: 12px; background: #0f1419; color: #71767b; font-size: 15px }
 .pub-map-spinner { width: 24px; height: 24px; border: 2.5px solid rgba(255,255,255,.1); border-top-color: #22c55e; border-radius: 50%; animation: pub-spin .8s linear infinite }
 @keyframes pub-spin { to { transform: rotate(360deg) } }
 @media (max-width: 640px) {
-  .pub-map-header { padding: 8px 12px; flex-wrap: wrap }
-  .pub-map-header-sub { display: none }
-  .pub-map-info { flex-wrap: wrap; bottom: 12px; right: 12px; left: 12px; justify-content: center }
-  .pub-map-legend { bottom: auto; top: 60px; left: 8px; max-width: 200px }
+  .pub-terra-header { padding: 8px 12px; flex-wrap: wrap; gap: 8px }
+  .pub-terra-sub { display: none }
+  .pub-terra-map-layout { flex-direction: column }
+  .pub-terra-map-sidebar { width: 100%; max-height: 200px; border-left: none; border-top: 1px solid rgba(255,255,255,.08) }
+  .pub-terra-talhao-grid { grid-template-columns: 1fr }
 }
