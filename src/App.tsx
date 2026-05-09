@@ -317,25 +317,7 @@ function PublicMapPage() {
     }
   }, [fazenda, fazTalhoes, hiddenUsos, hiddenTalhoes])
 
-  const usoGroups = useMemo(() => {
-    const map = new Map<string, { label: string; cor: string; count: number; areaHa: number }>()
-    fazTalhoes.forEach(t => {
-      const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
-      const key = t.uso
-      const existing = map.get(key)
-      if (existing) { existing.count++; existing.areaHa += t.areaHa }
-      else map.set(key, { label: usoInfo?.label || t.uso, cor: t.cor || usoInfo?.cor || '#6b7280', count: 1, areaHa: t.areaHa })
-    })
-    return Array.from(map.entries())
-  }, [fazTalhoes])
 
-  const toggleUso = (uso: string) => {
-    setHiddenUsos(prev => {
-      const next = new Set(prev)
-      if (next.has(uso)) next.delete(uso); else next.add(uso)
-      return next
-    })
-  }
 
   useEffect(() => {
     if (leafletMap.current) setTimeout(() => leafletMap.current?.invalidateSize(), 200)
