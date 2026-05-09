@@ -5008,53 +5008,6 @@ function TerraPage() {
   const [showQuickTalhao, setShowQuickTalhao] = useState(false)
   const [quickTalhaoName, setQuickTalhaoName] = useState('')
   const [quickTalhaoUso, setQuickTalhaoUso] = useState<TalhaoUso>('lavoura')
-  const overlayRef = useRef<L.ImageOverlay | null>(null)
-  const savedOv = useMemo(() => { try { return JSON.parse(localStorage.getItem('lion-terra-overlay') || 'null') } catch { return null } }, [])
-  const [overlayUrl, setOverlayUrl] = useState<string | null>(savedOv?.url || null)
-  const [overlayOpacity, setOverlayOpacity] = useState(savedOv?.opacity ?? 0.5)
-  const [overlayOffsetLat, setOverlayOffsetLat] = useState(savedOv?.lat ?? 0)
-  const [overlayOffsetLng, setOverlayOffsetLng] = useState(savedOv?.lng ?? 0)
-  const [overlayScaleX, setOverlayScaleX] = useState(savedOv?.sx ?? 1)
-  const [overlayScaleY, setOverlayScaleY] = useState(savedOv?.sy ?? 1)
-  const [overlayLockRatio, setOverlayLockRatio] = useState(true)
-  const [overlayRotation, setOverlayRotation] = useState(savedOv?.rot ?? 0)
-  const [overlaySaved, setOverlaySaved] = useState(!!savedOv)
-  const saveOverlayPos = () => {
-    const data = { url: overlayUrl, opacity: overlayOpacity, lat: overlayOffsetLat, lng: overlayOffsetLng, sx: overlayScaleX, sy: overlayScaleY, rot: overlayRotation }
-    localStorage.setItem('lion-terra-overlay', JSON.stringify(data))
-    setOverlaySaved(true)
-    setTimeout(() => setOverlaySaved(false), 2000)
-  }
-  const [overlayDrag, setOverlayDrag] = useState(false)
-  const overlayDragStart = useRef<{ lat: number; lng: number } | null>(null)
-  type OverlayState = { lat: number; lng: number; sx: number; sy: number; rot: number; opacity: number }
-  const [overlayHistory, setOverlayHistory] = useState<OverlayState[]>([])
-  const [overlayHistoryIdx, setOverlayHistoryIdx] = useState(-1)
-  const overlaySnap = useRef<OverlayState | null>(null)
-  const pushOverlayHistory = () => {
-    const snap: OverlayState = { lat: overlayOffsetLat, lng: overlayOffsetLng, sx: overlayScaleX, sy: overlayScaleY, rot: overlayRotation, opacity: overlayOpacity }
-    if (overlaySnap.current && JSON.stringify(snap) === JSON.stringify(overlaySnap.current)) return
-    overlaySnap.current = snap
-    setOverlayHistory(prev => { const next = [...prev.slice(0, overlayHistoryIdx + 1), snap]; return next.slice(-50) })
-    setOverlayHistoryIdx(prev => Math.min(prev + 1, 49))
-  }
-  const overlayUndo = () => {
-    if (overlayHistoryIdx <= 0) return
-    pushOverlayHistory()
-    const idx = overlayHistoryIdx - 1
-    const s = overlayHistory[idx]
-    if (!s) return
-    setOverlayOffsetLat(s.lat); setOverlayOffsetLng(s.lng); setOverlayScaleX(s.sx); setOverlayScaleY(s.sy); setOverlayRotation(s.rot); setOverlayOpacity(s.opacity)
-    setOverlayHistoryIdx(idx)
-  }
-  const overlayRedo = () => {
-    if (overlayHistoryIdx >= overlayHistory.length - 1) return
-    const idx = overlayHistoryIdx + 1
-    const s = overlayHistory[idx]
-    if (!s) return
-    setOverlayOffsetLat(s.lat); setOverlayOffsetLng(s.lng); setOverlayScaleX(s.sx); setOverlayScaleY(s.sy); setOverlayRotation(s.rot); setOverlayOpacity(s.opacity)
-    setOverlayHistoryIdx(idx)
-  }
 
   const emptyFazenda: Omit<TerraFazenda, 'id' | 'createdAt'> = {
     nome: '', municipio: '', uf: 'PR', matricula: '', carNumero: '', itrNumero: '', ccir: '',
@@ -5067,7 +5020,7 @@ function TerraPage() {
   const [fazForm, setFazForm] = useState(emptyFazenda)
 
   const emptyTalhao: Omit<TerraTalhao, 'id' | 'createdAt'> = {
-    fazendaId: '', nome: '', uso: 'lavoura', areaHa: 0, cultura: '', safra: '', poligono: [], cor: '', notas: '',
+    fazendaId: '', nome: '', uso: 'lavoura', areaHa: 0, cultura: '', safra: '', poligono: [], cor: '#f59e0b', notas: '',
   }
   const [talForm, setTalForm] = useState(emptyTalhao)
 
@@ -5143,8 +5096,6 @@ function TerraPage() {
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' })
     osm.addTo(map)
     tileRef.current = osm
-    map.createPane('overlayImagePane')
-    map.getPane('overlayImagePane')!.style.zIndex = '450'
     layerGroup.current = L.layerGroup().addTo(map)
     drawMarkersRef.current = L.layerGroup().addTo(map)
     leafletMap.current = map
@@ -5163,46 +5114,6 @@ function TerraPage() {
     tileRef.current = L.tileLayer(t.url, { attribution: t.attr, maxZoom: 17 }).addTo(leafletMap.current)
   }, [mapLayer])
 
-  useEffect(() => {
-    if (!leafletMap.current) return
-    if (overlayRef.current) { leafletMap.current.removeLayer(overlayRef.current); overlayRef.current = null }
-    if (overlayUrl && fazenda) {
-      const lat = fazenda.latitude + overlayOffsetLat
-      const lng = fazenda.longitude + overlayOffsetLng
-      const dLat = 0.012 * overlayScaleY
-      const dLng = 0.016 * overlayScaleX
-      const bounds = L.latLngBounds([[lat - dLat, lng - dLng], [lat + dLat, lng + dLng]])
-      overlayRef.current = L.imageOverlay(overlayUrl, bounds, { opacity: overlayOpacity, interactive: overlayDrag, pane: 'overlayImagePane' }).addTo(leafletMap.current)
-      if (overlayRotation !== 0 && overlayRef.current) {
-        const el = (overlayRef.current as any).getElement()
-        if (el) el.style.transform = (el.style.transform || '') + ` rotate(${overlayRotation}deg)`
-      }
-    }
-  }, [overlayUrl, overlayOpacity, fazenda, overlayOffsetLat, overlayOffsetLng, overlayScaleX, overlayScaleY, overlayRotation, overlayDrag, tab])
-
-  useEffect(() => {
-    if (drawMode !== 'none' && overlayDrag) setOverlayDrag(false)
-  }, [drawMode])
-
-  useEffect(() => {
-    const map = leafletMap.current
-    if (!map || !overlayDrag) return
-    map.dragging.disable()
-    const onDown = (e: L.LeafletMouseEvent) => { overlayDragStart.current = { lat: e.latlng.lat, lng: e.latlng.lng } }
-    const onMove = (e: L.LeafletMouseEvent) => {
-      if (!overlayDragStart.current) return
-      const dLat = e.latlng.lat - overlayDragStart.current.lat
-      const dLng = e.latlng.lng - overlayDragStart.current.lng
-      overlayDragStart.current = { lat: e.latlng.lat, lng: e.latlng.lng }
-      setOverlayOffsetLat((p: number) => p + dLat)
-      setOverlayOffsetLng((p: number) => p + dLng)
-    }
-    const onUp = () => { overlayDragStart.current = null }
-    map.on('mousedown', onDown)
-    map.on('mousemove', onMove)
-    map.on('mouseup', onUp)
-    return () => { map.off('mousedown', onDown); map.off('mousemove', onMove); map.off('mouseup', onUp); map.dragging.enable() }
-  }, [overlayDrag])
 
   const initialViewSet = useRef(false)
   useEffect(() => {
@@ -5445,76 +5356,6 @@ function TerraPage() {
           </div>
         )}
       </div>
-      {overlayUrl && (
-        <div className="terra-overlay-panel">
-          <div className="terra-overlay-row">
-            <span className="terra-overlay-label">Opacidade:</span>
-            <input type="range" min="0" max="100" value={Math.round(overlayOpacity * 100)} onChange={e => { pushOverlayHistory(); setOverlayOpacity(parseInt(e.target.value) / 100) }} className="terra-overlay-slider" />
-            <span className="terra-overlay-pct">{Math.round(overlayOpacity * 100)}%</span>
-            <div className="terra-ov-undo-group">
-              <button className="terra-ov-btn" onClick={overlayUndo} disabled={overlayHistoryIdx <= 0} title="Desfazer (Ctrl+Z)">↩ Desfazer</button>
-              <button className="terra-ov-btn" onClick={overlayRedo} disabled={overlayHistoryIdx >= overlayHistory.length - 1} title="Refazer (Ctrl+Y)">↪ Refazer</button>
-            </div>
-          </div>
-          <div className="terra-overlay-row">
-            <span className="terra-overlay-label">Posição:</span>
-            <div className="terra-overlay-arrows">
-              <button className="terra-ov-arrow" onClick={() => { pushOverlayHistory(); setOverlayOffsetLat((p: number) => p + 0.001) }} title="Mover Norte">▲</button>
-              <div className="terra-ov-arrow-row">
-                <button className="terra-ov-arrow" onClick={() => { pushOverlayHistory(); setOverlayOffsetLng((p: number) => p - 0.001) }} title="Mover Oeste">◄</button>
-                <button className="terra-ov-arrow terra-ov-center" onClick={() => { pushOverlayHistory(); setOverlayOffsetLat(0); setOverlayOffsetLng(0) }} title="Centralizar">●</button>
-                <button className="terra-ov-arrow" onClick={() => { pushOverlayHistory(); setOverlayOffsetLng((p: number) => p + 0.001) }} title="Mover Leste">►</button>
-              </div>
-              <button className="terra-ov-arrow" onClick={() => { pushOverlayHistory(); setOverlayOffsetLat((p: number) => p - 0.001) }} title="Mover Sul">▼</button>
-            </div>
-            <button className={`terra-ov-drag-btn ${overlayDrag ? 'active' : ''}`} onClick={() => { if (!overlayDrag) pushOverlayHistory(); setOverlayDrag((p: boolean) => !p) }} title="Arrastar imagem com o mouse">
-              {overlayDrag ? '🔒 Arrastando' : '✋ Arrastar'}
-            </button>
-          </div>
-          <div className="terra-overlay-row">
-            <span className="terra-overlay-label">Tamanho:</span>
-            <button className={`terra-ov-lock ${overlayLockRatio ? 'active' : ''}`} onClick={() => setOverlayLockRatio((p: boolean) => !p)} title={overlayLockRatio ? 'Proporcional (clique para independente)' : 'Independente (clique para proporcional)'}>
-              {overlayLockRatio ? '🔗' : '🔓'}
-            </button>
-            {overlayLockRatio ? (
-              <>
-                <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); const d = -0.05; setOverlayScaleX((p: number) => Math.max(0.3, p + d)); setOverlayScaleY((p: number) => Math.max(0.3, p + d)) }}>−</button>
-                <input type="range" min="30" max="300" value={Math.round(overlayScaleX * 100)} onChange={e => { pushOverlayHistory(); const v = parseInt(e.target.value) / 100; setOverlayScaleX(v); setOverlayScaleY(v) }} className="terra-overlay-slider" />
-                <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); const d = 0.05; setOverlayScaleX((p: number) => Math.min(3, p + d)); setOverlayScaleY((p: number) => Math.min(3, p + d)) }}>+</button>
-                <span className="terra-overlay-pct">{Math.round(overlayScaleX * 100)}%</span>
-              </>
-            ) : (
-              <div className="terra-ov-size-split">
-                <div className="terra-overlay-row">
-                  <span className="terra-ov-sublabel">L:</span>
-                  <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); setOverlayScaleX((p: number) => Math.max(0.3, p - 0.05)) }}>−</button>
-                  <input type="range" min="30" max="300" value={Math.round(overlayScaleX * 100)} onChange={e => { pushOverlayHistory(); setOverlayScaleX(parseInt(e.target.value) / 100) }} className="terra-overlay-slider" />
-                  <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); setOverlayScaleX((p: number) => Math.min(3, p + 0.05)) }}>+</button>
-                  <span className="terra-overlay-pct">{Math.round(overlayScaleX * 100)}%</span>
-                </div>
-                <div className="terra-overlay-row">
-                  <span className="terra-ov-sublabel">A:</span>
-                  <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); setOverlayScaleY((p: number) => Math.max(0.3, p - 0.05)) }}>−</button>
-                  <input type="range" min="30" max="300" value={Math.round(overlayScaleY * 100)} onChange={e => { pushOverlayHistory(); setOverlayScaleY(parseInt(e.target.value) / 100) }} className="terra-overlay-slider" />
-                  <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); setOverlayScaleY((p: number) => Math.min(3, p + 0.05)) }}>+</button>
-                  <span className="terra-overlay-pct">{Math.round(overlayScaleY * 100)}%</span>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="terra-overlay-row">
-            <span className="terra-overlay-label">Rotação:</span>
-            <input type="range" min="-180" max="180" value={overlayRotation} onChange={e => { pushOverlayHistory(); setOverlayRotation(parseInt(e.target.value)) }} className="terra-overlay-slider" />
-            <span className="terra-overlay-pct">{overlayRotation}°</span>
-            <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); setOverlayRotation(0) }}>0°</button>
-          </div>
-          <div className="terra-overlay-row">
-            <button className={`terra-ov-save ${overlaySaved ? 'saved' : ''}`} onClick={saveOverlayPos}>{overlaySaved ? '✓ Salvo!' : '💾 Salvar Posição'}</button>
-            <button className="terra-ov-btn" onClick={() => { pushOverlayHistory(); setOverlayScaleX(1); setOverlayScaleY(1); setOverlayOffsetLat(0); setOverlayOffsetLng(0); setOverlayRotation(0) }}>Resetar</button>
-            <button className="terra-btn-secondary" onClick={() => { if (overlayRef.current && leafletMap.current) leafletMap.current.removeLayer(overlayRef.current); overlayRef.current = null; setOverlayUrl(null); setOverlayDrag(false); setOverlayHistory([]); setOverlayHistoryIdx(-1); localStorage.removeItem('lion-terra-overlay') }} style={{ padding: '4px 12px', fontSize: 'calc(.7rem * var(--fs))' }}>Remover Overlay</button>
-          </div>
-        </div>
-      )}
       <div className="terra-map-layout">
         <div ref={mapRef} className="terra-map-container" />
         {fazTalhoes.length > 0 && (
