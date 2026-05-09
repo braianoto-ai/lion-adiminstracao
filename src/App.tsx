@@ -5721,12 +5721,6 @@ export default function App() {
   }
 
   const displayName = user?.user_metadata?.full_name ?? user?.email ?? ''
-  const initials = displayName
-    .split(/\s|@/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((s: string) => s[0].toUpperCase())
-    .join('')
 
   const closeAll = () => { setShowCalc(false); setShowNp(false); setShowFin(false); setShowSim(false); setShowDocs(false); setShowAlerts(false); setShowShare(false) }
 
