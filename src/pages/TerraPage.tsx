@@ -2,17 +2,18 @@ import { useState, useEffect, useRef, useCallback, useContext, useMemo } from 'r
 import L from 'leaflet'
 import { UserCtx } from '../context'
 import { useCloudTable, useSyncStatus } from '../hooks'
-import { TALHAO_USOS, TERRA_BIOMAS, TERRA_CULTURAS, TERRA_RELEVOS, TERRA_SOLOS, TERRA_UFS } from '../constants'
-import type { TerraFazenda, TerraTalhao, TalhaoUso } from '../types'
+import { TALHAO_USOS, TERRA_BIOMAS, TERRA_CULTURAS, TERRA_RELEVOS, TERRA_SOLOS, TERRA_UFS, NOTA_CATEGORIAS, compressImage } from '../constants'
+import type { TerraFazenda, TerraTalhao, TalhaoUso, TerraNote, NotaCategoria } from '../types'
 
 export default function TerraPage() {
   const userId = useContext(UserCtx)
   const [fazendas, setFazendas] = useCloudTable<TerraFazenda>('terra_fazendas', 'lion-terra', { shared: true })
   const [talhoes, setTalhoes] = useCloudTable<TerraTalhao>('terra_talhoes', 'lion-talhoes', { shared: true })
+  const [notas, setNotas] = useCloudTable<TerraNote>('terra_notas', 'lion-notas', { shared: true })
   const [tab, setTab] = useState<'visao' | 'mapa' | 'talhoes' | 'docs' | 'fazendas'>('visao')
   const [shareCopied, setShareCopied] = useState(false)
   const [showValores, setShowValores] = useState(false)
-  const isSyncing = useSyncStatus('lion-terra', 'lion-talhoes')
+  const isSyncing = useSyncStatus('lion-terra', 'lion-talhoes', 'lion-notas')
   const [activeFazendaId, setActiveFazendaId] = useState<string | null>(null)
   const [showFazendaForm, setShowFazendaForm] = useState(false)
   const [editFazendaId, setEditFazendaId] = useState<string | null>(null)
@@ -27,7 +28,7 @@ export default function TerraPage() {
   const [terraEditMode, setTerraEditMode] = useState(false)
   const [showMapSidebar, setShowMapSidebar] = useState(true)
   const [adminTalhaoOpacity, setAdminTalhaoOpacity] = useState(0.1)
-  const [drawMode, setDrawMode] = useState<'none' | 'perimetro' | 'talhao'>('none')
+  const [drawMode, setDrawMode] = useState<'none' | 'perimetro' | 'talhao' | 'nota'>('none')
   const [drawPoints, setDrawPoints] = useState<[number, number][]>([])
   const drawLayerRef = useRef<L.Polyline | null>(null)
   const drawMarkersRef = useRef<L.LayerGroup | null>(null)
@@ -40,6 +41,12 @@ export default function TerraPage() {
   const editLayerRef = useRef<L.LayerGroup | null>(null)
   const editPolyRef = useRef<L.Polygon | null>(null)
   const [editVersion, setEditVersion] = useState(0)
+  const [showNotaForm, setShowNotaForm] = useState(false)
+  const [editNotaId, setEditNotaId] = useState<string | null>(null)
+  const [pendingNotaLatLng, setPendingNotaLatLng] = useState<[number, number] | null>(null)
+  const [notaForm, setNotaForm] = useState({ titulo: '', conteudo: '', cor: '#3b82f6', icone: 'geral' as NotaCategoria, fotoUrl: '' })
+  const notasLayerRef = useRef<L.LayerGroup | null>(null)
+  const [hiddenNotas, setHiddenNotas] = useState(false)
 
   const emptyFazenda: Omit<TerraFazenda, 'id' | 'createdAt'> = {
     nome: '', municipio: '', uf: 'PR', matricula: '', carNumero: '', itrNumero: '', ccir: '',
@@ -59,6 +66,7 @@ export default function TerraPage() {
   const fazenda = fazendas.find(f => f.id === activeFazendaId) || fazendas[0] || null
   useEffect(() => { if (fazendas.length && !activeFazendaId) setActiveFazendaId(fazendas[0].id) }, [fazendas, activeFazendaId])
   const fazTalhoes = useMemo(() => talhoes.filter(t => t.fazendaId === fazenda?.id), [talhoes, fazenda])
+  const fazNotas = useMemo(() => notas.filter(n => n.fazendaId === fazenda?.id), [notas, fazenda])
 
   const reservaMinPct = useMemo(() => {
     if (!fazenda) return 20
@@ -96,6 +104,7 @@ export default function TerraPage() {
   const deleteFazenda = (id: string) => {
     setFazendas(prev => prev.filter(f => f.id !== id))
     setTalhoes(prev => prev.filter(t => t.fazendaId !== id))
+    setNotas(prev => prev.filter(n => n.fazendaId !== id))
     if (activeFazendaId === id) setActiveFazendaId(null)
   }
 
@@ -120,6 +129,28 @@ export default function TerraPage() {
   }
   const deleteTalhao = (id: string) => { setTalhoes(prev => prev.filter(t => t.id !== id)) }
 
+  // ─── Notas CRUD
+  const saveNota = () => {
+    if (!notaForm.titulo.trim() || !fazenda) return
+    if (editNotaId) {
+      setNotas(prev => prev.map(n => n.id === editNotaId ? { ...n, ...notaForm } : n))
+    } else if (pendingNotaLatLng) {
+      const nn: TerraNote = {
+        id: crypto.randomUUID(), fazendaId: fazenda.id,
+        lat: pendingNotaLatLng[0], lng: pendingNotaLatLng[1],
+        ...notaForm, createdAt: new Date().toISOString(),
+      }
+      setNotas(prev => [...prev, nn])
+    }
+    setShowNotaForm(false); setEditNotaId(null); setPendingNotaLatLng(null)
+    setNotaForm({ titulo: '', conteudo: '', cor: '#3b82f6', icone: 'geral', fotoUrl: '' })
+  }
+  const editNota = (n: TerraNote) => {
+    setNotaForm({ titulo: n.titulo, conteudo: n.conteudo, cor: n.cor, icone: n.icone, fotoUrl: n.fotoUrl || '' })
+    setEditNotaId(n.id); setShowNotaForm(true)
+  }
+  const deleteNota = (id: string) => { if (window.confirm('Excluir esta nota?')) setNotas(prev => prev.filter(n => n.id !== id)) }
+
   // ─── Map
   useEffect(() => {
     if (tab !== 'mapa' || !mapRef.current || leafletMap.current) return
@@ -130,8 +161,9 @@ export default function TerraPage() {
     tileRef.current = osm
     layerGroup.current = L.layerGroup().addTo(map)
     drawMarkersRef.current = L.layerGroup().addTo(map)
+    notasLayerRef.current = L.layerGroup().addTo(map)
     leafletMap.current = map
-    return () => { map.remove(); leafletMap.current = null; drawMarkersRef.current = null }
+    return () => { map.remove(); leafletMap.current = null; drawMarkersRef.current = null; notasLayerRef.current = null }
   }, [tab])
 
   useEffect(() => {
@@ -177,6 +209,26 @@ export default function TerraPage() {
     }
   }, [fazenda, fazTalhoes, tab, hiddenTalhoes, drawMode, editingMapTalhaoId, adminTalhaoOpacity])
 
+  // Render note markers
+  useEffect(() => {
+    if (!leafletMap.current || !notasLayerRef.current) return
+    notasLayerRef.current.clearLayers()
+    if (hiddenNotas) return
+    fazNotas.forEach(n => {
+      const catInfo = NOTA_CATEGORIAS.find(c => c.value === n.icone)
+      const cor = n.cor || catInfo?.cor || '#6b7280'
+      const emoji = catInfo?.emoji || '📝'
+      const icon = L.divIcon({
+        className: 'terra-nota-icon',
+        html: `<div style="width:32px;height:32px;border-radius:50% 50% 50% 0;background:${cor};transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.35);border:2px solid #fff"><span style="transform:rotate(45deg);font-size:14px">${emoji}</span></div>`,
+        iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -34],
+      })
+      const marker = L.marker([n.lat, n.lng], { icon })
+      marker.bindPopup(`<div style="font-family:system-ui;min-width:180px"><div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="background:${cor};color:#fff;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600">${catInfo?.label || n.icone}</span></div><strong style="font-size:14px">${n.titulo}</strong>${n.conteudo ? `<hr style="margin:6px 0;border:0;border-top:1px solid #ddd"/><span style="color:#666;font-size:12px;white-space:pre-wrap">${n.conteudo}</span>` : ''}${n.fotoUrl ? `<hr style="margin:6px 0;border:0;border-top:1px solid #ddd"/><img src="${n.fotoUrl}" style="max-width:200px;max-height:150px;border-radius:6px;cursor:pointer" onclick="window.open(this.src,'_blank')"/>` : ''}<div style="margin-top:6px;font-size:10px;color:#999">${new Date(n.createdAt).toLocaleDateString('pt-BR')}</div></div>`)
+      marker.addTo(notasLayerRef.current!)
+    })
+  }, [fazNotas, hiddenNotas])
+
   // Draw mode: click handler
   useEffect(() => {
     const map = leafletMap.current
@@ -187,6 +239,18 @@ export default function TerraPage() {
     }
     map.getContainer().style.cursor = 'crosshair'
     map.closePopup()
+    if (drawMode === 'nota') {
+      const onClick = (e: L.LeafletMouseEvent) => {
+        const lat = parseFloat(e.latlng.lat.toFixed(6))
+        const lng = parseFloat(e.latlng.lng.toFixed(6))
+        setPendingNotaLatLng([lat, lng])
+        setNotaForm({ titulo: '', conteudo: '', cor: '#3b82f6', icone: 'geral', fotoUrl: '' })
+        setShowNotaForm(true)
+        setDrawMode('none')
+      }
+      map.on('click', onClick)
+      return () => { map.off('click', onClick); map.getContainer().style.cursor = '' }
+    }
     const onClick = (e: L.LeafletMouseEvent) => {
       const pt: [number, number] = [parseFloat(e.latlng.lat.toFixed(6)), parseFloat(e.latlng.lng.toFixed(6))]
       setDrawPoints(prev => {
@@ -485,6 +549,12 @@ export default function TerraPage() {
             {terraEditMode ? 'Sair da Edição' : 'Editar Mapa'}
           </button>
         )}
+        {drawMode === 'none' && !editingMapTalhaoId && !showQuickTalhao && fazenda && (
+          <button className="terra-btn-draw" onClick={() => { setDrawMode('nota'); setDrawPoints([]) }}>
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 1C5.24 1 3 3.24 3 6c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5z" strokeLinejoin="round"/><circle cx="8" cy="6" r="1.5"/></svg>
+            Adicionar Nota
+          </button>
+        )}
         {terraEditMode && drawMode === 'none' && fazenda && !showQuickTalhao && (
           <>
             <button className="terra-btn-draw" onClick={() => { setDrawMode('perimetro'); setDrawPoints([]) }}>
@@ -537,7 +607,15 @@ export default function TerraPage() {
             </div>
           </div>
         )}
-        {drawMode !== 'none' && (
+        {drawMode === 'nota' && (
+          <div className="terra-draw-bar">
+            <span className="terra-draw-label">
+              📌 Clique no mapa para posicionar a nota
+            </span>
+            <button className="terra-btn-secondary" onClick={cancelDraw}>Cancelar</button>
+          </div>
+        )}
+        {(drawMode === 'perimetro' || drawMode === 'talhao') && (
           <div className="terra-draw-bar">
             <span className="terra-draw-label">
               {drawMode === 'perimetro' ? 'Desenhando perímetro' : 'Desenhando talhão'} — clique no mapa para adicionar pontos ({drawPoints.length} pontos)
@@ -568,6 +646,37 @@ export default function TerraPage() {
                 : <path d="M6 3L1 8l5 5M15 3v10M12 8H1" strokeLinecap="round" strokeLinejoin="round"/>}
             </svg>
           </button>
+          {showNotaForm && (
+            <div className="terra-nota-modal" onClick={e => { if (e.target === e.currentTarget) { setShowNotaForm(false); setEditNotaId(null); setPendingNotaLatLng(null) } }}>
+              <div className="terra-nota-form">
+                <h4>{editNotaId ? 'Editar Nota' : 'Nova Nota'}</h4>
+                <div className="terra-fields">
+                  {renderField('Título', <input value={notaForm.titulo} onChange={e => setNotaForm(p => ({ ...p, titulo: e.target.value }))} placeholder="Ex: Área com erosão" />)}
+                  {renderField('Categoria', <select value={notaForm.icone} onChange={e => {
+                    const cat = e.target.value as NotaCategoria
+                    const catInfo = NOTA_CATEGORIAS.find(c => c.value === cat)
+                    setNotaForm(p => ({ ...p, icone: cat, cor: catInfo?.cor || p.cor }))
+                  }}>{NOTA_CATEGORIAS.map(c => <option key={c.value} value={c.value}>{c.emoji} {c.label}</option>)}</select>)}
+                  {renderField('Cor', <input type="color" value={notaForm.cor} onChange={e => setNotaForm(p => ({ ...p, cor: e.target.value }))} className="terra-color-input-lg" />)}
+                  {renderField('Conteúdo', <textarea rows={3} value={notaForm.conteudo} onChange={e => setNotaForm(p => ({ ...p, conteudo: e.target.value }))} placeholder="Descrição detalhada..." />, true)}
+                  {renderField('Foto', <div>
+                    {notaForm.fotoUrl && <div style={{ marginBottom: 8 }}><img src={notaForm.fotoUrl} style={{ maxWidth: '100%', maxHeight: 120, borderRadius: 6 }} /><button className="terra-btn-secondary" style={{ marginTop: 4, fontSize: 11 }} onClick={() => setNotaForm(p => ({ ...p, fotoUrl: '' }))}>Remover foto</button></div>}
+                    <input type="file" accept="image/*" onChange={async e => {
+                      const f = e.target.files?.[0]
+                      if (!f) return
+                      const url = await compressImage(f)
+                      setNotaForm(p => ({ ...p, fotoUrl: url }))
+                    }} />
+                    <span style={{ fontSize: 11, color: '#888' }}>Comprimida automaticamente</span>
+                  </div>, true)}
+                </div>
+                <div className="terra-form-actions">
+                  <button className="terra-btn-primary" onClick={saveNota} disabled={!notaForm.titulo.trim()}>Salvar</button>
+                  <button className="terra-btn-secondary" onClick={() => { setShowNotaForm(false); setEditNotaId(null); setPendingNotaLatLng(null) }}>Cancelar</button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         {showMapSidebar && <div className="terra-map-sidebar">
           {fazenda && (
@@ -679,6 +788,48 @@ export default function TerraPage() {
             </>
           )}
           {!fazTalhoes.length && fazenda && <p className="terra-muted" style={{ padding: '8px 0', fontSize: 'calc(.75rem * var(--fs))' }}>Nenhum talhão cadastrado.</p>}
+          {fazenda && (
+            <>
+            <div className="terra-map-sidebar-title">
+              Notas ({fazNotas.length})
+              {fazNotas.length > 0 && (
+                <button className="terra-toggle-all" onClick={() => setHiddenNotas(v => !v)}>
+                  {hiddenNotas ? 'Mostrar' : 'Ocultar'}
+                </button>
+              )}
+            </div>
+            {fazNotas.map(n => {
+              const catInfo = NOTA_CATEGORIAS.find(c => c.value === n.icone)
+              return (
+                <div key={n.id} className="terra-map-nota-item" onClick={() => {
+                  if (leafletMap.current) leafletMap.current.setView([n.lat, n.lng], 16)
+                }}>
+                  <div className="terra-nota-dot" style={{ background: n.cor || catInfo?.cor }}>
+                    {catInfo?.emoji || '📝'}
+                  </div>
+                  <div className="terra-map-talhao-info">
+                    <strong style={{ fontSize: 'calc(.78rem * var(--fs))' }}>{n.titulo}</strong>
+                    <div className="terra-sidebar-row2">
+                      <span className="terra-talhao-badge" style={{ background: n.cor || catInfo?.cor, fontSize: 'calc(.6rem * var(--fs))', padding: '1px 8px' }}>{catInfo?.label}</span>
+                      <span className="terra-sidebar-pct">{new Date(n.createdAt).toLocaleDateString('pt-BR')}</span>
+                    </div>
+                    {terraEditMode && drawMode === 'none' && !editingMapTalhaoId && (
+                      <div className="terra-sidebar-row3">
+                        <button className="terra-btn-draw-sm" onClick={e => { e.stopPropagation(); editNota(n) }} title="Editar">
+                          <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 2l3 3-9 9H2v-3z" strokeLinejoin="round"/></svg>
+                        </button>
+                        <button className="terra-btn-draw-sm terra-btn-del-talhao" onClick={e => { e.stopPropagation(); deleteNota(n.id) }} title="Excluir">
+                          <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h8v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4zM6 2h4M3 4h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+            {!fazNotas.length && <p className="terra-muted" style={{ padding: '4px 0', fontSize: 'calc(.7rem * var(--fs))' }}>Nenhuma nota no mapa.</p>}
+            </>
+          )}
           <div className="terra-opacity-slider">
             <label>Opacidade <span>{Math.round(adminTalhaoOpacity * 100)}%</span></label>
             <input type="range" min="0" max="100" value={Math.round(adminTalhaoOpacity * 100)} onChange={e => setAdminTalhaoOpacity(Number(e.target.value) / 100)} />
