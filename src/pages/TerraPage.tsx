@@ -485,16 +485,34 @@ export default function TerraPage() {
           <div className="terra-card-stat"><span className="terra-stat-label">Talhões</span><span className="terra-stat-value">{fazTalhoes.length}</span><span className="terra-stat-sub">{fmtHa(somaTalhoes)} mapeados</span></div>
         </div>
 
+        <div className="terra-minimap-card" onClick={() => setTab('mapa')} title="Clique para abrir o mapa completo">
+          <div className="terra-minimap-container" ref={miniMapRef} />
+          <div className="terra-minimap-overlay">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><path d="M10 2a6 6 0 00-6 6c0 4.5 6 10 6 10s6-5.5 6-10a6 6 0 00-6-6zm0 8.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>
+            Ver mapa completo
+          </div>
+        </div>
+
         <div className="terra-visao-grid">
           <div className="terra-chart-card">
             <h4>Distribuição de Uso</h4>
             {pieSlices.length ? (
               <div className="terra-pie-wrap">
-                <svg viewBox="0 0 120 120" width="160" height="160">
-                  {pieSlices.map((s, i) => <path key={i} d={s.d} fill={s.cor} stroke="var(--bg)" strokeWidth="1.5" />)}
+                <svg viewBox="0 0 200 200" className="terra-donut">
+                  {pieSlices.map((s, i) => {
+                    const total = pieData.reduce((acc, it) => acc + it.value, 0)
+                    const startFrac = pieData.slice(0, i).reduce((acc, it) => acc + it.value, 0) / total
+                    const frac = s.value / total
+                    const r = 70
+                    const circ = 2 * Math.PI * r
+                    return <circle key={i} cx="100" cy="100" r={r} fill="none" stroke={s.cor} strokeWidth="32" strokeDasharray={`${frac * circ} ${circ}`} strokeDashoffset={-startFrac * circ} transform="rotate(-90 100 100)" />
+                  })}
+                  <circle cx="100" cy="100" r="54" fill="var(--bg2)" />
+                  <text x="100" y="96" textAnchor="middle" fill="var(--text3)" fontSize="22" fontWeight="700">{pieSlices.length}</text>
+                  <text x="100" y="114" textAnchor="middle" fill="var(--text)" fontSize="10">talhões</text>
                 </svg>
                 <div className="terra-legend">
-                  {pieSlices.map((s, i) => <div key={i} className="terra-legend-item"><span className="terra-legend-dot" style={{ background: s.cor }} />{s.label} — {s.pct}%</div>)}
+                  {pieSlices.map((s, i) => <div key={i} className="terra-legend-item"><span className="terra-legend-dot" style={{ background: s.cor }} /><span className="terra-legend-label">{s.label}</span><span className="terra-legend-pct">{s.pct}%</span></div>)}
                 </div>
               </div>
             ) : <p className="terra-muted">Preencha as áreas da fazenda para ver a distribuição.</p>}
@@ -513,14 +531,6 @@ export default function TerraPage() {
             <div className="terra-info-row"><span>Bioma:</span> <strong>{fazenda.bioma || '—'}</strong></div>
             <div className="terra-info-row"><span>Solo:</span> <strong>{fazenda.tipoSolo || '—'}</strong></div>
             <div className="terra-info-row"><span>Relevo:</span> <strong>{fazenda.relevo || '—'}</strong></div>
-          </div>
-        </div>
-
-        <div className="terra-minimap-card" onClick={() => setTab('mapa')} title="Clique para abrir o mapa completo">
-          <div className="terra-minimap-container" ref={miniMapRef} />
-          <div className="terra-minimap-overlay">
-            <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><path d="M10 2a6 6 0 00-6 6c0 4.5 6 10 6 10s6-5.5 6-10a6 6 0 00-6-6zm0 8.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>
-            Ver mapa completo
           </div>
         </div>
 
