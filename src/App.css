@@ -5779,23 +5779,41 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 .terra-draw-label { font-size: calc(.75rem * var(--fs)); color: var(--text2); flex: 1; min-width: 200px }
 .terra-map-layout { display: flex; gap: 14px; min-height: 640px }
 .terra-map-container { flex: 1; min-height: 600px; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border); box-shadow: 0 4px 24px rgba(0,0,0,.12) }
-.terra-map-sidebar { width: 300px; flex-shrink: 0; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; max-height: 640px }
-.terra-map-sidebar-title { font-size: calc(.78rem * var(--fs)); font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; padding-bottom: 8px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 6px }
+.terra-map-sidebar { width: 340px; flex-shrink: 0; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; max-height: 640px }
+.terra-sidebar-fazenda { padding: 12px; background: var(--bg3); border-radius: var(--radius); margin-bottom: 4px }
+.terra-sidebar-fazenda-name { font-size: calc(.9rem * var(--fs)); font-weight: 700; color: var(--text3); margin-bottom: 2px }
+.terra-sidebar-fazenda-loc { font-size: calc(.68rem * var(--fs)); color: var(--text); opacity: .7; margin-bottom: 10px }
+.terra-sidebar-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px }
+.terra-sidebar-stat { text-align: center; padding: 6px 4px; background: var(--bg2); border-radius: var(--radius); border: 1px solid var(--border) }
+.terra-sidebar-stat-val { display: block; font-size: calc(.72rem * var(--fs)); font-weight: 700; color: var(--text3); font-variant-numeric: tabular-nums; white-space: nowrap }
+.terra-sidebar-stat-lbl { display: block; font-size: calc(.56rem * var(--fs)); color: var(--text); opacity: .6; text-transform: uppercase; letter-spacing: .03em; margin-top: 1px }
+.terra-sidebar-utiliz { display: flex; align-items: center; gap: 8px; margin-bottom: 6px }
+.terra-sidebar-utiliz-bar { flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden }
+.terra-sidebar-utiliz-fill { height: 100%; background: #22c55e; border-radius: 3px; transition: width .3s }
+.terra-sidebar-utiliz-lbl { font-size: calc(.6rem * var(--fs)); color: #22c55e; font-weight: 600; white-space: nowrap }
+.terra-sidebar-meta { display: flex; flex-wrap: wrap; gap: 4px }
+.terra-sidebar-meta span { font-size: calc(.58rem * var(--fs)); padding: 2px 7px; background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; color: var(--text); opacity: .8 }
+.terra-sidebar-valores { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border) }
+.terra-sidebar-valor { text-align: center }
+.terra-sidebar-valor-lbl { display: block; font-size: calc(.54rem * var(--fs)); color: var(--text); opacity: .5; text-transform: uppercase; letter-spacing: .04em }
+.terra-sidebar-valor-val { display: block; font-size: calc(.72rem * var(--fs)); font-weight: 700; color: var(--text3); font-variant-numeric: tabular-nums }
+.terra-sidebar-mapped { font-size: calc(.64rem * var(--fs)); color: var(--text); opacity: .6; padding-bottom: 4px }
+.terra-map-sidebar-title { font-size: calc(.72rem * var(--fs)); font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; padding: 8px 0 6px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 6px }
 .terra-toggle-all { font-size: calc(.62rem * var(--fs)); text-transform: none; letter-spacing: 0; background: none; border: 1px solid var(--border); border-radius: var(--radius); padding: 2px 8px; color: var(--text); cursor: pointer; transition: all .15s; white-space: nowrap }
 .terra-toggle-all:hover { background: var(--bg3); color: var(--text3) }
 .terra-talhao-check { width: 14px; height: 14px; flex-shrink: 0; cursor: pointer }
 .terra-talhao-hidden { opacity: .4 }
-.terra-map-talhao-item { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--radius); transition: background .15s; margin: 0 -4px; border-bottom: 1px solid var(--border) }
+.terra-map-talhao-item { display: flex; gap: 10px; padding: 8px 10px; border-radius: var(--radius); transition: background .15s; margin: 0 -2px; border-bottom: 1px solid var(--border) }
 .terra-map-talhao-item:last-of-type { border-bottom: none }
 .terra-map-talhao-item:hover { background: var(--bg3) }
-.terra-sidebar-color-dot { width: 6px; align-self: stretch; border-radius: 3px; flex-shrink: 0 }
-.terra-map-talhao-info { flex: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0 }
+.terra-sidebar-color-dot { width: 5px; align-self: stretch; border-radius: 3px; flex-shrink: 0 }
+.terra-map-talhao-info { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0 }
 .terra-sidebar-row1 { display: flex; justify-content: space-between; align-items: center; gap: 8px }
-.terra-sidebar-row1 strong { font-size: calc(.8rem * var(--fs)); color: var(--text3); word-break: break-word; font-weight: 600 }
-.terra-sidebar-area { font-size: calc(.75rem * var(--fs)); color: var(--text3); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums }
+.terra-sidebar-row1 strong { font-size: calc(.78rem * var(--fs)); color: var(--text3); font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.terra-sidebar-area { font-size: calc(.72rem * var(--fs)); color: var(--text3); font-weight: 600; white-space: nowrap; font-variant-numeric: tabular-nums }
 .terra-sidebar-row2 { display: flex; align-items: center; gap: 6px }
-.terra-sidebar-pct { font-size: calc(.66rem * var(--fs)); color: var(--text); opacity: .7 }
-.terra-sidebar-tools { display: flex; align-items: center; gap: 3px; flex-shrink: 0 }
+.terra-sidebar-pct { font-size: calc(.62rem * var(--fs)); color: var(--text); opacity: .7 }
+.terra-sidebar-row3 { display: flex; align-items: center; gap: 3px; margin-top: 2px }
 .terra-btn-draw-sm { background: none; border: 1px solid var(--border); border-radius: var(--radius); padding: 4px 6px; cursor: pointer; color: var(--text); transition: all .15s; flex-shrink: 0 }
 .terra-btn-draw-sm:hover { background: var(--bg3); color: var(--text3); border-color: var(--text) }
 .terra-btn-clear-poly:hover { color: #f59e0b; border-color: #f59e0b }
