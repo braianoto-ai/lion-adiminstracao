@@ -148,5 +148,52 @@ export function useCloudTable<T extends { id: string }>(
     return () => window.removeEventListener('beforeunload', warn)
   }, [])
 
+  // ─── Realtime subscription ───
+  useEffect(() => {
+    if (!supabase || !userId) return
+    const channelConfig = shared
+      ? { event: '*' as const, schema: 'public', table: tableName }
+      : { event: '*' as const, schema: 'public', table: tableName, filter: `user_id=eq.${userId}` }
+    const channel = supabase
+      .channel(`${tableName}:${userId}`)
+      .on(
+        'postgres_changes',
+        channelConfig,
+        (payload) => {
+          // Skip if we're currently syncing (our own change)
+          if (SYNC_STATUS.get(lsKey)) return
+
+          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
+            const row = payload.new as { id: string; data: object; user_id: string; shared_with?: string[] }
+            // For shared tables, skip rows not meant for us
+            if (shared && row.user_id !== userId && !(row.shared_with || []).includes(userId)) return
+            ownerMap.current.set(row.id, row.user_id)
+            const item = { ...(row.data as object), id: row.id } as T
+            const prev = dataRef.current
+            const idx = prev.findIndex(i => i.id === row.id)
+            const next = idx >= 0
+              ? prev.map((i, j) => j === idx ? item : i)
+              : [...prev, item]
+            dataRef.current = next
+            localStorage.setItem(lsKey, JSON.stringify(next))
+            _setData(next)
+            CLOUD_BUS.dispatchEvent(new Event(lsKey))
+          } else if (payload.eventType === 'DELETE') {
+            const oldRow = payload.old as { id: string }
+            if (!oldRow.id) return
+            const next = dataRef.current.filter(i => i.id !== oldRow.id)
+            dataRef.current = next
+            localStorage.setItem(lsKey, JSON.stringify(next))
+            _setData(next)
+            CLOUD_BUS.dispatchEvent(new Event(lsKey))
+          }
+        }
+      )
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [userId, tableName, lsKey])
+
   return [data, setData]
 }
