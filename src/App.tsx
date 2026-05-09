@@ -271,16 +271,21 @@ function PublicMapPage() {
     return () => { map.remove(); leafletMap.current = null }
   }, [loading])
 
+  const pubOverlayRef = useRef<L.TileLayer | null>(null)
   useEffect(() => {
     if (!leafletMap.current || !tileRef.current) return
     leafletMap.current.removeLayer(tileRef.current)
+    if (pubOverlayRef.current) { leafletMap.current.removeLayer(pubOverlayRef.current); pubOverlayRef.current = null }
     const tiles = {
       mapa: { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attr: '&copy; OpenStreetMap' },
-      satelite: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr: '&copy; Esri' },
-      relevo: { url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', attr: '&copy; OpenTopoMap' },
+      satelite: { url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', attr: '&copy; Google', maxZ: 20 },
+      relevo: { url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', attr: '&copy; Google + OpenTopoMap', maxZ: 20 },
     }
     const t = tiles[mapLayer]
-    tileRef.current = L.tileLayer(t.url, { attribution: t.attr, maxZoom: 17 }).addTo(leafletMap.current)
+    tileRef.current = L.tileLayer(t.url, { attribution: t.attr, maxZoom: t.maxZ || 18 }).addTo(leafletMap.current)
+    if (mapLayer === 'relevo') {
+      pubOverlayRef.current = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '', maxZoom: 17, opacity: 0.55 }).addTo(leafletMap.current)
+    }
   }, [mapLayer])
 
   useEffect(() => {
@@ -347,7 +352,7 @@ function PublicMapPage() {
           <div className="pub-map-layer-toggle">
             {(['mapa', 'satelite', 'relevo'] as const).map(l => (
               <button key={l} className={`pub-map-layer-btn${mapLayer === l ? ' active' : ''}`} onClick={() => setMapLayer(l)}>
-                {l === 'mapa' ? 'Mapa' : l === 'satelite' ? 'Satélite' : 'Relevo'}
+                {({ mapa: 'Mapa', satelite: 'Satélite', relevo: 'Relevo' } as Record<string,string>)[l]}
               </button>
             ))}
           </div>
@@ -5289,16 +5294,21 @@ function TerraPage() {
     return () => { map.remove(); leafletMap.current = null; drawMarkersRef.current = null }
   }, [tab])
 
+  const overlayRef = useRef<L.TileLayer | null>(null)
   useEffect(() => {
     if (!leafletMap.current || !tileRef.current) return
     leafletMap.current.removeLayer(tileRef.current)
+    if (overlayRef.current) { leafletMap.current.removeLayer(overlayRef.current); overlayRef.current = null }
     const tiles = {
       mapa: { url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', attr: '&copy; OpenStreetMap' },
-      satelite: { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attr: '&copy; Esri' },
-      relevo: { url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', attr: '&copy; OpenTopoMap' },
+      satelite: { url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', attr: '&copy; Google', maxZ: 20 },
+      relevo: { url: 'https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', attr: '&copy; Google + OpenTopoMap', maxZ: 20 },
     }
     const t = tiles[mapLayer]
-    tileRef.current = L.tileLayer(t.url, { attribution: t.attr, maxZoom: 17 }).addTo(leafletMap.current)
+    tileRef.current = L.tileLayer(t.url, { attribution: t.attr, maxZoom: t.maxZ || 18 }).addTo(leafletMap.current)
+    if (mapLayer === 'relevo') {
+      overlayRef.current = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', { attribution: '', maxZoom: 17, opacity: 0.55 }).addTo(leafletMap.current)
+    }
   }, [mapLayer])
 
 
@@ -5651,21 +5661,60 @@ function TerraPage() {
       </div>
       <div className="terra-map-layout">
         <div ref={mapRef} className="terra-map-container" />
-        {fazTalhoes.length > 0 && (
-          <div className="terra-map-sidebar">
+        <div className="terra-map-sidebar">
+          {fazenda && (
+            <div className="terra-sidebar-fazenda">
+              <div className="terra-sidebar-fazenda-name">{fazenda.nome}</div>
+              {fazenda.municipio && <div className="terra-sidebar-fazenda-loc">{fazenda.municipio}{fazenda.uf ? ` — ${fazenda.uf}` : ''}</div>}
+              <div className="terra-sidebar-stats">
+                <div className="terra-sidebar-stat">
+                  <span className="terra-sidebar-stat-val">{fmtHa(fazenda.areaTotal)}</span>
+                  <span className="terra-sidebar-stat-lbl">Área Total</span>
+                </div>
+                <div className="terra-sidebar-stat">
+                  <span className="terra-sidebar-stat-val">{fmtHa(fazenda.areaUtil)}</span>
+                  <span className="terra-sidebar-stat-lbl">Área Útil</span>
+                </div>
+                <div className="terra-sidebar-stat">
+                  <span className="terra-sidebar-stat-val">{fmtHa(fazenda.areaReservaLegal + fazenda.areaApp)}</span>
+                  <span className="terra-sidebar-stat-lbl">Reserva + APP</span>
+                </div>
+              </div>
+              {fazenda.areaTotal > 0 && (
+                <div className="terra-sidebar-utiliz">
+                  <div className="terra-sidebar-utiliz-bar">
+                    <div className="terra-sidebar-utiliz-fill" style={{ width: `${Math.min(100, (fazenda.areaUtil / fazenda.areaTotal) * 100)}%` }} />
+                  </div>
+                  <span className="terra-sidebar-utiliz-lbl">{((fazenda.areaUtil / fazenda.areaTotal) * 100).toFixed(0)}% utilização</span>
+                </div>
+              )}
+              <div className="terra-sidebar-meta">
+                {fazenda.bioma && <span>{fazenda.bioma}</span>}
+                {fazenda.tipoSolo && <span>{fazenda.tipoSolo}</span>}
+                {fazenda.relevo && <span>{fazenda.relevo}</span>}
+              </div>
+            </div>
+          )}
+          {fazTalhoes.length > 0 && (
+            <>
             <div className="terra-map-sidebar-title">
-              Talhões — {fazenda?.nome}
+              Talhões ({fazTalhoes.length})
               <button className="terra-toggle-all" onClick={() => {
                 if (hiddenTalhoes.size === 0) setHiddenTalhoes(new Set(fazTalhoes.map(t => t.id)))
                 else setHiddenTalhoes(new Set())
               }}>{hiddenTalhoes.size === 0 ? 'Ocultar todos' : 'Mostrar todos'}</button>
+            </div>
+            <div className="terra-sidebar-mapped">
+              {somaTalhoes > 0 && fazenda && fazenda.areaTotal > 0 && (
+                <span className="terra-sidebar-mapped-lbl">{fmtHa(somaTalhoes)} mapeados ({((somaTalhoes / fazenda.areaTotal) * 100).toFixed(0)}%)</span>
+              )}
             </div>
             {fazTalhoes.map(t => {
               const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
               const drawn = t.poligono.length >= 3
               const visible = !hiddenTalhoes.has(t.id)
               const cor = t.cor || usoInfo?.cor || '#6b7280'
-              const pct = fazenda ? ((t.areaHa / fazenda.areaTotal) * 100).toFixed(1) : '—'
+              const pct = fazenda && fazenda.areaTotal > 0 ? ((t.areaHa / fazenda.areaTotal) * 100).toFixed(1) : '—'
               return (
                 <div key={t.id} className={`terra-map-talhao-item${!visible ? ' terra-talhao-hidden' : ''}`}>
                   <div className="terra-sidebar-color-dot" style={{ background: cor }} />
@@ -5678,34 +5727,34 @@ function TerraPage() {
                       <span className="terra-talhao-badge" style={{ background: cor, fontSize: 'calc(.6rem * var(--fs))', padding: '1px 8px' }}>{usoInfo?.label}</span>
                       <span className="terra-sidebar-pct">{pct}%{t.cultura ? ` · ${t.cultura}` : ''}</span>
                     </div>
-                  </div>
-                  <div className="terra-sidebar-tools">
-                    <input type="checkbox" checked={visible} onChange={() => setHiddenTalhoes(prev => {
-                      const next = new Set(prev)
-                      if (next.has(t.id)) next.delete(t.id); else next.add(t.id)
-                      return next
-                    })} className="terra-talhao-check" style={{ accentColor: cor }} title={visible ? 'Ocultar' : 'Mostrar'} />
-                    <input type="color" value={cor} onChange={e => setTalhoes(prev => prev.map(x => x.id === t.id ? { ...x, cor: e.target.value } : x))} className="terra-color-swatch" title="Alterar cor" />
-                    {drawMode === 'none' && !showQuickTalhao && !editingMapTalhaoId && (
-                      <>
-                        {drawn && (
-                          <button className="terra-btn-draw-sm terra-btn-edit-map" onClick={() => startEditMapTalhao(t.id)} title="Editar no mapa">
-                            <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 8a6 6 0 1112 0A6 6 0 012 8z"/><circle cx="5" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/><circle cx="11" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>
+                    <div className="terra-sidebar-row3">
+                      <input type="checkbox" checked={visible} onChange={() => setHiddenTalhoes(prev => {
+                        const next = new Set(prev)
+                        if (next.has(t.id)) next.delete(t.id); else next.add(t.id)
+                        return next
+                      })} className="terra-talhao-check" style={{ accentColor: cor }} title={visible ? 'Ocultar' : 'Mostrar'} />
+                      <input type="color" value={cor} onChange={e => setTalhoes(prev => prev.map(x => x.id === t.id ? { ...x, cor: e.target.value } : x))} className="terra-color-swatch" title="Alterar cor" />
+                      {drawMode === 'none' && !showQuickTalhao && !editingMapTalhaoId && (
+                        <>
+                          {drawn && (
+                            <button className="terra-btn-draw-sm terra-btn-edit-map" onClick={() => startEditMapTalhao(t.id)} title="Editar no mapa">
+                              <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 8a6 6 0 1112 0A6 6 0 012 8z"/><circle cx="5" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/><circle cx="11" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>
+                            </button>
+                          )}
+                          <button className="terra-btn-draw-sm" onClick={() => { setDrawTalhaoId(t.id); setDrawMode('talhao'); setDrawPoints([]) }} title={drawn ? 'Redesenhar' : 'Desenhar'}>
+                            <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 2l3 3-9 9H2v-3z" strokeLinejoin="round"/></svg>
                           </button>
-                        )}
-                        <button className="terra-btn-draw-sm" onClick={() => { setDrawTalhaoId(t.id); setDrawMode('talhao'); setDrawPoints([]) }} title={drawn ? 'Redesenhar' : 'Desenhar'}>
-                          <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 2l3 3-9 9H2v-3z" strokeLinejoin="round"/></svg>
-                        </button>
-                        {drawn && (
-                          <button className="terra-btn-draw-sm terra-btn-clear-poly" onClick={() => setTalhoes(prev => prev.map(x => x.id === t.id ? { ...x, poligono: [] } : x))} title="Limpar polígono">
-                            <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3l10 10M13 3L3 13" strokeLinecap="round"/></svg>
+                          {drawn && (
+                            <button className="terra-btn-draw-sm terra-btn-clear-poly" onClick={() => setTalhoes(prev => prev.map(x => x.id === t.id ? { ...x, poligono: [] } : x))} title="Limpar polígono">
+                              <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3l10 10M13 3L3 13" strokeLinecap="round"/></svg>
+                            </button>
+                          )}
+                          <button className="terra-btn-draw-sm terra-btn-del-talhao" onClick={() => deleteTalhao(t.id)} title="Excluir">
+                            <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h8v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4zM6 2h4M3 4h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
                           </button>
-                        )}
-                        <button className="terra-btn-draw-sm terra-btn-del-talhao" onClick={() => deleteTalhao(t.id)} title="Excluir">
-                          <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h8v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4zM6 2h4M3 4h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        </button>
-                      </>
-                    )}
+                        </>
+                      )}
+                    </div>
                   </div>
                 </div>
               )
@@ -5715,8 +5764,10 @@ function TerraPage() {
                 <span key={u.value} className="terra-legend-item"><span className="terra-legend-dot" style={{ background: u.cor }} />{u.label}</span>
               ))}
             </div>
-          </div>
-        )}
+            </>
+          )}
+          {!fazTalhoes.length && fazenda && <p className="terra-muted" style={{ padding: '8px 0', fontSize: 'calc(.75rem * var(--fs))' }}>Nenhum talhão cadastrado.</p>}
+        </div>
       </div>
       {!fazenda && <p className="terra-muted" style={{ marginTop: 12 }}>Cadastre uma fazenda com coordenadas para ver no mapa.</p>}
     </div>
