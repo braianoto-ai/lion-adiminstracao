@@ -5197,6 +5197,10 @@ function TerraPage() {
   }, [overlayUrl, overlayOpacity, fazenda, overlayOffsetLat, overlayOffsetLng, overlayScaleX, overlayScaleY, overlayRotation, overlayDrag, tab])
 
   useEffect(() => {
+    if (drawMode !== 'none' && overlayDrag) setOverlayDrag(false)
+  }, [drawMode])
+
+  useEffect(() => {
     const map = leafletMap.current
     if (!map || !overlayDrag) return
     map.dragging.disable()
@@ -5216,26 +5220,31 @@ function TerraPage() {
     return () => { map.off('mousedown', onDown); map.off('mousemove', onMove); map.off('mouseup', onUp); map.dragging.enable() }
   }, [overlayDrag])
 
+  const initialViewSet = useRef(false)
   useEffect(() => {
     if (!leafletMap.current || !layerGroup.current) return
     layerGroup.current.clearLayers()
+    const isDrawing = drawMode !== 'none'
     if (fazenda && fazenda.perimetro.length >= 3) {
-      L.polygon(fazenda.perimetro, { color: '#dc2626', weight: 3, fillOpacity: 0.04, dashArray: '8 4' })
-        .bindPopup(`<div style="font-family:system-ui;min-width:200px"><strong style="font-size:14px">${fazenda.nome}</strong><br/><span style="color:#888">${fazenda.municipio} — ${fazenda.uf}</span><hr style="margin:6px 0;border:0;border-top:1px solid #ddd"/><b>Área Total:</b> ${fmtHa(fazenda.areaTotal)}<br/><b>Área Útil:</b> ${fmtHa(fazenda.areaUtil)}<br/><b>Reserva Legal:</b> ${fmtHa(fazenda.areaReservaLegal)} (${(fazenda.areaReservaLegal/fazenda.areaTotal*100).toFixed(1)}%)<br/><b>Bioma:</b> ${fazenda.bioma}<br/><b>Relevo:</b> ${fazenda.relevo}</div>`)
-        .addTo(layerGroup.current)
+      const perimPoly = L.polygon(fazenda.perimetro, { color: '#dc2626', weight: 3, fillOpacity: 0.04, dashArray: '8 4', interactive: !isDrawing })
+      if (!isDrawing) perimPoly.bindPopup(`<div style="font-family:system-ui;min-width:200px"><strong style="font-size:14px">${fazenda.nome}</strong><br/><span style="color:#888">${fazenda.municipio} — ${fazenda.uf}</span><hr style="margin:6px 0;border:0;border-top:1px solid #ddd"/><b>Área Total:</b> ${fmtHa(fazenda.areaTotal)}<br/><b>Área Útil:</b> ${fmtHa(fazenda.areaUtil)}<br/><b>Reserva Legal:</b> ${fmtHa(fazenda.areaReservaLegal)} (${(fazenda.areaReservaLegal/fazenda.areaTotal*100).toFixed(1)}%)<br/><b>Bioma:</b> ${fazenda.bioma}<br/><b>Relevo:</b> ${fazenda.relevo}</div>`)
+      perimPoly.addTo(layerGroup.current)
     }
     fazTalhoes.forEach(t => {
       if (t.poligono.length >= 3 && !hiddenTalhoes.has(t.id)) {
         const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
         const cor = t.cor || usoInfo?.cor || '#6b7280'
         const pctArea = fazenda ? ((t.areaHa / fazenda.areaTotal) * 100).toFixed(1) : '—'
-        L.polygon(t.poligono, { color: cor, weight: 2.5, fillColor: cor, fillOpacity: 0.4 })
-          .bindPopup(`<div style="font-family:system-ui;min-width:180px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="background:${cor};color:#fff;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600">${usoInfo?.label || t.uso}</span></div><strong style="font-size:14px">${t.nome}</strong><hr style="margin:6px 0;border:0;border-top:1px solid #ddd"/><b>Área:</b> ${fmtHa(t.areaHa)} (${pctArea}% da fazenda)${t.cultura ? '<br/><b>Cultura:</b> ' + t.cultura : ''}${t.safra ? '<br/><b>Safra:</b> ' + t.safra : ''}${t.notas ? '<br/><span style="color:#888;font-size:12px">' + t.notas + '</span>' : ''}</div>`)
-          .addTo(layerGroup.current!)
+        const poly = L.polygon(t.poligono, { color: cor, weight: 2.5, fillColor: cor, fillOpacity: 0.4, interactive: !isDrawing })
+        if (!isDrawing) poly.bindPopup(`<div style="font-family:system-ui;min-width:180px"><div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="background:${cor};color:#fff;padding:2px 8px;border-radius:8px;font-size:11px;font-weight:600">${usoInfo?.label || t.uso}</span></div><strong style="font-size:14px">${t.nome}</strong><hr style="margin:6px 0;border:0;border-top:1px solid #ddd"/><b>Área:</b> ${fmtHa(t.areaHa)} (${pctArea}% da fazenda)${t.cultura ? '<br/><b>Cultura:</b> ' + t.cultura : ''}${t.safra ? '<br/><b>Safra:</b> ' + t.safra : ''}${t.notas ? '<br/><span style="color:#888;font-size:12px">' + t.notas + '</span>' : ''}</div>`)
+        poly.addTo(layerGroup.current!)
       }
     })
-    if (fazenda) leafletMap.current.setView([fazenda.latitude, fazenda.longitude], 14)
-  }, [fazenda, fazTalhoes, tab, hiddenTalhoes])
+    if (fazenda && !initialViewSet.current) {
+      leafletMap.current.setView([fazenda.latitude, fazenda.longitude], 14)
+      initialViewSet.current = true
+    }
+  }, [fazenda, fazTalhoes, tab, hiddenTalhoes, drawMode])
 
   // Draw mode: click handler
   useEffect(() => {
@@ -5246,6 +5255,7 @@ function TerraPage() {
       return
     }
     map.getContainer().style.cursor = 'crosshair'
+    map.closePopup()
     const onClick = (e: L.LeafletMouseEvent) => {
       const pt: [number, number] = [parseFloat(e.latlng.lat.toFixed(6)), parseFloat(e.latlng.lng.toFixed(6))]
       setDrawPoints(prev => {
