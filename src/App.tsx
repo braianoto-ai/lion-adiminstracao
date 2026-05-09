@@ -5009,8 +5009,10 @@ function TerraPage() {
   const [quickTalhaoName, setQuickTalhaoName] = useState('')
   const [quickTalhaoUso, setQuickTalhaoUso] = useState<TalhaoUso>('lavoura')
   const [editingMapTalhaoId, setEditingMapTalhaoId] = useState<string | null>(null)
-  const [editCoords, setEditCoords] = useState<[number, number][]>([])
+  const editCoordsRef = useRef<[number, number][]>([])
   const editLayerRef = useRef<L.LayerGroup | null>(null)
+  const editPolyRef = useRef<L.Polygon | null>(null)
+  const [editVersion, setEditVersion] = useState(0)
 
   const emptyFazenda: Omit<TerraFazenda, 'id' | 'createdAt'> = {
     nome: '', municipio: '', uf: 'PR', matricula: '', carNumero: '', itrNumero: '', ccir: '',
@@ -5207,93 +5209,85 @@ function TerraPage() {
     const t = talhoes.find(x => x.id === talhaoId)
     if (!t || t.poligono.length < 3) return
     setEditingMapTalhaoId(talhaoId)
-    setEditCoords([...t.poligono])
+    editCoordsRef.current = [...t.poligono]
+    setEditVersion(v => v + 1)
   }
 
-  const renderEditVertices = useCallback((coords: [number, number][]) => {
+  const buildEditLayer = useCallback(() => {
     const map = leafletMap.current
-    if (!map || !editLayerRef.current) return
+    if (!map) return
+    if (!editLayerRef.current) editLayerRef.current = L.layerGroup().addTo(map)
     editLayerRef.current.clearLayers()
+    editPolyRef.current = null
+    const coords = editCoordsRef.current
+    if (coords.length < 3) return
     const talhao = talhoes.find(t => t.id === editingMapTalhaoId)
     const cor = talhao?.cor || '#f59e0b'
-    const poly = L.polygon(coords, { color: cor, weight: 3, fillColor: cor, fillOpacity: 0.3, dashArray: '6 3' })
+
+    const poly = L.polygon(coords, { color: cor, weight: 3, fillColor: cor, fillOpacity: 0.25, dashArray: '6 3' })
     poly.addTo(editLayerRef.current)
-    coords.forEach((c, i) => {
-      const marker = L.circleMarker(c, {
-        radius: 7, color: '#fff', fillColor: cor, fillOpacity: 1, weight: 2.5,
-        className: 'terra-vertex-marker'
-      })
-      marker.addTo(editLayerRef.current!)
-      let dragging = false
-      let startPos: L.LatLng | null = null
-      marker.on('mousedown', (e: L.LeafletMouseEvent) => {
-        dragging = true
-        startPos = e.latlng
-        map.dragging.disable()
-        L.DomEvent.stopPropagation(e)
-      })
-      const onMove = (e: L.LeafletMouseEvent) => {
-        if (!dragging) return
-        const newCoords = [...coords] as [number, number][]
-        newCoords[i] = [e.latlng.lat, e.latlng.lng]
-        setEditCoords(newCoords)
-      }
-      const onUp = () => {
-        if (!dragging) return
-        dragging = false
-        map.dragging.enable()
-      }
-      map.on('mousemove', onMove)
-      map.on('mouseup', onUp)
-      ;(marker as any)._editCleanup = () => { map.off('mousemove', onMove); map.off('mouseup', onUp) }
+    editPolyRef.current = poly
+
+    const vertexIcon = (color: string) => L.divIcon({
+      className: 'terra-vertex-icon',
+      html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.4);cursor:grab"></div>`,
+      iconSize: [14, 14], iconAnchor: [7, 7]
     })
-    // midpoint markers to add new vertices
+    const midIcon = (color: string) => L.divIcon({
+      className: 'terra-mid-icon',
+      html: `<div style="width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid ${color};opacity:.7;cursor:copy"></div>`,
+      iconSize: [10, 10], iconAnchor: [5, 5]
+    })
+
+    coords.forEach((c, i) => {
+      const m = L.marker(c, { draggable: true, icon: vertexIcon(cor), zIndexOffset: 1000 })
+      m.addTo(editLayerRef.current!)
+      m.on('drag', () => {
+        const pos = m.getLatLng()
+        editCoordsRef.current = editCoordsRef.current.map((cc, j) => j === i ? [pos.lat, pos.lng] as [number, number] : cc)
+        editPolyRef.current?.setLatLngs(editCoordsRef.current)
+      })
+      m.on('dragend', () => { setEditVersion(v => v + 1) })
+    })
+
     coords.forEach((c, i) => {
       const next = coords[(i + 1) % coords.length]
       const mid: [number, number] = [(c[0] + next[0]) / 2, (c[1] + next[1]) / 2]
-      const midMarker = L.circleMarker(mid, {
-        radius: 4, color: cor, fillColor: '#fff', fillOpacity: 0.8, weight: 2,
-        className: 'terra-mid-marker'
-      })
-      midMarker.addTo(editLayerRef.current!)
-      midMarker.on('mousedown', (e: L.LeafletMouseEvent) => {
-        L.DomEvent.stopPropagation(e)
-        const newCoords = [...coords] as [number, number][]
-        newCoords.splice(i + 1, 0, mid)
-        setEditCoords(newCoords)
+      const mm = L.marker(mid, { icon: midIcon(cor), zIndexOffset: 900 })
+      mm.addTo(editLayerRef.current!)
+      mm.on('click', () => {
+        editCoordsRef.current = [...editCoordsRef.current.slice(0, i + 1), mid, ...editCoordsRef.current.slice(i + 1)]
+        setEditVersion(v => v + 1)
       })
     })
   }, [editingMapTalhaoId, talhoes])
 
   useEffect(() => {
     if (!leafletMap.current) return
-    if (editingMapTalhaoId && !editLayerRef.current) {
-      editLayerRef.current = L.layerGroup().addTo(leafletMap.current)
-    }
-    if (editingMapTalhaoId && editCoords.length >= 3) {
-      renderEditVertices(editCoords)
-    }
-    if (!editingMapTalhaoId && editLayerRef.current) {
-      editLayerRef.current.eachLayer((l: any) => { if (l._editCleanup) l._editCleanup() })
+    if (editingMapTalhaoId) {
+      buildEditLayer()
+    } else if (editLayerRef.current) {
       editLayerRef.current.clearLayers()
       leafletMap.current.removeLayer(editLayerRef.current)
       editLayerRef.current = null
+      editPolyRef.current = null
     }
-  }, [editingMapTalhaoId, editCoords, renderEditVertices])
+  }, [editingMapTalhaoId, editVersion, buildEditLayer])
 
   const saveEditMapTalhao = () => {
-    if (!editingMapTalhaoId || editCoords.length < 3) return
-    setTalhoes(prev => prev.map(t => t.id === editingMapTalhaoId ? { ...t, poligono: editCoords } : t))
+    if (!editingMapTalhaoId || editCoordsRef.current.length < 3) return
+    setTalhoes(prev => prev.map(t => t.id === editingMapTalhaoId ? { ...t, poligono: [...editCoordsRef.current] } : t))
     setEditingMapTalhaoId(null)
-    setEditCoords([])
+    editCoordsRef.current = []
   }
   const cancelEditMapTalhao = () => {
     setEditingMapTalhaoId(null)
-    setEditCoords([])
+    editCoordsRef.current = []
   }
   const deleteEditVertex = () => {
-    if (editCoords.length <= 3) return
-    setEditCoords(prev => prev.slice(0, -1))
+    if (editCoordsRef.current.length <= 3) return
+    editCoordsRef.current = editCoordsRef.current.slice(0, -1)
+    setEditVersion(v => v + 1)
   }
 
   // ─── Pie chart SVG (land use distribution)
@@ -5457,7 +5451,7 @@ function TerraPage() {
               <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 14h3l9-9-3-3-9 9v3z" strokeLinejoin="round"/></svg>
               Editando <strong>{talhoes.find(t => t.id === editingMapTalhaoId)?.nome}</strong> — arraste os vértices para mover/redimensionar
             </span>
-            <button className="terra-btn-draw terra-btn-undo" onClick={deleteEditVertex} disabled={editCoords.length <= 3}>Remover Vértice</button>
+            <button className="terra-btn-draw terra-btn-undo" onClick={deleteEditVertex} disabled={editCoordsRef.current.length <= 3}>Remover Vértice</button>
             <button className="terra-btn-primary" onClick={saveEditMapTalhao}>Salvar</button>
             <button className="terra-btn-secondary" onClick={cancelEditMapTalhao}>Cancelar</button>
           </div>
