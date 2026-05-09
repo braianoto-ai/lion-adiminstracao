@@ -24,10 +24,12 @@ const CLOUD_BUS = new EventTarget()
 function useCloudTable<T extends { id: string }>(
   tableName: string,
   lsKey: string,
+  options?: { shared?: boolean },
 ): [T[], React.Dispatch<React.SetStateAction<T[]>>] {
   const userId = useContext(UserCtx)
   const userIdRef = useRef(userId)
   useEffect(() => { userIdRef.current = userId }, [userId])
+  const shared = options?.shared || false
 
   const [data, _setData] = useState<T[]>(() => {
     try { return JSON.parse(localStorage.getItem(lsKey) || '[]') } catch { return [] }
@@ -35,6 +37,8 @@ function useCloudTable<T extends { id: string }>(
 
   const dataRef = useRef(data)
   useEffect(() => { dataRef.current = data }, [data])
+
+  const ownerMap = useRef<Map<string, string>>(new Map())
 
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -45,10 +49,15 @@ function useCloudTable<T extends { id: string }>(
       localStorage.removeItem(lsKey)
       return
     }
-    supabase.from(tableName).select('id, data').eq('user_id', userId)
-      .then(({ data: rows }) => {
+    const query = shared
+      ? supabase.from(tableName).select('id, data, user_id').or(`user_id.eq.${userId},shared_with.cs.{${userId}}`)
+      : supabase.from(tableName).select('id, data, user_id').eq('user_id', userId)
+    query.then(({ data: rows }) => {
         if (rows) {
-          const remote = rows.map(r => ({ ...(r.data as object), id: r.id })) as T[]
+          const remote = rows.map(r => {
+            ownerMap.current.set(r.id, r.user_id)
+            return { ...(r.data as object), id: r.id } as T
+          })
           const local: T[] = (() => { try { return JSON.parse(localStorage.getItem(lsKey) || '[]') } catch { return [] } })()
           const remoteIds = new Set(remote.map(i => i.id))
           const pending = local.filter(i => !remoteIds.has(i.id))
@@ -57,9 +66,8 @@ function useCloudTable<T extends { id: string }>(
           localStorage.setItem(lsKey, JSON.stringify(merged))
         }
       })
-  }, [userId, tableName, lsKey])
+  }, [userId, tableName, lsKey, shared])
 
-  // Listen for cross-instance updates (same lsKey, different component)
   useEffect(() => {
     const handler = () => {
       try {
@@ -72,8 +80,6 @@ function useCloudTable<T extends { id: string }>(
   }, [lsKey])
 
   const setData: React.Dispatch<React.SetStateAction<T[]>> = useCallback((action) => {
-    // Compute next synchronously using ref — side effects run immediately,
-    // not inside the React updater (which can be dropped if component unmounts)
     const next = typeof action === 'function' ? (action as (p: T[]) => T[])(dataRef.current) : action
     dataRef.current = next
     localStorage.setItem(lsKey, JSON.stringify(next))
@@ -86,7 +92,7 @@ function useCloudTable<T extends { id: string }>(
         if (!uid || !supabase) return
         if (next.length > 0) {
           await supabase.from(tableName).upsert(
-            next.map(item => ({ id: item.id, user_id: uid, data: item })),
+            next.map(item => ({ id: item.id, user_id: ownerMap.current.get(item.id) || uid, data: item })),
             { onConflict: 'id' }
           )
           const keepIds = next.map(i => i.id)
@@ -5217,8 +5223,8 @@ function Modal({ title, onClose, children }: { title: string; onClose: () => voi
 
 function TerraPage() {
   const userId = useContext(UserCtx)
-  const [fazendas, setFazendas] = useCloudTable<TerraFazenda>('terra_fazendas', 'lion-terra')
-  const [talhoes, setTalhoes] = useCloudTable<TerraTalhao>('terra_talhoes', 'lion-talhoes')
+  const [fazendas, setFazendas] = useCloudTable<TerraFazenda>('terra_fazendas', 'lion-terra', { shared: true })
+  const [talhoes, setTalhoes] = useCloudTable<TerraTalhao>('terra_talhoes', 'lion-talhoes', { shared: true })
   const [tab, setTab] = useState<'visao' | 'mapa' | 'talhoes' | 'docs' | 'fazendas'>('visao')
   const [shareCopied, setShareCopied] = useState(false)
   const [syncing, setSyncing] = useState(false)
@@ -5355,6 +5361,10 @@ function TerraPage() {
     leafletMap.current = map
     return () => { map.remove(); leafletMap.current = null; drawMarkersRef.current = null }
   }, [tab])
+
+  useEffect(() => {
+    if (leafletMap.current) setTimeout(() => leafletMap.current?.invalidateSize(), 200)
+  }, [showMapSidebar])
 
   useEffect(() => {
     if (!leafletMap.current || !tileRef.current) return
