@@ -645,7 +645,7 @@
 .login-btn {
   margin-top: 4px;
   padding: 12px;
-  background: linear-gradient(135deg, var(--purple), #96281b);
+  background: linear-gradient(135deg, var(--purple), #1d4ed8);
   color: #fff;
   font-size: calc(14px * var(--fs, 1));
   font-weight: 600;
@@ -1516,7 +1516,7 @@
 
 .cb-fn  { background: #2d3748; color: var(--text3); font-size: calc(16px * var(--fs, 1)) }
 .cb-op  { background: rgba(192,57,43,.25); color: var(--purple-l); font-size: calc(22px * var(--fs, 1)); font-weight: 300 }
-.cb-eq  { background: linear-gradient(135deg, #c0392b, #6d28d9); color: #fff; font-size: calc(22px * var(--fs, 1)) }
+.cb-eq  { background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #fff; font-size: calc(22px * var(--fs, 1)) }
 
 .cb-wide { grid-column: span 2 }
 
@@ -3646,8 +3646,8 @@ html[data-theme="light"] .pat-svg line { stroke: rgba(0,0,0,.08) !important }
 
 html[data-theme="light"] .cb-num  { background: #e2e8f0; color: #0f172a }
 html[data-theme="light"] .cb-fn   { background: #cbd5e1; color: #0f172a }
-html[data-theme="light"] .cb-op   { background: #c0392b; color: #fff }
-html[data-theme="light"] .cb-eq   { background: #c0392b; color: #fff }
+html[data-theme="light"] .cb-op   { background: #3b82f6; color: #fff }
+html[data-theme="light"] .cb-eq   { background: #3b82f6; color: #fff }
 html[data-theme="light"] .calc-display { background: #1e293b; color: #f8fafc }
 
 html[data-theme="light"] .np-wrap,
@@ -5782,7 +5782,7 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 .terra-btn-draw:hover { background: var(--bg3); color: var(--text3) }
 .terra-btn-draw:disabled { opacity: .4; cursor: not-allowed }
 .terra-btn-edit-active { background: var(--purple); color: #fff; border-color: var(--purple); box-shadow: 0 2px 8px rgba(139,92,246,.25) }
-.terra-btn-edit-active:hover { background: #7c3aed; color: #fff }
+.terra-btn-edit-active:hover { background: #3b82f6; color: #fff }
 .terra-btn-sync.copied { border-color: #22c55e; color: #22c55e }
 @keyframes terra-spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
 .terra-spin { animation: terra-spin .8s linear infinite }

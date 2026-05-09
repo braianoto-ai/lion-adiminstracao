@@ -3395,10 +3395,10 @@ function computeDashData() {
 // ─── Appearance constants ──────────────────────────────────────────────────────
 
 const THEMES = [
-  { id: 'dark',     label: 'Noite',    swatch: '#0c0e14', bg: '#13151e' },
-  { id: 'charcoal', label: 'Carvão',   swatch: '#171717', bg: '#1f1f1f' },
-  { id: 'slate',    label: 'Ardósia',  swatch: '#0e1520', bg: '#15202e' },
-  { id: 'light',    label: 'Claro',    swatch: '#f0f2f5', bg: '#e8eaed' },
+  { id: 'dark',     label: 'Noite',    swatch: '#0a0a0a', bg: '#141414' },
+  { id: 'charcoal', label: 'Carvão',   swatch: '#111111', bg: '#191919' },
+  { id: 'slate',    label: 'Ardósia',  swatch: '#0c1017', bg: '#131a24' },
+  { id: 'light',    label: 'Claro',    swatch: '#f5f5f5', bg: '#e5e5e5' },
 ]
 
 const FONT_SIZES = [
@@ -3409,8 +3409,8 @@ const FONT_SIZES = [
 ]
 
 const ACCENT_COLORS = [
+  { id: 'blue',   label: 'Azul',     color: '#3b82f6', light: '#60a5fa' },
   { id: 'red',    label: 'Vermelho', color: '#c0392b', light: '#e74c3c' },
-  { id: 'blue',   label: 'Azul',    color: '#1d4ed8', light: '#60a5fa' },
   { id: 'green',  label: 'Verde',   color: '#059669', light: '#34d399' },
   { id: 'purple', label: 'Roxo',    color: '#7c3aed', light: '#a78bfa' },
   { id: 'pink',   label: 'Rosa',    color: '#be185d', light: '#f472b6' },
@@ -3489,7 +3489,7 @@ const OB_STEPS = [
       <svg viewBox="0 0 48 48" fill="none">
         <rect width="48" height="48" rx="14" fill="url(#obg)"/>
         <path d="M12 34L18 18l8 13 6-8 6 15" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <defs><linearGradient id="obg" x1="0" y1="0" x2="48" y2="48"><stop stopColor="#c0392b"/><stop offset="1" stopColor="#96281b"/></linearGradient></defs>
+        <defs><linearGradient id="obg" x1="0" y1="0" x2="48" y2="48"><stop stopColor="#3b82f6"/><stop offset="1" stopColor="#1d4ed8"/></linearGradient></defs>
       </svg>
     ),
     title: 'Bem-vindo ao Lion Admin',
@@ -4335,7 +4335,7 @@ function TripsPage() {
 
 // ─── Family Page ─────────────────────────────────────────────────────────────
 
-const MEMBER_COLORS = ['#c0392b','#3b82f6','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#84cc16']
+const MEMBER_COLORS = ['#3b82f6','#10b981','#f59e0b','#8b5cf6','#ec4899','#06b6d4','#84cc16','#60a5fa']
 const MEMBER_ROLES  = ['Responsável','Cônjuge','Filho(a)','Dependente','Sócio(a)','Outro']
 const MEMBER_FORM_INIT = { name: '', role: MEMBER_ROLES[0], color: MEMBER_COLORS[0] }
 
@@ -4684,7 +4684,7 @@ function SettingsPage({ user }: { user: User | null }) {
           <div className="settings-img-preview">
             {logo
               ? <img src={logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: 6 }} />
-              : <svg viewBox="0 0 32 32" fill="none" style={{ width: 32, height: 32, opacity: .3 }}><rect width="32" height="32" rx="10" fill="currentColor" opacity=".15"/><path d="M8 22L13 10l5 8 4-5 4 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              : <svg viewBox="0 0 32 32" fill="none" style={{ width: 32, height: 32, opacity: .3 }}><rect width="32" height="32" rx="10" fill="currentColor" opacity=".15"/><text x="16" y="23" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="18" fill="currentColor" letterSpacing="-1">LI</text></svg>
             }
           </div>
           <div className="settings-img-actions">
@@ -4709,7 +4709,7 @@ function SettingsPage({ user }: { user: User | null }) {
           <div className="settings-img-preview settings-img-preview--sm">
             {favicon
               ? <img src={favicon} alt="Favicon" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
-              : <svg viewBox="0 0 16 16" fill="none" style={{ width: 16, height: 16, opacity: .3 }}><rect width="16" height="16" rx="3" fill="currentColor"/></svg>
+              : <svg viewBox="0 0 16 16" fill="none" style={{ width: 16, height: 16, opacity: .3 }}><rect width="16" height="16" rx="3" fill="currentColor"/><text x="8" y="12" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="9" fill="white" letterSpacing="-0.5">LI</text></svg>
             }
           </div>
           <div className="settings-img-actions">
@@ -6760,7 +6760,7 @@ export default function App() {
   const [activity, setActivity] = useState(() => buildActivity())
   const [themeId, setThemeId] = useState(() => localStorage.getItem('lion-theme') || 'dark')
   const [fontSize, setFontSize] = useState(() => localStorage.getItem('lion-font') || 'normal')
-  const [accentId, setAccentId] = useState(() => localStorage.getItem('lion-accent') || 'red')
+  const [accentId, setAccentId] = useState(() => localStorage.getItem('lion-accent') || 'blue')
   const [animations, setAnimations] = useState(() => localStorage.getItem('lion-animations') !== 'off')
   const [sidebarFixed, setSidebarFixed] = useState(() => localStorage.getItem('lion-sidebar-fixed') === 'on')
   const [modal, setModal] = useState<ModalType>(null)
@@ -6985,9 +6985,8 @@ export default function App() {
             {customLogo
               ? <img src={customLogo} alt="Logo" style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 6 }} />
               : <svg viewBox="0 0 32 32" fill="none">
-                  <rect width="32" height="32" rx="10" fill="url(#tbg)"/>
-                  <path d="M8 22L13 10l5 8 4-5 4 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                  <defs><linearGradient id="tbg" x1="0" y1="0" x2="32" y2="32"><stop stopColor="#c0392b"/><stop offset="1" stopColor="#96281b"/></linearGradient></defs>
+                  <rect width="32" height="32" rx="10" fill="#1a1a1a"/>
+                  <text x="16" y="22" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="18" fill="white" letterSpacing="-1">L<tspan fill="#3b82f6">I</tspan></text>
                 </svg>
             }
           </div>
@@ -7136,13 +7135,13 @@ export default function App() {
                     <svg className="spark-svg" viewBox="0 0 260 44" preserveAspectRatio="none">
                       <defs>
                         <linearGradient id="sg2" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#c0392b" stopOpacity=".3"/>
-                          <stop offset="100%" stopColor="#c0392b" stopOpacity="0"/>
+                          <stop offset="0%" stopColor="#3b82f6" stopOpacity=".3"/>
+                          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0"/>
                         </linearGradient>
                       </defs>
                       <path d={sparkPath.area} fill="url(#sg2)"/>
-                      <path d={sparkPath.line} stroke="#e74c3c" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="260" cy={42-((sparkMonths[5]-Math.min(...sparkMonths))/(Math.max(...sparkMonths)-Math.min(...sparkMonths)||1)*38)} r="3" fill="#e74c3c"/>
+                      <path d={sparkPath.line} stroke="#60a5fa" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+                      <circle cx="260" cy={42-((sparkMonths[5]-Math.min(...sparkMonths))/(Math.max(...sparkMonths)-Math.min(...sparkMonths)||1)*38)} r="3" fill="#60a5fa"/>
                     </svg>
                   </div>
                 )}

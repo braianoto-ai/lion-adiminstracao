@@ -23,14 +23,8 @@ export default function LoginPage() {
         <div className="login-brand">
           <div className="brand-mark">
             <svg viewBox="0 0 32 32" fill="none">
-              <rect width="32" height="32" rx="10" fill="url(#lg)"/>
-              <path d="M8 22L13 10l5 8 4-5 4 9" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-              <defs>
-                <linearGradient id="lg" x1="0" y1="0" x2="32" y2="32">
-                  <stop stopColor="#7c3aed"/>
-                  <stop offset="1" stopColor="#4f46e5"/>
-                </linearGradient>
-              </defs>
+              <rect width="32" height="32" rx="10" fill="#1a1a1a"/>
+              <text x="16" y="22" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="18" fill="white" letterSpacing="-1">L<tspan fill="#3b82f6">I</tspan></text>
             </svg>
           </div>
           <div>

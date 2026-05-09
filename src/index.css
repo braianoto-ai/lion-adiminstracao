@@ -2,22 +2,22 @@
 
 :root {
   /* ── Noite (default) ─────────────────────── */
-  --bg:        #0c0e14;
-  --bg2:       #13151e;
-  --bg3:       #1a1d2a;
-  --bg4:       #21253a;
-  --border:    rgba(255,255,255,.07);
-  --border2:   rgba(255,255,255,.12);
-  --text:      #94a3b8;
-  --text2:     #cbd5e1;
-  --text3:     #f1f5f9;
-  --shadow-sm: 0 2px 8px rgba(0,0,0,.4);
-  --shadow:    0 4px 24px rgba(0,0,0,.5);
-  --shadow-lg: 0 8px 40px rgba(0,0,0,.6);
+  --bg:        #0a0a0a;
+  --bg2:       #141414;
+  --bg3:       #1a1a1a;
+  --bg4:       #262626;
+  --border:    rgba(255,255,255,.08);
+  --border2:   rgba(255,255,255,.14);
+  --text:      #a3a3a3;
+  --text2:     #d4d4d4;
+  --text3:     #fafafa;
+  --shadow-sm: 0 2px 8px rgba(0,0,0,.5);
+  --shadow:    0 4px 24px rgba(0,0,0,.6);
+  --shadow-lg: 0 8px 40px rgba(0,0,0,.7);
 
   /* ── Accent colors ───────────────────────── */
-  --purple:    #c0392b;
-  --purple-l:  #e74c3c;
+  --purple:    #3b82f6;
+  --purple-l:  #60a5fa;
   --blue:      #3b82f6;
   --blue-l:    #93c5fd;
   --amber:     #f59e0b;
@@ -43,15 +43,15 @@
 
 /* ── Carvão ────────────────────────────────── */
 html[data-theme="charcoal"] {
-  --bg:        #171717;
-  --bg2:       #1f1f1f;
-  --bg3:       #272727;
-  --bg4:       #313131;
+  --bg:        #111111;
+  --bg2:       #191919;
+  --bg3:       #222222;
+  --bg4:       #2e2e2e;
   --border:    rgba(255,255,255,.09);
   --border2:   rgba(255,255,255,.16);
-  --text:      #9ca3af;
-  --text2:     #d1d5db;
-  --text3:     #f9fafb;
+  --text:      #a3a3a3;
+  --text2:     #d4d4d4;
+  --text3:     #fafafa;
   --shadow-sm: 0 2px 12px rgba(0,0,0,.65);
   --shadow:    0 4px 32px rgba(0,0,0,.75);
   --shadow-lg: 0 8px 48px rgba(0,0,0,.85);
@@ -61,15 +61,15 @@ html[data-theme="charcoal"] {
 
 /* ── Ardósia ───────────────────────────────── */
 html[data-theme="slate"] {
-  --bg:        #0e1520;
-  --bg2:       #15202e;
-  --bg3:       #1c2b3d;
-  --bg4:       #24364f;
+  --bg:        #0c1017;
+  --bg2:       #131a24;
+  --bg3:       #1a2332;
+  --bg4:       #222e40;
   --border:    rgba(255,255,255,.08);
   --border2:   rgba(255,255,255,.14);
-  --text:      #8da0b3;
-  --text2:     #b8ccd8;
-  --text3:     #e4edf5;
+  --text:      #8a95a5;
+  --text2:     #bcc6d2;
+  --text3:     #e8edf3;
   --shadow-sm: 0 2px 12px rgba(0,0,0,.55);
   --shadow:    0 4px 32px rgba(0,0,0,.68);
   --shadow-lg: 0 8px 48px rgba(0,0,0,.78);
@@ -79,15 +79,15 @@ html[data-theme="slate"] {
 
 /* ── Claro ─────────────────────────────────── */
 html[data-theme="light"] {
-  --bg:        #f0f2f5;
-  --bg2:       #e8eaed;
-  --bg3:       #dde0e5;
-  --bg4:       #c8cdd5;
+  --bg:        #f5f5f5;
+  --bg2:       #e5e5e5;
+  --bg3:       #d4d4d4;
+  --bg4:       #c4c4c4;
   --border:    rgba(0,0,0,.09);
   --border2:   rgba(0,0,0,.16);
-  --text:      #5a6478;
-  --text2:     #2d3748;
-  --text3:     #0f172a;
+  --text:      #525252;
+  --text2:     #262626;
+  --text3:     #0a0a0a;
   --shadow-sm: 0 2px 10px rgba(0,0,0,.10);
   --shadow:    0 4px 28px rgba(0,0,0,.14);
   --shadow-lg: 0 8px 44px rgba(0,0,0,.18);
@@ -125,4 +125,4 @@ svg { display: block; flex-shrink: 0 }
 ::-webkit-scrollbar-thumb:hover { background: var(--border2) }
 
 /* Selection */
-::selection { background: rgba(192,57,43,.3); color: var(--text3) }
+::selection { background: rgba(59,130,246,.3); color: var(--text3) }
