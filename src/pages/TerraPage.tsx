@@ -156,9 +156,9 @@ export default function TerraPage() {
     if (!leafletMap.current || !layerGroup.current) return
     layerGroup.current.clearLayers()
     const isDrawing = drawMode !== 'none'
-    if (fazenda && fazenda.perimetro.length >= 3) {
-      const perimPoly = L.polygon(fazenda.perimetro, { color: '#dc2626', weight: 3, fillOpacity: 0.04, dashArray: '8 4', interactive: !isDrawing })
-      if (!isDrawing) perimPoly.bindPopup(`<div style="font-family:system-ui;min-width:200px"><strong style="font-size:14px">${fazenda.nome}</strong><br/><span style="color:#888">${fazenda.municipio} — ${fazenda.uf}</span><hr style="margin:6px 0;border:0;border-top:1px solid #ddd"/><b>Área Total:</b> ${fmtHa(fazenda.areaTotal)}<br/><b>Área Útil:</b> ${fmtHa(fazenda.areaUtil)}<br/><b>Reserva Legal:</b> ${fmtHa(fazenda.areaReservaLegal)} (${(fazenda.areaReservaLegal/fazenda.areaTotal*100).toFixed(1)}%)<br/><b>Bioma:</b> ${fazenda.bioma}<br/><b>Relevo:</b> ${fazenda.relevo}</div>`)
+    if (fazenda && fazenda.perimetro.length >= 3 && editingMapTalhaoId !== '__perimetro__') {
+      const perimPoly = L.polygon(fazenda.perimetro, { color: '#dc2626', weight: 3, fillOpacity: 0.04, dashArray: '8 4', interactive: !isDrawing && !editingMapTalhaoId })
+      if (!isDrawing && !editingMapTalhaoId) perimPoly.bindPopup(`<div style="font-family:system-ui;min-width:200px"><strong style="font-size:14px">${fazenda.nome}</strong><br/><span style="color:#888">${fazenda.municipio} — ${fazenda.uf}</span><hr style="margin:6px 0;border:0;border-top:1px solid #ddd"/><b>Área Total:</b> ${fmtHa(fazenda.areaTotal)}<br/><b>Área Útil:</b> ${fmtHa(fazenda.areaUtil)}<br/><b>Reserva Legal:</b> ${fmtHa(fazenda.areaReservaLegal)} (${(fazenda.areaReservaLegal/fazenda.areaTotal*100).toFixed(1)}%)<br/><b>Bioma:</b> ${fazenda.bioma}<br/><b>Relevo:</b> ${fazenda.relevo}</div>`)
       perimPoly.addTo(layerGroup.current)
     }
     fazTalhoes.forEach(t => {
@@ -236,7 +236,15 @@ export default function TerraPage() {
   }
 
   // ─── Map polygon editing (drag vertices to reshape/move)
+  const PERIM_EDIT_ID = '__perimetro__'
   const startEditMapTalhao = (talhaoId: string) => {
+    if (talhaoId === PERIM_EDIT_ID) {
+      if (!fazenda || fazenda.perimetro.length < 3) return
+      setEditingMapTalhaoId(PERIM_EDIT_ID)
+      editCoordsRef.current = [...fazenda.perimetro]
+      setEditVersion(v => v + 1)
+      return
+    }
     const t = talhoes.find(x => x.id === talhaoId)
     if (!t || t.poligono.length < 3) return
     setEditingMapTalhaoId(talhaoId)
@@ -252,8 +260,9 @@ export default function TerraPage() {
     editPolyRef.current = null
     const coords = editCoordsRef.current
     if (coords.length < 3) return
-    const talhao = talhoes.find(t => t.id === editingMapTalhaoId)
-    const cor = talhao?.cor || '#f59e0b'
+    const isPerimEdit = editingMapTalhaoId === PERIM_EDIT_ID
+    const talhao = isPerimEdit ? null : talhoes.find(t => t.id === editingMapTalhaoId)
+    const cor = isPerimEdit ? '#dc2626' : (talhao?.cor || '#f59e0b')
 
     const poly = L.polygon(coords, { color: cor, weight: 3, fillColor: cor, fillOpacity: 0.25, dashArray: '6 3' })
     poly.addTo(editLayerRef.current)
@@ -307,7 +316,13 @@ export default function TerraPage() {
 
   const saveEditMapTalhao = () => {
     if (!editingMapTalhaoId || editCoordsRef.current.length < 3) return
-    setTalhoes(prev => prev.map(t => t.id === editingMapTalhaoId ? { ...t, poligono: [...editCoordsRef.current] } : t))
+    if (editingMapTalhaoId === PERIM_EDIT_ID && fazenda) {
+      const pts = [...editCoordsRef.current]
+      const center = pts.reduce((acc, p) => [acc[0] + p[0], acc[1] + p[1]] as [number, number], [0, 0] as [number, number])
+      setFazendas(prev => prev.map(f => f.id === fazenda.id ? { ...f, perimetro: pts, latitude: center[0] / pts.length, longitude: center[1] / pts.length } : f))
+    } else {
+      setTalhoes(prev => prev.map(t => t.id === editingMapTalhaoId ? { ...t, poligono: [...editCoordsRef.current] } : t))
+    }
     setEditingMapTalhaoId(null)
     editCoordsRef.current = []
   }
@@ -477,6 +492,12 @@ export default function TerraPage() {
               {fazenda && fazenda.perimetro.length >= 3 ? 'Redesenhar Perímetro' : 'Desenhar Perímetro'}
             </button>
             {fazenda && fazenda.perimetro.length >= 3 && (
+              <button className="terra-btn-draw terra-btn-edit-active" onClick={() => startEditMapTalhao(PERIM_EDIT_ID)}>
+                <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 8a6 6 0 1112 0A6 6 0 012 8z"/><circle cx="5" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/><circle cx="11" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>
+                Editar Perímetro
+              </button>
+            )}
+            {fazenda && fazenda.perimetro.length >= 3 && (
               <button className="terra-btn-draw terra-btn-danger" onClick={() => { if (window.confirm('Limpar o perímetro atual? Os talhões não serão afetados.')) setFazendas(prev => prev.map(f => f.id === fazenda.id ? { ...f, perimetro: [] } : f)) }} title="Limpar perímetro desenhado">
                 <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3l10 10M13 3L3 13" strokeLinecap="round"/></svg>
                 Limpar Perímetro
@@ -530,7 +551,7 @@ export default function TerraPage() {
           <div className="terra-draw-bar terra-edit-bar">
             <span className="terra-draw-label">
               <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 14h3l9-9-3-3-9 9v3z" strokeLinejoin="round"/></svg>
-              Editando <strong>{talhoes.find(t => t.id === editingMapTalhaoId)?.nome}</strong> — arraste os vértices para mover/redimensionar
+              Editando <strong>{editingMapTalhaoId === PERIM_EDIT_ID ? 'Perímetro' : talhoes.find(t => t.id === editingMapTalhaoId)?.nome}</strong> — arraste os vértices para mover/redimensionar
             </span>
             <button className="terra-btn-draw terra-btn-undo" onClick={deleteEditVertex} disabled={editCoordsRef.current.length <= 3}>Remover Vértice</button>
             <button className="terra-btn-primary" onClick={saveEditMapTalhao}>Salvar</button>
