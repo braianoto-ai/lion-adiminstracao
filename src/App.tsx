@@ -5002,6 +5002,7 @@ function TerraPage() {
   const [drawMode, setDrawMode] = useState<'none' | 'perimetro' | 'talhao'>('none')
   const [drawPoints, setDrawPoints] = useState<[number, number][]>([])
   const drawLayerRef = useRef<L.Polyline | null>(null)
+  const drawMarkersRef = useRef<L.LayerGroup | null>(null)
   const [drawTalhaoId, setDrawTalhaoId] = useState<string | null>(null)
   const [showQuickTalhao, setShowQuickTalhao] = useState(false)
   const [quickTalhaoName, setQuickTalhaoName] = useState('')
@@ -5145,8 +5146,9 @@ function TerraPage() {
     map.createPane('overlayImagePane')
     map.getPane('overlayImagePane')!.style.zIndex = '450'
     layerGroup.current = L.layerGroup().addTo(map)
+    drawMarkersRef.current = L.layerGroup().addTo(map)
     leafletMap.current = map
-    return () => { map.remove(); leafletMap.current = null }
+    return () => { map.remove(); leafletMap.current = null; drawMarkersRef.current = null }
   }, [tab])
 
   useEffect(() => {
@@ -5234,7 +5236,7 @@ function TerraPage() {
         const next = [...prev, pt]
         if (drawLayerRef.current) map.removeLayer(drawLayerRef.current)
         drawLayerRef.current = L.polyline(next, { color: drawMode === 'perimetro' ? '#dc2626' : '#f59e0b', weight: 3, dashArray: '6 4' }).addTo(map)
-        L.circleMarker(pt, { radius: 5, color: '#fff', fillColor: drawMode === 'perimetro' ? '#dc2626' : '#f59e0b', fillOpacity: 1, weight: 2 }).addTo(layerGroup.current!)
+        L.circleMarker(pt, { radius: 5, color: '#fff', fillColor: drawMode === 'perimetro' ? '#dc2626' : '#f59e0b', fillOpacity: 1, weight: 2 }).addTo(drawMarkersRef.current!)
         return next
       })
     }
@@ -5257,6 +5259,7 @@ function TerraPage() {
   const cancelDraw = () => {
     if (drawLayerRef.current && leafletMap.current) leafletMap.current.removeLayer(drawLayerRef.current)
     drawLayerRef.current = null
+    if (drawMarkersRef.current) drawMarkersRef.current.clearLayers()
     setDrawMode('none')
     setDrawPoints([])
     setDrawTalhaoId(null)
@@ -5265,8 +5268,11 @@ function TerraPage() {
     setDrawPoints(prev => {
       const next = prev.slice(0, -1)
       if (drawLayerRef.current && leafletMap.current) leafletMap.current.removeLayer(drawLayerRef.current)
+      drawLayerRef.current = null
+      if (drawMarkersRef.current) drawMarkersRef.current.clearLayers()
       if (next.length > 0 && leafletMap.current) {
         drawLayerRef.current = L.polyline(next, { color: drawMode === 'perimetro' ? '#dc2626' : '#f59e0b', weight: 3, dashArray: '6 4' }).addTo(leafletMap.current)
+        next.forEach(p => L.circleMarker(p, { radius: 5, color: '#fff', fillColor: drawMode === 'perimetro' ? '#dc2626' : '#f59e0b', fillOpacity: 1, weight: 2 }).addTo(drawMarkersRef.current!))
       }
       return next
     })
