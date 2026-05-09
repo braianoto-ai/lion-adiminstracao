@@ -5592,8 +5592,9 @@ function TerraPage() {
                     const next = new Set(prev)
                     if (next.has(t.id)) next.delete(t.id); else next.add(t.id)
                     return next
-                  })} className="terra-talhao-check" style={{ accentColor: usoInfo?.cor }} />
-                  <span className="terra-talhao-badge" style={{ background: usoInfo?.cor || '#6b7280', fontSize: 'calc(.62rem * var(--fs))', padding: '1px 7px' }}>{usoInfo?.label}</span>
+                  })} className="terra-talhao-check" style={{ accentColor: t.cor || usoInfo?.cor }} />
+                  <span className="terra-talhao-badge" style={{ background: t.cor || usoInfo?.cor || '#6b7280', fontSize: 'calc(.62rem * var(--fs))', padding: '1px 7px' }}>{usoInfo?.label}</span>
+                  <input type="color" value={t.cor || usoInfo?.cor || '#6b7280'} onChange={e => setTalhoes(prev => prev.map(x => x.id === t.id ? { ...x, cor: e.target.value } : x))} className="terra-color-swatch" title="Alterar cor" />
                   <div className="terra-map-talhao-info">
                     <strong>{t.nome}</strong>
                     <span>{fmtHa(t.areaHa)} · {pct}%{t.cultura ? ` · ${t.cultura}` : ''}</span>
@@ -5643,6 +5644,7 @@ function TerraPage() {
           <div className="terra-fields">
             {renderField('Nome', <input value={talForm.nome} onChange={e => setTalForm(p => ({ ...p, nome: e.target.value }))} placeholder="Ex: Talhão 3" />)}
             {renderField('Uso', <select value={talForm.uso} onChange={e => setTalForm(p => ({ ...p, uso: e.target.value as TalhaoUso }))}>{TALHAO_USOS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}</select>)}
+            {renderField('Cor', <div className="terra-color-field"><input type="color" value={talForm.cor || TALHAO_USOS.find(u => u.value === talForm.uso)?.cor || '#6b7280'} onChange={e => setTalForm(p => ({ ...p, cor: e.target.value }))} className="terra-color-input-lg" /><span className="terra-color-hex">{talForm.cor || TALHAO_USOS.find(u => u.value === talForm.uso)?.cor || '#6b7280'}</span></div>)}
             {renderField('Área (ha)', <input type="number" step="0.01" value={talForm.areaHa || ''} onChange={e => setTalForm(p => ({ ...p, areaHa: parseFloat(e.target.value) || 0 }))} />)}
             {talForm.uso === 'lavoura' && renderField('Cultura', <select value={talForm.cultura} onChange={e => setTalForm(p => ({ ...p, cultura: e.target.value }))}><option value="">Selecione</option>{TERRA_CULTURAS.map(c => <option key={c} value={c}>{c}</option>)}</select>)}
             {talForm.uso === 'lavoura' && renderField('Safra', <input value={talForm.safra} onChange={e => setTalForm(p => ({ ...p, safra: e.target.value }))} placeholder="Ex: 2025/26" />)}
