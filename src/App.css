@@ -5929,6 +5929,23 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 .terra-sync-status.syncing { color: #f59e0b }
 @keyframes terra-spin { from { transform: rotate(0deg) } to { transform: rotate(360deg) } }
 .terra-spin { animation: terra-spin .8s linear infinite }
+
+/* ─── Sync Error Toast ─── */
+.sync-error-toast {
+  position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 8px;
+  background: #dc2626; color: #fff;
+  padding: 10px 20px; border-radius: 10px;
+  font-size: calc(.8rem * var(--fs)); font-weight: 500;
+  box-shadow: 0 4px 20px rgba(220,38,38,.4);
+  z-index: 99999;
+  animation: sync-toast-in .3s ease-out;
+}
+.sync-error-toast svg { flex-shrink: 0; stroke: #fff }
+@keyframes sync-toast-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(12px) }
+  to { opacity: 1; transform: translateX(-50%) translateY(0) }
+}
 .terra-btn-undo { border-color: #f59e0b; color: #f59e0b }
 .terra-draw-select { padding: 6px 10px; font-size: calc(.78rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer }
 .terra-quick-input { padding: 6px 10px; font-size: calc(.78rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg3); color: var(--text3); outline: none; min-width: 180px; transition: border-color .15s }

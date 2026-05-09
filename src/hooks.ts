@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useContext } from 'react'
 import { supabase } from './lib/supabase'
-import { UserCtx, CLOUD_BUS, SYNC_STATUS } from './context'
+import { UserCtx, CLOUD_BUS, SYNC_STATUS, SYNC_ERRORS } from './context'
 
 export function useSyncStatus(...keys: string[]): boolean {
   const [syncing, setSyncing] = useState(false)
@@ -11,6 +11,23 @@ export function useSyncStatus(...keys: string[]): boolean {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   return syncing
+}
+
+export function useSyncError(): string | null {
+  const [error, setError] = useState<string | null>(null)
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as string | null
+      setError(detail)
+      if (detail) setTimeout(() => {
+        SYNC_ERRORS.clear()
+        CLOUD_BUS.dispatchEvent(new CustomEvent('sync:error', { detail: null }))
+      }, 8000)
+    }
+    CLOUD_BUS.addEventListener('sync:error', handler)
+    return () => CLOUD_BUS.removeEventListener('sync:error', handler)
+  }, [])
+  return error
 }
 
 export function useCloudTable<T extends { id: string }>(
@@ -44,7 +61,11 @@ export function useCloudTable<T extends { id: string }>(
     const query = shared
       ? supabase.from(tableName).select('id, data, user_id').or(`user_id.eq.${userId},shared_with.cs.{${userId}}`)
       : supabase.from(tableName).select('id, data, user_id').eq('user_id', userId)
-    query.then(({ data: rows }) => {
+    query.then(({ data: rows, error: fetchErr }) => {
+        if (fetchErr) {
+          CLOUD_BUS.dispatchEvent(new CustomEvent('sync:error', { detail: `Erro ao carregar ${tableName}: ${fetchErr.message}` }))
+          return
+        }
         if (rows) {
           const remote = rows.map(r => {
             ownerMap.current.set(r.id, r.user_id)
@@ -84,23 +105,39 @@ export function useCloudTable<T extends { id: string }>(
       syncTimer.current = setTimeout(async () => {
         const uid = userIdRef.current
         if (!uid || !supabase) return
-        try {
-          if (next.length > 0) {
-            await supabase.from(tableName).upsert(
-              next.map(item => ({ id: item.id, user_id: ownerMap.current.get(item.id) || uid, data: item })),
-              { onConflict: 'id' }
-            )
-            const keepIds = next.map(i => i.id)
-            await supabase.from(tableName).delete()
-              .eq('user_id', uid)
-              .not('id', 'in', `(${keepIds.join(',')})`)
-          } else {
-            await supabase.from(tableName).delete().eq('user_id', uid)
+        let retries = 0
+        const maxRetries = 2
+        const attempt = async (): Promise<void> => {
+          try {
+            if (next.length > 0) {
+              const { error: upsertErr } = await supabase.from(tableName).upsert(
+                next.map(item => ({ id: item.id, user_id: ownerMap.current.get(item.id) || uid, data: item })),
+                { onConflict: 'id' }
+              )
+              if (upsertErr) throw upsertErr
+              const keepIds = next.map(i => i.id)
+              await supabase.from(tableName).delete()
+                .eq('user_id', uid)
+                .not('id', 'in', `(${keepIds.join(',')})`)
+            } else {
+              await supabase.from(tableName).delete().eq('user_id', uid)
+            }
+            SYNC_ERRORS.delete(lsKey)
+          } catch (err) {
+            if (retries < maxRetries) {
+              retries++
+              await new Promise(r => setTimeout(r, 1000 * retries))
+              return attempt()
+            }
+            const msg = err instanceof Error ? err.message : 'Erro de conexão'
+            SYNC_ERRORS.set(lsKey, msg)
+            CLOUD_BUS.dispatchEvent(new CustomEvent('sync:error', { detail: `Falha ao salvar ${tableName}: ${msg}` }))
+          } finally {
+            SYNC_STATUS.set(lsKey, false)
+            CLOUD_BUS.dispatchEvent(new Event(`${lsKey}:status`))
           }
-        } finally {
-          SYNC_STATUS.set(lsKey, false)
-          CLOUD_BUS.dispatchEvent(new Event(`${lsKey}:status`))
         }
+        await attempt()
       }, 2000)
     }
   }, [tableName, lsKey])
