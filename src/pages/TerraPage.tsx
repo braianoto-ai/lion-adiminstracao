@@ -871,32 +871,51 @@ export default function TerraPage() {
             </>
           )}
 
-          {/* ── Seção Perímetro ── */}
-          {fazenda && drawMode === 'none' && !editingMapTalhaoId && !showQuickTalhao && (
+          {/* ── Seção Notas ── */}
+          {fazenda && (
             <>
-            <div className="terra-section-toggle" onClick={() => toggleSection('perimetro')}>
-              <span className="terra-section-chevron" data-collapsed={collapsedSections.has('perimetro')}>&#9662;</span>
-              <span>Perímetro</span>
-            </div>
-            {!collapsedSections.has('perimetro') && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '6px 0 8px' }}>
-                <button className="terra-btn-draw" onClick={() => { setDrawMode('perimetro'); setDrawPoints([]) }}>
-                  <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="2,14 8,2 14,14" strokeLinejoin="round"/></svg>
-                  {fazenda.perimetro.length >= 3 ? 'Redesenhar Perímetro' : 'Desenhar Perímetro'}
+            <div className="terra-section-toggle" onClick={() => toggleSection('notas')}>
+              <span className="terra-section-chevron" data-collapsed={collapsedSections.has('notas')}>&#9662;</span>
+              <span>Notas ({fazNotas.length})</span>
+              {fazNotas.length > 0 && (
+                <button className="terra-toggle-all" onClick={e => { e.stopPropagation(); setHiddenNotas(v => !v) }}>
+                  {hiddenNotas ? 'Mostrar' : 'Ocultar'}
                 </button>
-                {fazenda.perimetro.length >= 3 && (
-                  <button className="terra-btn-draw terra-btn-edit-active" onClick={() => startEditMapTalhao(PERIM_EDIT_ID)}>
-                    <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 8a6 6 0 1112 0A6 6 0 012 8z"/><circle cx="5" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/><circle cx="11" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>
-                    Editar Perímetro
-                  </button>
-                )}
-                {fazenda.perimetro.length >= 3 && (
-                  <button className="terra-btn-draw terra-btn-danger" onClick={() => { if (window.confirm('Limpar o perímetro atual? Os talhões não serão afetados.')) setFazendas(prev => prev.map(f => f.id === fazenda.id ? { ...f, perimetro: [] } : f)) }}>
-                    <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h8v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4zM6 2h4M3 4h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                    Limpar Perímetro
-                  </button>
-                )}
-              </div>
+              )}
+            </div>
+            {!collapsedSections.has('notas') && (
+              <>
+              {fazNotas.map(n => {
+                const catInfo = NOTA_CATEGORIAS.find(c => c.value === n.icone)
+                return (
+                  <div key={n.id} className="terra-map-nota-item" onClick={() => {
+                    if (leafletMap.current) leafletMap.current.setView([n.lat, n.lng], 16)
+                  }}>
+                    <div className="terra-nota-dot" style={{ background: n.cor || catInfo?.cor }}>
+                      {catInfo?.emoji || '📝'}
+                    </div>
+                    <div className="terra-map-talhao-info">
+                      <strong style={{ fontSize: 'calc(.78rem * var(--fs))' }}>{n.titulo}</strong>
+                      <div className="terra-sidebar-row2">
+                        <span className="terra-talhao-badge" style={{ background: n.cor || catInfo?.cor, fontSize: 'calc(.6rem * var(--fs))', padding: '1px 8px' }}>{catInfo?.label}</span>
+                        <span className="terra-sidebar-pct">{new Date(n.createdAt).toLocaleDateString('pt-BR')}</span>
+                      </div>
+                      {terraEditMode && drawMode === 'none' && !editingMapTalhaoId && (
+                        <div className="terra-sidebar-row3">
+                          <button className="terra-btn-draw-sm" onClick={e => { e.stopPropagation(); editNota(n) }} title="Editar">
+                            <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 2l3 3-9 9H2v-3z" strokeLinejoin="round"/></svg>
+                          </button>
+                          <button className="terra-btn-draw-sm terra-btn-del-talhao" onClick={e => { e.stopPropagation(); deleteNota(n.id) }} title="Excluir">
+                            <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h8v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4zM6 2h4M3 4h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+              {!fazNotas.length && <p className="terra-muted" style={{ padding: '4px 0', fontSize: 'calc(.7rem * var(--fs))' }}>Nenhuma nota no mapa.</p>}
+              </>
             )}
             </>
           )}
@@ -999,51 +1018,32 @@ export default function TerraPage() {
             </>
           )}
 
-          {/* ── Seção Notas ── */}
-          {fazenda && (
+          {/* ── Seção Perímetro ── */}
+          {fazenda && drawMode === 'none' && !editingMapTalhaoId && !showQuickTalhao && (
             <>
-            <div className="terra-section-toggle" onClick={() => toggleSection('notas')}>
-              <span className="terra-section-chevron" data-collapsed={collapsedSections.has('notas')}>&#9662;</span>
-              <span>Notas ({fazNotas.length})</span>
-              {fazNotas.length > 0 && (
-                <button className="terra-toggle-all" onClick={e => { e.stopPropagation(); setHiddenNotas(v => !v) }}>
-                  {hiddenNotas ? 'Mostrar' : 'Ocultar'}
-                </button>
-              )}
+            <div className="terra-section-toggle" onClick={() => toggleSection('perimetro')}>
+              <span className="terra-section-chevron" data-collapsed={collapsedSections.has('perimetro')}>&#9662;</span>
+              <span>Perímetro</span>
             </div>
-            {!collapsedSections.has('notas') && (
-              <>
-              {fazNotas.map(n => {
-                const catInfo = NOTA_CATEGORIAS.find(c => c.value === n.icone)
-                return (
-                  <div key={n.id} className="terra-map-nota-item" onClick={() => {
-                    if (leafletMap.current) leafletMap.current.setView([n.lat, n.lng], 16)
-                  }}>
-                    <div className="terra-nota-dot" style={{ background: n.cor || catInfo?.cor }}>
-                      {catInfo?.emoji || '📝'}
-                    </div>
-                    <div className="terra-map-talhao-info">
-                      <strong style={{ fontSize: 'calc(.78rem * var(--fs))' }}>{n.titulo}</strong>
-                      <div className="terra-sidebar-row2">
-                        <span className="terra-talhao-badge" style={{ background: n.cor || catInfo?.cor, fontSize: 'calc(.6rem * var(--fs))', padding: '1px 8px' }}>{catInfo?.label}</span>
-                        <span className="terra-sidebar-pct">{new Date(n.createdAt).toLocaleDateString('pt-BR')}</span>
-                      </div>
-                      {terraEditMode && drawMode === 'none' && !editingMapTalhaoId && (
-                        <div className="terra-sidebar-row3">
-                          <button className="terra-btn-draw-sm" onClick={e => { e.stopPropagation(); editNota(n) }} title="Editar">
-                            <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 2l3 3-9 9H2v-3z" strokeLinejoin="round"/></svg>
-                          </button>
-                          <button className="terra-btn-draw-sm terra-btn-del-talhao" onClick={e => { e.stopPropagation(); deleteNota(n.id) }} title="Excluir">
-                            <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h8v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4zM6 2h4M3 4h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )
-              })}
-              {!fazNotas.length && <p className="terra-muted" style={{ padding: '4px 0', fontSize: 'calc(.7rem * var(--fs))' }}>Nenhuma nota no mapa.</p>}
-              </>
+            {!collapsedSections.has('perimetro') && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '6px 0 8px' }}>
+                <button className="terra-btn-draw" onClick={() => { setDrawMode('perimetro'); setDrawPoints([]) }}>
+                  <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="2,14 8,2 14,14" strokeLinejoin="round"/></svg>
+                  {fazenda.perimetro.length >= 3 ? 'Redesenhar Perímetro' : 'Desenhar Perímetro'}
+                </button>
+                {fazenda.perimetro.length >= 3 && (
+                  <button className="terra-btn-draw terra-btn-edit-active" onClick={() => startEditMapTalhao(PERIM_EDIT_ID)}>
+                    <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 8a6 6 0 1112 0A6 6 0 012 8z"/><circle cx="5" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/><circle cx="11" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>
+                    Editar Perímetro
+                  </button>
+                )}
+                {fazenda.perimetro.length >= 3 && (
+                  <button className="terra-btn-draw terra-btn-danger" onClick={() => { if (window.confirm('Limpar o perímetro atual? Os talhões não serão afetados.')) setFazendas(prev => prev.map(f => f.id === fazenda.id ? { ...f, perimetro: [] } : f)) }}>
+                    <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h8v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4zM6 2h4M3 4h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Limpar Perímetro
+                  </button>
+                )}
+              </div>
             )}
             </>
           )}
