@@ -708,28 +708,35 @@ export default function App() {
   const dashMiniMapRef = useCallback((node: HTMLDivElement | null) => {
     if (dashMiniMapInstance.current) { dashMiniMapInstance.current.remove(); dashMiniMapInstance.current = null }
     if (!node) return
-    const fazArr: TerraFazenda[] = (() => { try { return JSON.parse(localStorage.getItem('lion-terra') || '[]') } catch { return [] } })()
-    const talArr: TerraTalhao[] = (() => { try { return JSON.parse(localStorage.getItem('lion-talhoes') || '[]') } catch { return [] } })()
-    if (!fazArr.length) return
-    const fz = fazArr[0]
-    const map = L.map(node, {
-      zoomControl: false, dragging: false, scrollWheelZoom: false,
-      doubleClickZoom: false, touchZoom: false, boxZoom: false,
-      keyboard: false, attributionControl: false,
-    })
-    L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map)
-    if (fz.perimetro?.length >= 3) {
-      const perim = L.polygon(fz.perimetro, { color: '#dc2626', weight: 2, fillOpacity: 0.08, dashArray: '6 3' }).addTo(map)
-      talArr.filter(t => t.fazendaId === fz.id && t.poligono?.length >= 3).forEach(t => {
-        const cor = t.cor || TALHAO_USOS.find(u => u.value === t.uso)?.cor || '#6b7280'
-        L.polygon(t.poligono, { color: cor, weight: 1, fillColor: cor, fillOpacity: 0.15 }).addTo(map)
+    try {
+      const fazArr: TerraFazenda[] = (() => { try { return JSON.parse(localStorage.getItem('lion-terra') || '[]') } catch { return [] } })()
+      const talArr: TerraTalhao[] = (() => { try { return JSON.parse(localStorage.getItem('lion-talhoes') || '[]') } catch { return [] } })()
+      if (!fazArr.length) return
+      const fz = fazArr[0]
+      const map = L.map(node, {
+        zoomControl: false, dragging: false, scrollWheelZoom: false,
+        doubleClickZoom: false, touchZoom: false, boxZoom: false,
+        keyboard: false, attributionControl: false,
       })
-      map.fitBounds(perim.getBounds(), { padding: [10, 10] })
-    } else {
-      map.setView([fz.latitude, fz.longitude], 14)
+      L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map)
+      if (fz.perimetro?.length >= 3) {
+        const perim = L.polygon(fz.perimetro, { color: '#dc2626', weight: 2, fillOpacity: 0.08, dashArray: '6 3' }).addTo(map)
+        talArr.filter(t => t.fazendaId === fz.id && t.poligono?.length >= 3).forEach(t => {
+          const cor = t.cor || TALHAO_USOS.find(u => u.value === t.uso)?.cor || '#6b7280'
+          L.polygon(t.poligono, { color: cor, weight: 1, fillColor: cor, fillOpacity: 0.15 }).addTo(map)
+        })
+        map.fitBounds(perim.getBounds(), { padding: [10, 10] })
+      } else if (fz.latitude && fz.longitude) {
+        map.setView([fz.latitude, fz.longitude], 14)
+      } else {
+        // No coordinates at all — show Brazil center as fallback
+        map.setView([-15.77, -47.93], 4)
+      }
+      dashMiniMapInstance.current = map
+      setTimeout(() => map.invalidateSize(), 200)
+    } catch (err) {
+      console.warn('Minimap dash init error:', err)
     }
-    dashMiniMapInstance.current = map
-    setTimeout(() => map.invalidateSize(), 200)
   }, [sidebarPage])
 
   if (!authReady) return null
