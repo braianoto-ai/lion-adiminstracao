@@ -5912,6 +5912,17 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 .terra-map-sidebar-title { font-size: calc(.72rem * var(--fs)); font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; padding: 8px 0 6px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 6px }
 .terra-toggle-all { font-size: calc(.62rem * var(--fs)); text-transform: none; letter-spacing: 0; background: none; border: 1px solid var(--border); border-radius: var(--radius); padding: 2px 8px; color: var(--text); cursor: pointer; transition: all .15s; white-space: nowrap }
 .terra-toggle-all:hover { background: var(--bg3); color: var(--text3) }
+.terra-section-toggle { display: flex; align-items: center; gap: 6px; padding: 8px 0 6px; border-bottom: 1px solid var(--border); cursor: pointer; font-size: calc(.72rem * var(--fs)); font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .05em; user-select: none }
+.terra-section-toggle:hover { color: var(--purple) }
+.terra-section-toggle .terra-toggle-all { margin-left: auto }
+.terra-section-chevron { display: inline-block; font-size: calc(.6rem * var(--fs)); transition: transform .2s ease; line-height: 1 }
+.terra-section-chevron[data-collapsed="true"] { transform: rotate(-90deg) }
+.terra-talhao-group { margin-top: 2px }
+.terra-group-header { display: flex; align-items: center; gap: 6px; padding: 5px 6px; cursor: pointer; font-size: calc(.68rem * var(--fs)); font-weight: 600; color: var(--text2); border-radius: var(--radius); user-select: none }
+.terra-group-header:hover { background: var(--bg3); color: var(--text3) }
+.terra-group-header .terra-legend-dot { width: 8px; height: 8px; flex-shrink: 0 }
+.terra-group-header .terra-section-chevron { font-size: calc(.55rem * var(--fs)) }
+.terra-group-area { margin-left: auto; font-size: calc(.62rem * var(--fs)); color: var(--text); opacity: .6; font-weight: 400; font-variant-numeric: tabular-nums }
 .terra-talhao-check { width: 14px; height: 14px; flex-shrink: 0; cursor: pointer }
 .terra-talhao-hidden { opacity: .4 }
 .terra-map-talhao-item { display: flex; gap: 10px; padding: 8px 10px; border-radius: var(--radius); transition: background .15s; margin: 0 -2px; border-bottom: 1px solid var(--border) }
