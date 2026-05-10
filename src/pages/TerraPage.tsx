@@ -19,6 +19,7 @@ export default function TerraPage() {
   const [editFazendaId, setEditFazendaId] = useState<string | null>(null)
   const [showTalhaoForm, setShowTalhaoForm] = useState(false)
   const [editTalhaoId, setEditTalhaoId] = useState<string | null>(null)
+  const [mapReady, setMapReady] = useState(false)
   const leafletMap = useRef<L.Map | null>(null)
   const miniMapRef = useRef<HTMLDivElement>(null)
   const miniMapInstance = useRef<L.Map | null>(null)
@@ -166,6 +167,7 @@ export default function TerraPage() {
       drawMarkersRef.current = null
       notasLayerRef.current = null
       initialViewSet.current = false   // reset so next mount can position correctly
+      setMapReady(false)
       return
     }
     if (leafletMap.current) return
@@ -191,6 +193,7 @@ export default function TerraPage() {
       drawMarkersRef.current = L.layerGroup().addTo(map)
       notasLayerRef.current = L.layerGroup().addTo(map)
       leafletMap.current = map
+      setMapReady(true)
       // ResizeObserver keeps Leaflet in sync when sidebar or window resizes.
       // CRITICAL: only start observing AFTER initial tiles have loaded.
       // If ResizeObserver fires while tiles are still in-flight it calls
@@ -255,7 +258,7 @@ export default function TerraPage() {
       leafletMap.current.setView([fazenda.latitude, fazenda.longitude], 14)
       initialViewSet.current = true
     }
-  }, [fazenda, fazTalhoes, tab, hiddenTalhoes, drawMode, editingMapTalhaoId, adminTalhaoOpacity])
+  }, [fazenda, fazTalhoes, tab, hiddenTalhoes, drawMode, editingMapTalhaoId, adminTalhaoOpacity, mapReady])
 
   useEffect(() => {
     if (tab !== 'visao' || !fazenda || !miniMapRef.current) return
