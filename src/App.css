@@ -5950,7 +5950,7 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 .terra-sidebar-toggle:hover { background: var(--bg3); color: var(--text3) }
 
 /* Floating action buttons on map */
-.terra-map-fab { position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 999; display: flex; gap: 6px; background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 6px; box-shadow: var(--shadow) }
+.terra-map-fab { position: absolute; bottom: 24px; right: 16px; z-index: 999; display: flex; gap: 6px; background: var(--bg2); border: 1px solid var(--border2); border-radius: var(--radius-lg); padding: 6px; box-shadow: var(--shadow) }
 .terra-fab-btn { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 14px; border-radius: var(--radius); background: none; border: 1px solid transparent; color: var(--text); cursor: pointer; transition: all .15s; font-size: calc(.68rem * var(--fs)); font-weight: 500 }
 .terra-fab-btn:hover { background: var(--bg3); color: var(--text3); border-color: var(--border2) }
 .terra-fab-btn svg { flex-shrink: 0 }
