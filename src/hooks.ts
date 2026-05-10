@@ -110,17 +110,17 @@ export function useCloudTable<T extends { id: string }>(
         const attempt = async (): Promise<void> => {
           try {
             if (next.length > 0) {
-              const { error: upsertErr } = await supabase.from(tableName).upsert(
+              const { error: upsertErr } = await supabase!.from(tableName).upsert(
                 next.map(item => ({ id: item.id, user_id: ownerMap.current.get(item.id) || uid, data: item })),
                 { onConflict: 'id' }
               )
               if (upsertErr) throw upsertErr
               const keepIds = next.map(i => i.id)
-              await supabase.from(tableName).delete()
+              await supabase!.from(tableName).delete()
                 .eq('user_id', uid)
                 .not('id', 'in', `(${keepIds.join(',')})`)
             } else {
-              await supabase.from(tableName).delete().eq('user_id', uid)
+              await supabase!.from(tableName).delete().eq('user_id', uid)
             }
             SYNC_ERRORS.delete(lsKey)
           } catch (err) {
@@ -191,7 +191,7 @@ export function useCloudTable<T extends { id: string }>(
       )
       .subscribe()
 
-    return () => { supabase.removeChannel(channel) }
+    return () => { supabase!.removeChannel(channel) }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId, tableName, lsKey])
 

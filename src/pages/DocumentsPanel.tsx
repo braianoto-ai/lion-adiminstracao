@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { useCloudTable } from '../hooks'
 import { DOC_CATEGORIES, BUCKET } from '../constants'
-import { fmtDate } from '../utils'
 import type { DocMeta } from '../types'
 
 export default 

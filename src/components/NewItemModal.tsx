@@ -1,8 +1,67 @@
 import { useState } from 'react'
 import { useCloudTable } from '../hooks'
-import type { ModalType, SidebarPage, Imovel, Produto, Vehicle } from '../types'
+import type { ModalType, SidebarPage, Imovel, Produto, Vehicle, FieldDef } from '../types'
 
-export default 
+const MODAL_CONFIG: Record<string, { title: string; icon: React.ReactNode; color: string; fields: FieldDef[] }> = {
+  imovel: {
+    title: 'Novo Imóvel',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+      </svg>
+    ),
+    color: 'blue',
+    fields: [
+      { key: 'descricao', label: 'Descrição', type: 'text', placeholder: 'Ex: Apartamento Jardins' },
+      { key: 'tipo', label: 'Tipo', type: 'select', options: ['Residencial', 'Comercial', 'Rural', 'Terreno', 'Galpão'] },
+      { key: 'valor', label: 'Valor de Compra (R$)', type: 'number', placeholder: '0,00' },
+      { key: 'valorAtual', label: 'Valor Atual (R$)', type: 'number', placeholder: '0,00' },
+      { key: 'endereco', label: 'Endereço', type: 'text', placeholder: 'Rua, número, cidade' },
+      { key: 'area', label: 'Área (m²)', type: 'number', placeholder: '0' },
+    ],
+  },
+  carro: {
+    title: 'Novo Veículo',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <rect x="1" y="9" width="22" height="11" rx="2"/>
+        <path d="M6 9V7a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
+        <circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/>
+      </svg>
+    ),
+    color: 'amber',
+    fields: [
+      { key: 'marca', label: 'Marca', type: 'text', placeholder: 'Ex: BMW, Toyota, Fiat' },
+      { key: 'modelo', label: 'Modelo', type: 'text', placeholder: 'Ex: X5, Corolla, Pulse' },
+      { key: 'ano', label: 'Ano', type: 'number', placeholder: '2024' },
+      { key: 'placa', label: 'Placa', type: 'text', placeholder: 'ABC-1234' },
+      { key: 'valor', label: 'Valor de Compra (R$)', type: 'number', placeholder: '0,00' },
+      { key: 'valorAtual', label: 'Valor Atual (R$)', type: 'number', placeholder: '0,00' },
+      { key: 'km', label: 'Quilometragem', type: 'number', placeholder: '0' },
+    ],
+  },
+  produto: {
+    title: 'Novo Produto',
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+        <line x1="12" y1="22.08" x2="12" y2="12"/>
+      </svg>
+    ),
+    color: 'green',
+    fields: [
+      { key: 'nome', label: 'Nome do Produto', type: 'text', placeholder: 'Ex: MacBook Pro 14"' },
+      { key: 'categoria', label: 'Categoria', type: 'text', placeholder: 'Ex: Eletrônico, Móvel' },
+      { key: 'valor', label: 'Valor Unitário (R$)', type: 'number', placeholder: '0,00' },
+      { key: 'quantidade', label: 'Quantidade', type: 'number', placeholder: '1' },
+      { key: 'fornecedor', label: 'Fornecedor', type: 'text', placeholder: 'Nome do fornecedor' },
+      { key: 'descricao', label: 'Descrição', type: 'text', placeholder: 'Detalhes adicionais' },
+    ],
+  },
+}
+
+export default
 function NewItemModal({ type, onClose, onNavigate }: { type: ModalType; onClose: () => void; onNavigate?: (page: SidebarPage) => void }) {
   const [form, setForm] = useState<Record<string, string>>({})
   const [error, setError] = useState('')
