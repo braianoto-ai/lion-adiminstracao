@@ -1,15 +1,18 @@
 import { useState } from 'react'
 import { useCloudTable } from '../hooks'
 import { IMOVEL_INIT, IMOVEL_TIPOS, PRODUTO_CATS, PRODUTO_INIT } from '../constants'
-import type { Imovel, Produto, Vehicle } from '../types'
+import type { Imovel, Produto, Vehicle, DocMeta } from '../types'
+import ImovelExpansion from './ImovelExpansion'
 
 export default 
 function PatrimonioPage() {
   const [imoveis, setImoveis] = useCloudTable<Imovel>('imoveis', 'lion-imoveis')
   const [produtos, setProdutos] = useCloudTable<Produto>('produtos', 'lion-produtos')
   const [vehicles, setVehicles] = useCloudTable<Vehicle>('vehicles', 'lion-vehicles')
+  const [docs, setDocs] = useCloudTable<DocMeta>('documents', 'lion-docs-meta')
 
   const [tab, setTab] = useState<'imoveis' | 'veiculos' | 'produtos'>('imoveis')
+  const [expandedImovelId, setExpandedImovelId] = useState<string | null>(null)
   const [showImovelForm, setShowImovelForm] = useState(false)
   const [editImovelId, setEditImovelId] = useState<string | null>(null)
   const [imovelForm, setImovelForm] = useState({ ...IMOVEL_INIT })
@@ -172,32 +175,46 @@ function PatrimonioPage() {
             <div className="patr-list">
               {imoveis.map(im => {
                 const gain = (parseFloat(im.valorAtual || '0') || 0) - (parseFloat(im.valor || '0') || 0)
+                const isExpanded = expandedImovelId === im.id
+                const docCount = docs.filter(d => d.assetId === im.id || (!d.assetId && d.asset === im.descricao)).length
                 return (
-                  <div key={im.id} className="patr-card">
-                    <div className="patr-card-icon patr-card-icon-blue">
-                      <svg viewBox="0 0 20 20" fill="none"><path d="M3 9l7-6 7 6v9H3V9z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M7 18V12h6v6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
-                    </div>
-                    <div className="patr-card-body">
-                      <div className="patr-card-title">{im.descricao}</div>
-                      <div className="patr-card-meta">
-                        {im.tipo && <span className="patr-badge">{im.tipo}</span>}
-                        {im.area && <span>{im.area} m²</span>}
-                        {im.endereco && <span className="patr-card-addr">{im.endereco}</span>}
+                  <div key={im.id} className={`patr-card patr-card-expandable${isExpanded ? ' patr-card-expanded' : ''}`}>
+                    <div className="patr-card-main" onClick={() => setExpandedImovelId(isExpanded ? null : im.id)}>
+                      <div className="patr-card-icon patr-card-icon-blue">
+                        <svg viewBox="0 0 20 20" fill="none"><path d="M3 9l7-6 7 6v9H3V9z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round"/><path d="M7 18V12h6v6" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
                       </div>
-                      <div className="patr-card-values">
-                        <span>Compra: {fmtR(im.valor)}</span>
-                        {im.valorAtual && <span>Atual: {fmtR(im.valorAtual)}</span>}
-                        {gain !== 0 && <span className={gain > 0 ? 'patr-gain-pos' : 'patr-gain-neg'}>{gain > 0 ? '+' : ''}{fmtR(gain)}</span>}
+                      <div className="patr-card-body">
+                        <div className="patr-card-title">
+                          {im.descricao}
+                          {docCount > 0 && <span className="patr-badge" style={{ marginLeft: 8, fontSize: 'calc(.65rem * var(--fs))' }}>{docCount} doc{docCount > 1 ? 's' : ''}</span>}
+                          {(im.condominioValue || 0) > 0 && <span className="patr-badge" style={{ marginLeft: 4, fontSize: 'calc(.65rem * var(--fs))' }}>Condo</span>}
+                        </div>
+                        <div className="patr-card-meta">
+                          {im.tipo && <span className="patr-badge">{im.tipo}</span>}
+                          {im.area && <span>{im.area} m²</span>}
+                          {im.endereco && <span className="patr-card-addr">{im.endereco}</span>}
+                        </div>
+                        <div className="patr-card-values">
+                          <span>Compra: {fmtR(im.valor)}</span>
+                          {im.valorAtual && <span>Atual: {fmtR(im.valorAtual)}</span>}
+                          {gain !== 0 && <span className={gain > 0 ? 'patr-gain-pos' : 'patr-gain-neg'}>{gain > 0 ? '+' : ''}{fmtR(gain)}</span>}
+                        </div>
                       </div>
+                      <div className="patr-card-actions">
+                        <button className="patr-icon-btn" onClick={e => { e.stopPropagation(); startEditImovel(im) }} title="Editar">
+                          <svg viewBox="0 0 14 14" fill="none"><path d="M2 10l7-7 2 2-7 7H2v-2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
+                        </button>
+                        <button className="patr-icon-btn patr-icon-btn-del" onClick={e => { e.stopPropagation(); setImoveis(prev => prev.filter(x => x.id !== im.id)) }} title="Excluir">
+                          <svg viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                        </button>
+                      </div>
+                      <svg className={`patr-chevron${isExpanded ? ' expanded' : ''}`} viewBox="0 0 16 16" fill="none">
+                        <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
                     </div>
-                    <div className="patr-card-actions">
-                      <button className="patr-icon-btn" onClick={() => startEditImovel(im)} title="Editar">
-                        <svg viewBox="0 0 14 14" fill="none"><path d="M2 10l7-7 2 2-7 7H2v-2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
-                      </button>
-                      <button className="patr-icon-btn patr-icon-btn-del" onClick={() => setImoveis(prev => prev.filter(x => x.id !== im.id))} title="Excluir">
-                        <svg viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
-                      </button>
-                    </div>
+                    {isExpanded && (
+                      <ImovelExpansion imovel={im} docs={docs} setDocs={setDocs} setImoveis={setImoveis} />
+                    )}
                   </div>
                 )
               })}

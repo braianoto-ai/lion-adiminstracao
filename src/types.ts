@@ -24,6 +24,9 @@ export interface Imovel {
   valorAtual: string
   endereco: string
   area: string
+  condominioValue?: number
+  condominioDueDay?: number
+  condominioPayments?: Record<string, 'pago' | 'pendente' | 'atrasado'>
   createdAt: string
 }
 
@@ -195,6 +198,7 @@ export interface DocMeta {
   name: string
   category: string
   asset: string
+  assetId?: string
   notes: string
   fileUrl: string
   fileName: string
