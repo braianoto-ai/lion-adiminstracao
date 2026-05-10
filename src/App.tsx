@@ -1,12 +1,15 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import './App.css'
 import 'leaflet/dist/leaflet.css'
+import L from 'leaflet'
 import { supabase } from './lib/supabase'
 import LoginPage from './LoginPage'
 import type { User } from '@supabase/supabase-js'
 import { UserCtx, DATA_KEYS } from './context'
-import { useCloudTable } from './hooks'
-import type { ModalType, SidebarPage, Folder, Goal, Rental, Maintenance, Vehicle } from './types'
+import { useCloudTable, useSyncError } from './hooks'
+import type { ModalType, SidebarPage, TerraFazenda, TerraTalhao, Folder, Goal, Transaction, Rental, Vehicle, Maintenance, Collector, Bill, AppAlert, ActivityItem, SearchResult, FamilyMember } from './types'
+import { TALHAO_USOS } from './constants'
+import { fmtDate, effectiveStatus } from './utils'
 import TerraPage from './pages/TerraPage'
 import PublicMapPage from './pages/PublicMapPage'
 import PaymentHubPage from './pages/PaymentHubPage'
@@ -31,154 +34,6 @@ import OnboardingWizard from './components/OnboardingWizard'
 
 
 
-type BillStatus = 'em_aberto' | 'pago' | 'vencido' | 'cancelado'
-type BillRecurrence = 'mensal' | 'unica' | 'anual' | 'semanal'
-
-interface Collector {
-  id: string
-  name: string
-  category: string
-  color: string
-  createdAt: string
-}
-
-interface Bill {
-  id: string
-  collectorId: string
-  description: string
-  amount: number
-  dueDate: string
-  status: BillStatus
-  recurrence: BillRecurrence
-  paymentLink?: string
-  barcode?: string
-  paidAt?: string
-  notes?: string
-  createdAt: string
-  updatedAt: string
-}
-
-const BILL_CATEGORIES = ['Energia','Água','Internet','Telefonia','Condomínio','Aluguel','Cartão','Streaming','Educação','Saúde','Imposto','Outros']
-const BILL_COLORS = ['#7c3aed','#3b82f6','#10b981','#f59e0b','#ef4444','#ec4899','#06b6d4','#84cc16','#a855f7','#f97316']
-
-interface FamilyMember {
-  id: string
-  name: string
-  role: string
-  color: string
-}
-
-// ─── Calculator ───────────────────────────────────────────────────────────────
-
-
-// ─── Notepad ──────────────────────────────────────────────────────────────────
-
-
-
-
-// ─── New Item Modal ───────────────────────────────────────────────────────────
-
-export interface FieldDef {
-  key: string
-  label: string
-  type: string
-  placeholder?: string
-  options?: string[]
-}
-
-export const MODAL_CONFIG: Record<string, { title: string; icon: React.ReactNode; color: string; fields: FieldDef[] }> = {
-  imovel: {
-    title: 'Novo Imóvel',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-      </svg>
-    ),
-    color: 'blue',
-    fields: [
-      { key: 'descricao', label: 'Descrição', type: 'text', placeholder: 'Ex: Apartamento Jardins' },
-      { key: 'tipo', label: 'Tipo', type: 'select', options: ['Residencial', 'Comercial', 'Rural', 'Terreno', 'Galpão'] },
-      { key: 'valor', label: 'Valor de Compra (R$)', type: 'number', placeholder: '0,00' },
-      { key: 'valorAtual', label: 'Valor Atual (R$)', type: 'number', placeholder: '0,00' },
-      { key: 'endereco', label: 'Endereço', type: 'text', placeholder: 'Rua, número, cidade' },
-      { key: 'area', label: 'Área (m²)', type: 'number', placeholder: '0' },
-    ],
-  },
-  carro: {
-    title: 'Novo Veículo',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <rect x="1" y="9" width="22" height="11" rx="2"/>
-        <path d="M6 9V7a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
-        <circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/>
-      </svg>
-    ),
-    color: 'amber',
-    fields: [
-      { key: 'marca', label: 'Marca', type: 'text', placeholder: 'Ex: BMW, Toyota, Fiat' },
-      { key: 'modelo', label: 'Modelo', type: 'text', placeholder: 'Ex: X5, Corolla, Pulse' },
-      { key: 'ano', label: 'Ano', type: 'number', placeholder: '2024' },
-      { key: 'placa', label: 'Placa', type: 'text', placeholder: 'ABC-1234' },
-      { key: 'valor', label: 'Valor de Compra (R$)', type: 'number', placeholder: '0,00' },
-      { key: 'valorAtual', label: 'Valor Atual (R$)', type: 'number', placeholder: '0,00' },
-      { key: 'km', label: 'Quilometragem', type: 'number', placeholder: '0' },
-    ],
-  },
-  produto: {
-    title: 'Novo Produto',
-    icon: (
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-        <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
-        <line x1="12" y1="22.08" x2="12" y2="12"/>
-      </svg>
-    ),
-    color: 'green',
-    fields: [
-      { key: 'nome', label: 'Nome do Produto', type: 'text', placeholder: 'Ex: MacBook Pro 14"' },
-      { key: 'categoria', label: 'Categoria', type: 'text', placeholder: 'Ex: Eletrônico, Móvel' },
-      { key: 'valor', label: 'Valor Unitário (R$)', type: 'number', placeholder: '0,00' },
-      { key: 'quantidade', label: 'Quantidade', type: 'number', placeholder: '1' },
-      { key: 'fornecedor', label: 'Fornecedor', type: 'text', placeholder: 'Nome do fornecedor' },
-      { key: 'descricao', label: 'Descrição', type: 'text', placeholder: 'Detalhes adicionais' },
-    ],
-  },
-}
-
-
-// ─── Finance Panel ────────────────────────────────────────────────────────────
-
-type TxType = 'receita' | 'despesa'
-
-interface Transaction {
-  id: string
-  type: TxType
-  category: string
-  description: string
-  amount: number
-  date: string
-  recurring?: boolean
-  recurringId?: string
-}
-
-
-// ─── Bank import parsers ──────────────────────────────────────────────────────
-
-
-// ─── Patrimony Chart Section ──────────────────────────────────────────────────
-
-
-
-
-// ─── Alerts Panel ────────────────────────────────────────────────────────────
-
-interface AppAlert {
-  id: string
-  severity: 'danger' | 'warning'
-  category: string
-  title: string
-  detail: string
-}
 
 function buildAlerts(): AppAlert[] {
   const alerts: AppAlert[] = []
@@ -246,7 +101,6 @@ function buildAlerts(): AppAlert[] {
   alerts.sort((a, b) => (a.severity === 'danger' ? 0 : 1) - (b.severity === 'danger' ? 0 : 1))
   return alerts
 }
-
 
 // ─── Dashboard data ───────────────────────────────────────────────────────────
 
@@ -324,8 +178,6 @@ function relTime(ts: number): string {
   return `${Math.floor(days / 30)}mês atrás`
 }
 
-interface ActivityItem { id: string; icon: React.ReactNode; title: string; sub: string; time: string; color: string; ts: number }
-
 function buildActivity(): ActivityItem[] {
   const items: ActivityItem[] = []
 
@@ -363,58 +215,7 @@ function buildActivity(): ActivityItem[] {
   return items.sort((a, b) => b.ts - a.ts).slice(0, 8)
 }
 
-// ─── Onboarding ───────────────────────────────────────────────────────────────
-
-export const OB_STEPS = [
-  {
-    icon: (
-      <svg viewBox="0 0 48 48" fill="none">
-        <rect width="48" height="48" rx="14" fill="url(#obg)"/>
-        <path d="M12 34L18 18l8 13 6-8 6 15" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-        <defs><linearGradient id="obg" x1="0" y1="0" x2="48" y2="48"><stop stopColor="#3b82f6"/><stop offset="1" stopColor="#1d4ed8"/></linearGradient></defs>
-      </svg>
-    ),
-    title: 'Bem-vindo ao Lion Admin',
-    body: 'Seu painel completo de gestão financeira e patrimonial. Em menos de 2 minutos você estará configurado e pronto para usar.',
-    cta: 'Começar tour',
-  },
-  {
-    icon: <svg viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="14" fill="rgba(59,130,246,.15)"/><path d="M24 8v32M31 14H19.5a5 5 0 0 0 0 10h9a5 5 0 0 1 0 10H16" stroke="var(--blue)" strokeWidth="2.5" strokeLinecap="round"/></svg>,
-    title: 'Registre suas Finanças',
-    body: 'Clique no botão "Finanças" (ou pressione F) para lançar receitas e despesas. Acompanhe seu saldo mensal e histórico de transações.',
-    cta: 'Entendido',
-  },
-  {
-    icon: <svg viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="14" fill="rgba(16,185,129,.15)"/><circle cx="24" cy="24" r="14" stroke="var(--green)" strokeWidth="2.5"/><circle cx="24" cy="24" r="8" stroke="var(--green)" strokeWidth="2"/><circle cx="24" cy="24" r="3" fill="var(--green)"/></svg>,
-    title: 'Defina Metas Financeiras',
-    body: 'Crie objetivos como reserva de emergência, viagem ou compra de imóvel. Acompanhe o progresso em tempo real com barras visuais.',
-    cta: 'Entendido',
-  },
-  {
-    icon: <svg viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="14" fill="rgba(245,158,11,.15)"/><path d="M8 20l16-14 16 14v20a3 3 0 0 1-3 3H11a3 3 0 0 1-3-3z" stroke="var(--amber)" strokeWidth="2.5"/><polyline points="18,43 18,28 30,28 30,43" stroke="var(--amber)" strokeWidth="2.5"/></svg>,
-    title: 'Gerencie Imóveis e Aluguéis',
-    body: 'Cadastre seus imóveis, controle recebimento de aluguéis, registre manutenções e armazene documentos importantes com segurança.',
-    cta: 'Entendido',
-  },
-  {
-    icon: <svg viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="14" fill="rgba(16,185,129,.15)"/><path d="M14 26l8 8 14-16" stroke="var(--green)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-    title: 'Tudo pronto!',
-    body: 'Use os botões flutuantes à direita ou os atalhos de teclado (pressione ? para ver todos). Seus dados ficam salvos localmente no seu dispositivo.',
-    cta: 'Ir para o painel',
-  },
-]
-
-
 // ─── Search ───────────────────────────────────────────────────────────────────
-
-interface SearchResult {
-  id: string
-  type: string
-  label: string
-  sub: string
-  color: string
-  section: string
-}
 
 function buildSearchIndex(q: string): SearchResult[] {
   if (q.trim().length < 2) return []
@@ -709,171 +510,6 @@ function AppearancePage({ themeId, setThemeId, fontSize, setFontSize, accentId, 
 // ─── Settings Page ────────────────────────────────────────────────────────────
 
 
-// ─── Payment Hub ──────────────────────────────────────────────────────────────
-
-const BILL_STATUS_LABEL: Record<BillStatus, string> = {
-  em_aberto: 'Em aberto', pago: 'Pago', vencido: 'Vencido', cancelado: 'Cancelado',
-}
-const BILL_RECURRENCE_LABEL: Record<BillRecurrence, string> = {
-  mensal: 'Mensal', unica: 'Única', anual: 'Anual', semanal: 'Semanal',
-}
-
-function isOverdue(bill: Bill): boolean {
-  if (bill.status !== 'em_aberto') return false
-  return new Date(bill.dueDate + 'T23:59:59') < new Date()
-}
-
-function effectiveStatus(bill: Bill): BillStatus {
-  return isOverdue(bill) ? 'vencido' : bill.status
-}
-
-const fmtDate = (s: string) => { if (!s) return '—'; const d = new Date(s + 'T12:00:00'); return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' }) }
-
-const COLL_INIT = { name: '', category: BILL_CATEGORIES[0], color: BILL_COLORS[0] }
-const BILL_INIT = { collectorId: '', description: '', amount: '', dueDate: '', status: 'em_aberto' as BillStatus, recurrence: 'mensal' as BillRecurrence, paymentLink: '', barcode: '', notes: '' }
-
-export function CollectorForm({ initial, onSave, onCancel }: { initial: typeof COLL_INIT; onSave: (v: typeof COLL_INIT) => void; onCancel: () => void }) {
-  const [form, setForm] = useState(initial)
-  const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
-  return (
-    <form className="ph-modal-form" onSubmit={e => { e.preventDefault(); if (!form.name.trim()) return; onSave(form) }}>
-      <div className="ph-field">
-        <label>Nome *</label>
-        <input autoFocus value={form.name} onChange={e => f('name', e.target.value)} placeholder="Ex: CEMIG, Claro, Condomínio…" required />
-      </div>
-      <div className="ph-field">
-        <label>Categoria</label>
-        <select value={form.category} onChange={e => f('category', e.target.value)}>
-          {BILL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-      </div>
-      <div className="ph-field">
-        <label>Cor</label>
-        <div className="ph-color-picker">
-          {BILL_COLORS.map(c => (
-            <button key={c} type="button" className={`ph-color-dot${form.color === c ? ' ph-color-active' : ''}`}
-              style={{ background: c }} onClick={() => f('color', c)} />
-          ))}
-        </div>
-      </div>
-      <div className="ph-form-actions">
-        <button type="button" className="btn-ghost" onClick={onCancel}>Cancelar</button>
-        <button type="submit" className="btn-accent">Salvar</button>
-      </div>
-    </form>
-  )
-}
-
-export function BillForm({ initial, collectors, onSave, onCancel, onCreateCollector }: {
-  initial: typeof BILL_INIT; collectors: Collector[]
-  onSave: (v: typeof BILL_INIT) => void; onCancel: () => void
-  onCreateCollector?: (name: string) => string
-}) {
-  const [form, setForm] = useState(initial)
-  const [newCollName, setNewCollName] = useState('')
-  const [showNewColl, setShowNewColl] = useState(false)
-  const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
-
-  const handleAddCollector = () => {
-    if (!newCollName.trim() || !onCreateCollector) return
-    const id = onCreateCollector(newCollName.trim())
-    f('collectorId', id)
-    setNewCollName('')
-    setShowNewColl(false)
-  }
-
-  return (
-    <form className="ph-modal-form" onSubmit={e => { e.preventDefault(); if (!form.amount || !form.dueDate) return; onSave(form) }}>
-      <div className="ph-field">
-        <label>Cobrador</label>
-        {!showNewColl ? (
-          <div className="ph-coll-select-row">
-            <select value={form.collectorId} onChange={e => f('collectorId', e.target.value)}>
-              <option value="">Selecione…</option>
-              {collectors.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-            </select>
-            <button type="button" className="ph-coll-add-btn" onClick={() => setShowNewColl(true)} title="Novo cobrador">
-              <svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-            </button>
-          </div>
-        ) : (
-          <div className="ph-coll-select-row">
-            <input value={newCollName} onChange={e => setNewCollName(e.target.value)} placeholder="Nome do cobrador" autoFocus
-              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddCollector() } }} />
-            <button type="button" className="ph-coll-add-btn ph-coll-confirm" onClick={handleAddCollector} title="Criar" disabled={!newCollName.trim()}>
-              <svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            </button>
-            <button type="button" className="ph-coll-add-btn" onClick={() => { setShowNewColl(false); setNewCollName('') }} title="Cancelar">
-              <svg viewBox="0 0 14 14" fill="none"><path d="M4 4l6 6M10 4l-6 6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
-            </button>
-          </div>
-        )}
-      </div>
-      <div className="ph-field">
-        <label>Descrição</label>
-        <input value={form.description} onChange={e => f('description', e.target.value)} placeholder="Ex: Fatura março 2026" />
-      </div>
-      <div className="ph-form-row">
-        <div className="ph-field">
-          <label>Valor (R$) *</label>
-          <input type="number" min="0.01" step="0.01" value={form.amount} onChange={e => f('amount', e.target.value)} placeholder="0,00" required />
-        </div>
-        <div className="ph-field">
-          <label>Vencimento *</label>
-          <input type="date" value={form.dueDate} onChange={e => f('dueDate', e.target.value)} required />
-        </div>
-      </div>
-      <div className="ph-form-row">
-        <div className="ph-field">
-          <label>Recorrência</label>
-          <select value={form.recurrence} onChange={e => f('recurrence', e.target.value)}>
-            {(Object.entries(BILL_RECURRENCE_LABEL) as [BillRecurrence, string][]).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-          </select>
-        </div>
-        <div className="ph-field">
-          <label>Status</label>
-          <select value={form.status} onChange={e => f('status', e.target.value as BillStatus)}>
-            {(Object.entries(BILL_STATUS_LABEL) as [BillStatus, string][]).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
-          </select>
-        </div>
-      </div>
-      <div className="ph-field">
-        <label>Link de pagamento</label>
-        <input type="url" value={form.paymentLink} onChange={e => f('paymentLink', e.target.value)} placeholder="https://…" />
-      </div>
-      <div className="ph-field">
-        <label>Código de barras / PIX</label>
-        <input value={form.barcode} onChange={e => f('barcode', e.target.value)} placeholder="Cole o código aqui" />
-      </div>
-      <div className="ph-field">
-        <label>Observações</label>
-        <input value={form.notes} onChange={e => f('notes', e.target.value)} placeholder="Opcional" />
-      </div>
-      <div className="ph-form-actions">
-        <button type="button" className="btn-ghost" onClick={onCancel}>Cancelar</button>
-        <button type="submit" className="btn-accent">Salvar</button>
-      </div>
-    </form>
-  )
-}
-
-export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="ph-modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="ph-modal">
-        <div className="ph-modal-header">
-          <span className="ph-modal-title">{title}</span>
-          <button className="ph-modal-close" onClick={onClose}>
-            <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  )
-}
-
-// ─── Terra Page ──────────────────────────────────────────────────────────────
 
 
 
@@ -893,6 +529,7 @@ export default function App() {
   const [viewOwner, setViewOwner] = useState('')
   const [showOnboarding, setShowOnboarding] = useState(() => !localStorage.getItem('lion-onboarded'))
   const finishOnboarding = () => { localStorage.setItem('lion-onboarded', '1'); setShowOnboarding(false) }
+  const syncError = useSyncError()
 
   interface FxRate { code: string; bid: string; pct: string }
   const [fxRates, setFxRates] = useState<FxRate[]>([])
@@ -1071,6 +708,34 @@ export default function App() {
     return () => { window.removeEventListener('keydown', onKey); clearTimeout(hintTimer) }
   }, [showCalc, showNp, showFin, showSim, showDocs, showAlerts])
 
+  const dashMiniMapInstance = useRef<L.Map | null>(null)
+  const dashMiniMapRef = useCallback((node: HTMLDivElement | null) => {
+    if (dashMiniMapInstance.current) { dashMiniMapInstance.current.remove(); dashMiniMapInstance.current = null }
+    if (!node) return
+    const fazArr: TerraFazenda[] = (() => { try { return JSON.parse(localStorage.getItem('lion-terra') || '[]') } catch { return [] } })()
+    const talArr: TerraTalhao[] = (() => { try { return JSON.parse(localStorage.getItem('lion-talhoes') || '[]') } catch { return [] } })()
+    if (!fazArr.length) return
+    const fz = fazArr[0]
+    const map = L.map(node, {
+      zoomControl: false, dragging: false, scrollWheelZoom: false,
+      doubleClickZoom: false, touchZoom: false, boxZoom: false,
+      keyboard: false, attributionControl: false,
+    })
+    L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map)
+    if (fz.perimetro?.length >= 3) {
+      const perim = L.polygon(fz.perimetro, { color: '#dc2626', weight: 2, fillOpacity: 0.08, dashArray: '6 3' }).addTo(map)
+      talArr.filter(t => t.fazendaId === fz.id && t.poligono?.length >= 3).forEach(t => {
+        const cor = t.cor || TALHAO_USOS.find(u => u.value === t.uso)?.cor || '#6b7280'
+        L.polygon(t.poligono, { color: cor, weight: 1, fillColor: cor, fillOpacity: 0.15 }).addTo(map)
+      })
+      map.fitBounds(perim.getBounds(), { padding: [10, 10] })
+    } else {
+      map.setView([fz.latitude, fz.longitude], 14)
+    }
+    dashMiniMapInstance.current = map
+    setTimeout(() => map.invalidateSize(), 200)
+  }, [sidebarPage])
+
   if (!authReady) return null
 
   // Public map route — no auth required
@@ -1083,6 +748,13 @@ export default function App() {
     <div className={`app${viewMode ? ' view-mode' : ''}${sidebarFixed ? ' sidebar-pinned' : ''}`}>
       {kbHint && <div className="kb-toast">{kbHint}</div>}
       {showOnboarding && <OnboardingWizard onDone={finishOnboarding} />}
+
+      {syncError && (
+        <div className="sync-error-toast">
+          <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="8" cy="8" r="7"/><path d="M8 4v5M8 11v1" strokeLinecap="round"/></svg>
+          <span>{syncError}</span>
+        </div>
+      )}
 
       {/* ── Sidebar ── */}
       {showSidebar && <div className="sidebar-overlay" onClick={() => setShowSidebar(false)} />}
@@ -1465,6 +1137,111 @@ export default function App() {
 
 
             </div>
+
+            {/* ── Row 3: Terra overview ── */}
+            {(() => {
+              const dashFazendas: TerraFazenda[] = (() => { try { return JSON.parse(localStorage.getItem('lion-terra') || '[]') } catch { return [] } })()
+              const dashTalhoes: TerraTalhao[] = (() => { try { return JSON.parse(localStorage.getItem('lion-talhoes') || '[]') } catch { return [] } })()
+              if (dashFazendas.length === 0) return null
+              const faz = dashFazendas[0]
+              const fazTal = dashTalhoes.filter(t => t.fazendaId === faz.id)
+              const areaUtilVal = faz.areaUtil || 0
+              const utilizPct = faz.areaTotal > 0 ? ((areaUtilVal / faz.areaTotal) * 100).toFixed(1) : '0'
+              const somaTal = fazTal.reduce((s, t) => s + t.areaHa, 0)
+              const fmtHa2 = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' ha'
+
+              const pieItems = fazTal.length > 0
+                ? fazTal.map(t => {
+                    const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
+                    return { label: t.nome, value: t.areaHa, cor: t.cor || usoInfo?.cor || '#6b7280' }
+                  }).filter(i => i.value > 0)
+                : [
+                    { label: 'Lavoura', value: faz.areaLavoura, cor: '#f59e0b' },
+                    { label: 'Pastagem', value: faz.areaPastagem, cor: '#22c55e' },
+                    { label: 'APP', value: faz.areaApp, cor: '#0d9488' },
+                    { label: 'Reflorestamento', value: faz.areaReflorestamento, cor: '#65a30d' },
+                    { label: 'Benfeitorias', value: faz.areaBenfeitorias, cor: '#8b5cf6' },
+                  ].filter(i => i.value > 0)
+
+              const pieTotal = pieItems.reduce((s, i) => s + i.value, 0)
+              let pieCum = 0
+              const slices = pieTotal > 0 ? pieItems.map(item => {
+                const startFrac = pieCum / pieTotal
+                pieCum += item.value
+                const frac = item.value / pieTotal
+                const r = 70
+                const circ = 2 * Math.PI * r
+                return { ...item, strokeDasharray: `${frac * circ} ${circ}`, strokeDashoffset: -startFrac * circ, pct: ((item.value / pieTotal) * 100).toFixed(0) }
+              }) : []
+
+              const docs = [faz.geoReferenciado, faz.licencaAmbiental, !!faz.matricula, !!faz.carNumero]
+              const docsOk = docs.filter(Boolean).length
+
+              return (
+                <div className="bento-row bento-r3">
+                  <div className="bc bc-metric">
+                    <div className="metric-ico mi-green">
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 18C6 10 14 10 18 18" strokeLinecap="round"/><path d="M10 2c2 4 6 5 8 4-1 3-5 5-8 3-3 2-7 0-8-3 2 1 6 0 8-4z" strokeLinejoin="round"/></svg>
+                    </div>
+                    <div className="metric-lbl">Área Útil</div>
+                    <div className="metric-val">{fmtHa2(areaUtilVal)}</div>
+                    <div className={`metric-chg ${Number(utilizPct) >= 70 ? 'mc-pos' : 'mc-neu'}`}>{utilizPct}% de utilização</div>
+                  </div>
+
+                  <div className="bc bc-metric">
+                    <div className="metric-ico mi-amber">
+                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="7" height="7" rx="1" strokeLinejoin="round"/><rect x="11" y="2" width="7" height="7" rx="1" strokeLinejoin="round"/><rect x="2" y="11" width="7" height="7" rx="1" strokeLinejoin="round"/><rect x="11" y="11" width="7" height="7" rx="1" strokeLinejoin="round"/></svg>
+                    </div>
+                    <div className="metric-lbl">Talhões</div>
+                    <div className="metric-val">{fazTal.length}</div>
+                    <div className="metric-chg mc-neu">{fmtHa2(somaTal)} mapeados</div>
+                  </div>
+
+                  <div className="bc">
+                    <div className="bc-title">
+                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 18C6 10 14 10 18 18" strokeLinecap="round"/><path d="M10 2c2 4 6 5 8 4-1 3-5 5-8 3-3 2-7 0-8-3 2 1 6 0 8-4z" strokeLinejoin="round"/></svg>
+                        {faz.nome}
+                      </span>
+                      <button className="bc-title-btn" onClick={() => setSidebarPage('terra')}>Ver Terra</button>
+                    </div>
+                    <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
+                      <div ref={dashMiniMapRef} style={{ width: 120, height: 120, borderRadius: '10px', overflow: 'hidden', flexShrink: 0, background: 'var(--bg3)', cursor: 'pointer' }} onClick={() => setSidebarPage('terra')} title="Ver mapa completo" />
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        {faz.municipio && <div style={{ fontSize: 'calc(.7rem * var(--fs))', color: 'var(--text)', opacity: .7, marginBottom: '4px' }}>{faz.municipio}{faz.uf ? ` — ${faz.uf}` : ''}</div>}
+                        <div style={{ fontSize: 'calc(.72rem * var(--fs))', color: 'var(--text2)', fontWeight: 600 }}>Área Total: {fmtHa2(faz.areaTotal)}</div>
+                        <div style={{ fontSize: 'calc(.65rem * var(--fs))', color: 'var(--text)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: docsOk === 4 ? 'var(--green)' : docsOk >= 2 ? 'var(--amber)' : 'var(--red)', display: 'inline-block', flexShrink: 0 }} />
+                          Documentação: {docsOk}/4 completo{docsOk !== 1 ? 's' : ''}
+                        </div>
+                        {slices.length > 0 && (
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 8px', marginTop: '8px' }}>
+                            {slices.slice(0, 5).map((s, i) => (
+                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: 'calc(.6rem * var(--fs))', color: 'var(--text)' }}>
+                                <span style={{ width: 8, height: 8, borderRadius: '2px', background: s.cor, flexShrink: 0 }} />
+                                {s.label} {s.pct}%
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {slices.length > 0 && (
+                        <div style={{ width: 80, height: 80, flexShrink: 0, alignSelf: 'center' }}>
+                          <svg viewBox="0 0 200 200" style={{ width: '100%', height: '100%' }}>
+                            {slices.map((s, i) => (
+                              <circle key={i} cx="100" cy="100" r="70" fill="none" stroke={s.cor} strokeWidth="28" strokeDasharray={s.strokeDasharray} strokeDashoffset={s.strokeDashoffset} transform="rotate(-90 100 100)" />
+                            ))}
+                            <circle cx="100" cy="100" r="56" fill="var(--bg2)" />
+                            <text x="100" y="96" textAnchor="middle" fill="var(--text3)" fontSize="24" fontWeight="700">{slices.length}</text>
+                            <text x="100" y="114" textAnchor="middle" fill="var(--text)" fontSize="11" opacity=".6">usos</text>
+                          </svg>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })()}
 
           </main>
         )
