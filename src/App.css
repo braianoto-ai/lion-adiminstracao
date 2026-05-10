@@ -5984,9 +5984,9 @@ html[data-theme="light"] .patr-upload-form { background: var(--bg2) }
 .terra-page-fullmap .terra-map-overlay-tl { top: 6px; left: 66px }
 .terra-page-fullmap .terra-map-overlay-tr { top: 6px; right: 46px }
 .terra-page-fullmap .terra-map-overlay-bottom { bottom: 80px }
-.terra-page-fullmap .terra-map-layout { height: calc(100vh - 90px); max-height: none; gap: 0 }
+.terra-page-fullmap .terra-map-layout { height: calc(100dvh - 90px); max-height: none; gap: 0 }
 .terra-page-fullmap .terra-map-container { min-height: 0; border-radius: 0; border: none; position: relative }
-.terra-page-fullmap .terra-map-sidebar { max-height: calc(100vh - 100px); width: 280px; padding: 10px; border-radius: 0; border-left: 1px solid var(--border); border-top: none; border-bottom: none; border-right: none }
+.terra-page-fullmap .terra-map-sidebar { max-height: calc(100dvh - 100px); width: 280px; padding: 10px; border-radius: 0; border-left: 1px solid var(--border); border-top: none; border-bottom: none; border-right: none }
 .terra-sidebar-toggle { position: absolute; top: 10px; right: 10px; z-index: 999; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text2); transition: all .15s; box-shadow: 0 2px 8px rgba(0,0,0,.2) }
 .terra-sidebar-toggle:hover { background: var(--bg3); color: var(--text3) }
 
@@ -6313,6 +6313,14 @@ html[data-theme="light"] .patr-upload-form { background: var(--bg2) }
   .terra-map-overlay-tr { right: 10px; top: auto; bottom: 10px }
   .terra-map-overlay-bottom { max-width: calc(100% - 20px); font-size: calc(.7rem * var(--fs)) }
   .terra-talhao-grid { grid-template-columns: 1fr }
+  /* Fullmap overrides: mapa preenche espaço em vez de 400px fixo */
+  .terra-page-fullmap .terra-map-container { flex: 1; height: auto; min-height: 0 }
+  .terra-page-fullmap .terra-map-sidebar { max-height: 160px; width: 100% }
+  /* Tabs em linha única (scroll horizontal) para não inflar o budget de 90px */
+  .terra-page-fullmap .terra-tabs { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none }
+  .terra-page-fullmap .terra-tabs::-webkit-scrollbar { display: none }
+  /* Bottom bar acima da sidebar abaixo */
+  .terra-page-fullmap .terra-map-overlay-bottom { bottom: 8px }
 }
 
 html[data-theme="light"] .terra-minimap-card,
