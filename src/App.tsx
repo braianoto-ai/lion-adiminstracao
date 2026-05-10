@@ -499,6 +499,9 @@ function Dashboard({ onNavigate, fazendas, talhoes }: { onNavigate: (page: Sideb
 
   const recentTxs = txs.filter(t => t.date <= curMonth).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5)
 
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => { try { return JSON.parse(localStorage.getItem('lion-dash-collapsed') || '{}') } catch { return {} } })
+  const toggleSection = (key: string) => setCollapsed(prev => { const next = { ...prev, [key]: !prev[key] }; localStorage.setItem('lion-dash-collapsed', JSON.stringify(next)); return next })
+
   const calColors: Record<string, string> = { financeiro: '#3b82f6', pessoal: '#8b5cf6', viagem: '#f59e0b', manutencao: '#10b981', sistema: '#94a3b8' }
   const fmtHa = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' ha'
   const fmtDay = (d: string) => { const [,m,dd] = d.split('-'); return `${dd}/${m}` }
@@ -555,17 +558,46 @@ function Dashboard({ onNavigate, fazendas, talhoes }: { onNavigate: (page: Sideb
         </div>
       </div>
 
+      {/* ── Patrimônio Overview ── */}
+      <div className="dash-patrimonio-overview" onClick={() => onNavigate('patrimonio')}>
+        <div className="patr-summary">
+          <div className="patr-summary-card">
+            <div className="metric-ico mi-blue"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l7-6 7 6v9H3V9z" strokeLinejoin="round"/><path d="M7 18V12h6v6" strokeLinecap="round"/></svg></div>
+            <div className="patr-summary-label">Imóveis</div>
+            <div className="patr-summary-val">{fmtCurrency(totalImoveis)}</div>
+            <div className="patr-summary-sub">{imoveis.length} imóve{imoveis.length !== 1 ? 'is' : 'l'}</div>
+          </div>
+          <div className="patr-summary-card">
+            <div className="metric-ico mi-amber"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M5 17h10M6 13h8l1-4H5l1 4zM10 3v2M14 5l-1 1M6 5l1 1" strokeLinecap="round" strokeLinejoin="round"/><rect x="8" y="9" width="4" height="4" rx="1"/></svg></div>
+            <div className="patr-summary-label">Veículos</div>
+            <div className="patr-summary-val">{fmtCurrency(totalVeiculos)}</div>
+            <div className="patr-summary-sub">{vehicles.length} veículo{vehicles.length !== 1 ? 's' : ''}</div>
+          </div>
+          <div className="patr-summary-card">
+            <div className="metric-ico mi-green"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 7h14M3 7l2-3h10l2 3M3 7v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7" strokeLinecap="round" strokeLinejoin="round"/></svg></div>
+            <div className="patr-summary-label">Bens / Produtos</div>
+            <div className="patr-summary-val">{fmtCurrency(totalProdutos)}</div>
+            <div className="patr-summary-sub">{produtos.length} ite{produtos.length !== 1 ? 'ns' : 'm'}</div>
+          </div>
+        </div>
+      </div>
+
       {/* ── Detail Grid: 2 columns ── */}
       <div className="dash-detail-grid">
         {/* Left column */}
         <div className="dash-detail-col">
           {/* Próximos eventos */}
           <div className="bc dash-list-card">
-            <div className="dash-list-header" onClick={() => onNavigate('calendar')} style={{ cursor: 'pointer' }}>
-              <span className="dash-list-title">Próximos eventos</span>
-              <span className="dash-list-link">Ver todos &rsaquo;</span>
+            <div className="dash-list-header" style={{ cursor: 'pointer' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span className={`dash-collapse-chevron${collapsed['eventos'] ? '' : ' dash-collapse-open'}`} onClick={e => { e.stopPropagation(); toggleSection('eventos') }}>
+                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M7 5l5 5-5 5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </span>
+                <span className="dash-list-title">Próximos eventos</span>
+              </div>
+              <span className="dash-list-link" onClick={() => onNavigate('calendar')}>Ver todos &rsaquo;</span>
             </div>
-            {upcomingEvents.length === 0 ? (
+            {!collapsed['eventos'] && (upcomingEvents.length === 0 ? (
               <div className="dash-list-empty">Nenhum evento próximo</div>
             ) : (
               <div className="dash-list-items">
@@ -580,16 +612,21 @@ function Dashboard({ onNavigate, fazendas, talhoes }: { onNavigate: (page: Sideb
                   </div>
                 ))}
               </div>
-            )}
+            ))}
           </div>
 
           {/* Últimas transações */}
           <div className="bc dash-list-card">
-            <div className="dash-list-header" onClick={() => onNavigate('financas')} style={{ cursor: 'pointer' }}>
-              <span className="dash-list-title">Últimas transações</span>
-              <span className="dash-list-link">Ver todas &rsaquo;</span>
+            <div className="dash-list-header" style={{ cursor: 'pointer' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span className={`dash-collapse-chevron${collapsed['txs'] ? '' : ' dash-collapse-open'}`} onClick={e => { e.stopPropagation(); toggleSection('txs') }}>
+                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M7 5l5 5-5 5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </span>
+                <span className="dash-list-title">Últimas transações</span>
+              </div>
+              <span className="dash-list-link" onClick={() => onNavigate('financas')}>Ver todas &rsaquo;</span>
             </div>
-            {recentTxs.length === 0 ? (
+            {!collapsed['txs'] && (recentTxs.length === 0 ? (
               <div className="dash-list-empty">Nenhuma transação registrada</div>
             ) : (
               <div className="dash-list-items">
@@ -608,7 +645,7 @@ function Dashboard({ onNavigate, fazendas, talhoes }: { onNavigate: (page: Sideb
                   </div>
                 ))}
               </div>
-            )}
+            ))}
           </div>
         </div>
 
@@ -616,11 +653,16 @@ function Dashboard({ onNavigate, fazendas, talhoes }: { onNavigate: (page: Sideb
         <div className="dash-detail-col">
           {/* Contas a pagar */}
           <div className="bc dash-list-card">
-            <div className="dash-list-header" onClick={() => onNavigate('payment-hub')} style={{ cursor: 'pointer' }}>
-              <span className="dash-list-title">Contas pendentes</span>
-              <span className="dash-list-link">Ver todas &rsaquo;</span>
+            <div className="dash-list-header" style={{ cursor: 'pointer' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <span className={`dash-collapse-chevron${collapsed['contas'] ? '' : ' dash-collapse-open'}`} onClick={e => { e.stopPropagation(); toggleSection('contas') }}>
+                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M7 5l5 5-5 5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                </span>
+                <span className="dash-list-title">Contas pendentes</span>
+              </div>
+              <span className="dash-list-link" onClick={() => onNavigate('payment-hub')}>Ver todas &rsaquo;</span>
             </div>
-            {upcomingBills.length === 0 ? (
+            {!collapsed['contas'] && (upcomingBills.length === 0 ? (
               <div className="dash-list-empty">Nenhuma conta pendente</div>
             ) : (
               <div className="dash-list-items">
@@ -642,7 +684,7 @@ function Dashboard({ onNavigate, fazendas, talhoes }: { onNavigate: (page: Sideb
                   )
                 })}
               </div>
-            )}
+            ))}
           </div>
 
           {/* Fazendas */}

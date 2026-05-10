@@ -773,6 +773,12 @@
   opacity: .8;
 }
 .dash-list-header:hover .dash-list-link { opacity: 1 }
+.dash-collapse-chevron { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:4px; cursor:pointer; transition:transform .2s ease; transform:rotate(0deg); color:var(--text); opacity:.5; flex-shrink:0 }
+.dash-collapse-chevron:hover { opacity:1; background:var(--bg3) }
+.dash-collapse-open { transform:rotate(90deg) }
+.dash-patrimonio-overview { cursor:pointer }
+.dash-patrimonio-overview:hover .patr-summary-card { border-color:var(--accent) }
+.dash-patrimonio-overview .patr-summary { grid-template-columns:repeat(3,1fr) }
 .dash-list-empty {
   padding: 24px 16px;
   text-align: center;
@@ -6159,7 +6165,7 @@ html[data-theme="light"] .patr-upload-form { background: var(--bg2) }
 .terra-talhao-sidebar-actions { display: flex; gap: 3px; flex-shrink: 0 }
 .terra-btn-danger { color: #ef4444 !important; border-color: #ef4444 !important }
 .terra-btn-danger:hover { background: #ef4444 !important; color: #fff !important }
-.terra-color-swatch { width: 18px; height: 18px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; padding: 0; flex-shrink: 0; background: none }
+.terra-color-swatch { width: 18px; height: 18px; border: 1px solid var(--border); border-radius: 50%; cursor: pointer; padding: 0; flex-shrink: 0; background: none }
 .terra-color-swatch:hover { border-color: #fff; transform: scale(1.15) }
 .terra-color-field { display: flex; align-items: center; gap: 8px }
 .terra-color-input-lg { width: 40px; height: 32px; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; padding: 2px; background: var(--bg2) }
@@ -6267,6 +6273,11 @@ html[data-theme="light"] .patr-upload-form { background: var(--bg2) }
 .terra-fazenda-card-header strong { font-size: calc(.88rem * var(--fs)); color: var(--text3) }
 .terra-fazenda-loc { font-size: calc(.75rem * var(--fs)); color: var(--text2) }
 .terra-fazenda-card-body { display: flex; gap: 16px; font-size: calc(.78rem * var(--fs)); color: var(--text2) }
+.terra-fazenda-drag-handle { cursor: grab; opacity: .35; font-size: 1.1rem; line-height: 1; padding: 0 8px 0 0; flex-shrink: 0; user-select: none; transition: opacity .15s }
+.terra-fazenda-drag-handle:hover { opacity: .75 }
+.terra-fazenda-drag-handle:active { cursor: grabbing }
+.terra-fazenda-dragging { opacity: .4; border-style: dashed }
+.terra-fazenda-dragover { border-color: var(--purple) !important; box-shadow: 0 -3px 0 0 var(--purple) }
 
 /* Form */
 .terra-form { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px; display: flex; flex-direction: column; gap: 14px }
