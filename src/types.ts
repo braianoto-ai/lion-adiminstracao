@@ -269,6 +269,7 @@ export interface CalEvent {
   category: 'financeiro' | 'pessoal' | 'viagem' | 'manutencao' | 'sistema'
   notes: string
   auto?: boolean
+  paid?: boolean
 }
 
 export interface Trip {
