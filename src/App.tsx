@@ -9,7 +9,6 @@ import { UserCtx, DATA_KEYS } from './context'
 import { useCloudTable, useSyncError } from './hooks'
 import type { ModalType, SidebarPage, TerraFazenda, TerraTalhao, Folder, Goal, Transaction, Rental, Vehicle, Maintenance, Collector, Bill, AppAlert, ActivityItem, SearchResult, FamilyMember } from './types'
 import { TALHAO_USOS } from './constants'
-import { fmtDate, effectiveStatus } from './utils'
 import TerraPage from './pages/TerraPage'
 import PublicMapPage from './pages/PublicMapPage'
 import PaymentHubPage from './pages/PaymentHubPage'
@@ -519,7 +518,6 @@ export default function App() {
   const [showSim, setShowSim] = useState(false)
   const [showDocs, setShowDocs] = useState(false)
   const [showAlerts, setShowAlerts] = useState(false)
-  const [activityOpen, setActivityOpen] = useState(true)
   const [alertCount, setAlertCount] = useState(() => buildAlerts().length)
   const [showShare, setShowShare] = useState(false)
   const [viewMode, setViewMode] = useState(false)
@@ -550,8 +548,6 @@ export default function App() {
       .catch(() => {})
   }, [])
 
-  const [dashData, setDashData] = useState(() => computeDashData())
-  const [activity, setActivity] = useState(() => buildActivity())
   const [themeId, setThemeId] = useState(() => localStorage.getItem('lion-theme') || 'dark')
   const [fontSize, setFontSize] = useState(() => localStorage.getItem('lion-font') || 'normal')
   const [accentId, setAccentId] = useState(() => localStorage.getItem('lion-accent') || 'blue')
@@ -615,11 +611,6 @@ export default function App() {
     localStorage.setItem('lion-sidebar-fixed', sidebarFixed ? 'on' : 'off')
   }, [sidebarFixed])
 
-  useEffect(() => {
-    const refresh = () => { setDashData(computeDashData()); setActivity(buildActivity()) }
-    window.addEventListener('storage', refresh)
-    return () => window.removeEventListener('storage', refresh)
-  }, [])
 
   const [user, setUser] = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(false)
