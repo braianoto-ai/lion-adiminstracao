@@ -72,6 +72,9 @@ export default function TerraPage() {
 
   const fazenda = fazendas.find(f => f.id === activeFazendaId) || fazendas[0] || null
   useEffect(() => { if (fazendas.length && !activeFazendaId) setActiveFazendaId(fazendas[0].id) }, [fazendas, activeFazendaId])
+
+  const dragFazendaIdx = useRef<number | null>(null)
+  const [dragOverFazendaIdx, setDragOverFazendaIdx] = useState<number | null>(null)
   const fazTalhoes = useMemo(() => talhoes.filter(t => t.fazendaId === fazenda?.id), [talhoes, fazenda])
   const fazNotas = useMemo(() => notas.filter(n => n.fazendaId === fazenda?.id), [notas, fazenda])
   const talhoesByUso = useMemo(() => {
@@ -1292,8 +1295,30 @@ export default function TerraPage() {
         </div>
       )}
       <div className="terra-fazenda-list">
-        {fazendas.map(f => (
-          <div key={f.id} className={`terra-fazenda-card${f.id === activeFazendaId ? ' terra-fazenda-active' : ''}`} onClick={() => setActiveFazendaId(f.id)}>
+        {fazendas.map((f, i) => (
+          <div
+            key={f.id}
+            className={`terra-fazenda-card${f.id === activeFazendaId ? ' terra-fazenda-active' : ''}${dragOverFazendaIdx === i ? ' terra-fazenda-drag-over' : ''}`}
+            draggable
+            onDragStart={() => { dragFazendaIdx.current = i }}
+            onDragOver={e => { e.preventDefault(); setDragOverFazendaIdx(i) }}
+            onDrop={e => {
+              e.preventDefault()
+              const from = dragFazendaIdx.current
+              if (from === null || from === i) return
+              setFazendas(prev => {
+                const next = [...prev]
+                const [item] = next.splice(from, 1)
+                next.splice(i, 0, item)
+                return next
+              })
+              dragFazendaIdx.current = null
+              setDragOverFazendaIdx(null)
+            }}
+            onDragEnd={() => { dragFazendaIdx.current = null; setDragOverFazendaIdx(null) }}
+            onClick={() => setActiveFazendaId(f.id)}
+          >
+            <div className="terra-fazenda-drag-handle" onMouseDown={e => e.stopPropagation()}>⠿</div>
             <div className="terra-fazenda-card-header">
               <strong>{f.nome}</strong>
               <span className="terra-fazenda-loc">{f.municipio}{f.uf ? ` — ${f.uf}` : ''}</span>

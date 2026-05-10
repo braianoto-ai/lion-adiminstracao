@@ -6221,9 +6221,13 @@ html[data-theme="light"] .patr-icon-btn { background: var(--bg2) }
 
 /* Fazendas list */
 .terra-fazenda-list { display: flex; flex-direction: column; gap: 10px }
-.terra-fazenda-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; cursor: pointer; transition: border-color .15s; display: flex; flex-direction: column; gap: 6px }
+.terra-fazenda-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px 16px; cursor: pointer; transition: border-color .15s, opacity .15s; display: flex; flex-direction: column; gap: 6px; position: relative }
 .terra-fazenda-card:hover { border-color: var(--text) }
 .terra-fazenda-active { border-color: var(--purple) }
+.terra-fazenda-card[draggable]:hover .terra-fazenda-drag-handle { opacity: 1 }
+.terra-fazenda-drag-handle { position: absolute; top: 50%; left: 6px; transform: translateY(-50%); font-size: 16px; color: var(--text2); opacity: 0; cursor: grab; transition: opacity .15s; user-select: none; line-height: 1 }
+.terra-fazenda-drag-handle:active { cursor: grabbing }
+.terra-fazenda-drag-over { border-color: var(--purple) !important; opacity: .6 }
 .terra-fazenda-card-header { display: flex; justify-content: space-between; align-items: center }
 .terra-fazenda-card-header strong { font-size: calc(.88rem * var(--fs)); color: var(--text3) }
 .terra-fazenda-loc { font-size: calc(.75rem * var(--fs)); color: var(--text2) }
