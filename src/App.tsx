@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import './App.css'
-import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
+import './App.css'
 import { supabase } from './lib/supabase'
 import LoginPage from './LoginPage'
 import type { User } from '@supabase/supabase-js'
@@ -257,9 +256,6 @@ function buildSearchIndex(q: string): SearchResult[] {
 
   return results
 }
-
-
-
 
 
 // ─── Family Page ─────────────────────────────────────────────────────────────
