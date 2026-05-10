@@ -103,6 +103,7 @@ export interface TerraNote {
   cor: string
   icone: NotaCategoria
   fotoUrl: string
+  publico?: boolean
   createdAt: string
 }
 
