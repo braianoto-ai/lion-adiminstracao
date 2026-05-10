@@ -180,48 +180,56 @@ export default function TerraPage() {
       return
     }
     if (leafletMap.current) return
-    // Defer init by one macro-task so browser completes CSS layout (fullmap class)
+    // Defer init so browser finishes CSS layout (fullmap class changes container height).
+    // Use rAF inside the timeout to align with a paint frame — guarantees the container
+    // has its final dimensions before we read them.
     mapTimerRef.current = setTimeout(() => {
-      if (!node || leafletMap.current) return
-      const center: [number, number] = fazenda ? [fazenda.latitude, fazenda.longitude] : [-15.78, -47.93]
-      const zoom = fazenda ? 14 : 4
-      const map = L.map(node, { zoomControl: true })
-      // Sync the container size BEFORE setView so _pixelOrigin is computed from
-      // the final layout dimensions. Without this, any layout change after
-      // setView (sidebar render, CSS animation) shifts _pixelOrigin mid tile-load
-      // and produces two misaligned tile grids separated by a black band.
-      map.invalidateSize({ animate: false })
-      // Mark initialView as set BEFORE setView so the layer-draw useEffect
-      // never calls a redundant second setView that scrambles tile positions
-      if (fazenda) initialViewSet.current = true
-      map.setView(center, zoom)
-      const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' })
-      osm.addTo(map)
-      tileRef.current = osm
-      layerGroup.current = L.layerGroup().addTo(map)
-      drawMarkersRef.current = L.layerGroup().addTo(map)
-      notasLayerRef.current = L.layerGroup().addTo(map)
-      leafletMap.current = map
-      setMapReady(true)
-      // ResizeObserver keeps Leaflet in sync when sidebar or window resizes.
-      // CRITICAL: only start observing AFTER initial tiles have loaded.
-      // If ResizeObserver fires while tiles are still in-flight it calls
-      // invalidateSize() which shifts _pixelOrigin and produces the split-grid bug.
-      let roTimer: ReturnType<typeof setTimeout> | null = null
-      const startRo = () => {
-        if (mapRoRef.current) return   // already started (avoid double-setup)
+      requestAnimationFrame(() => {
+        if (!node || leafletMap.current) return
+        // Bail out if container still has no dimensions (defensive guard).
+        const { width, height } = node.getBoundingClientRect()
+        if (!width || !height) return
+        const center: [number, number] = fazenda ? [fazenda.latitude, fazenda.longitude] : [-15.78, -47.93]
+        const zoom = fazenda ? 14 : 4
+        const map = L.map(node, { zoomControl: true })
+        // Sync the container size BEFORE setView so _pixelOrigin is computed from
+        // the final layout dimensions. Without this, any layout change after
+        // setView (sidebar render, CSS animation) shifts _pixelOrigin mid tile-load
+        // and produces two misaligned tile grids separated by a black band.
+        map.invalidateSize({ animate: false })
+        // Mark initialView as set BEFORE setView so the layer-draw useEffect
+        // never calls a redundant second setView that scrambles tile positions.
+        if (fazenda) initialViewSet.current = true
+        map.setView(center, zoom)
+        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' })
+        osm.addTo(map)
+        tileRef.current = osm
+        layerGroup.current = L.layerGroup().addTo(map)
+        drawMarkersRef.current = L.layerGroup().addTo(map)
+        notasLayerRef.current = L.layerGroup().addTo(map)
+        leafletMap.current = map
+        setMapReady(true)
+        // ResizeObserver strategy: start immediately but buffer invalidateSize calls
+        // until the initial tiles finish loading. Any resize during tile-loading is
+        // queued and replayed once load completes, preventing the split-grid bug.
+        let tilesLoaded = false
+        let pendingInvalidate = false
+        let roTimer: ReturnType<typeof setTimeout> | null = null
+        const doInvalidate = () => { map.invalidateSize({ animate: false }) }
         const ro = new ResizeObserver(() => {
+          if (!tilesLoaded) { pendingInvalidate = true; return }
           if (roTimer) clearTimeout(roTimer)
-          roTimer = setTimeout(() => { map.invalidateSize({ animate: false }) }, 80)
+          roTimer = setTimeout(doInvalidate, 80)
         })
         ro.observe(node)
         mapRoRef.current = ro
-      }
-      // Primary trigger: tiles loaded → safe to observe
-      osm.once('load', startRo)
-      // Fallback: start after 4 s even if some tiles are still loading
-      // (handles offline / slow connections so sidebar resize still works)
-      setTimeout(startRo, 4000)
+        osm.once('load', () => {
+          tilesLoaded = true
+          if (pendingInvalidate) { pendingInvalidate = false; doInvalidate() }
+        })
+        // Fallback: treat as loaded after 4s so sidebar resize still works on slow connections.
+        setTimeout(() => { tilesLoaded = true }, 4000)
+      })
     }, 50)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab])
