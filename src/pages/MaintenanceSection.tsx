@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useCloudTable } from '../hooks'
 import { MAINT_FORM_INIT, MAINT_TYPES } from '../constants'
-import { fmtDate } from '../utils'
 import type { Maintenance } from '../types'
 
 export default 
