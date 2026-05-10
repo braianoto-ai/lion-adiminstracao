@@ -6159,7 +6159,7 @@ html[data-theme="light"] .patr-upload-form { background: var(--bg2) }
 .terra-talhao-sidebar-actions { display: flex; gap: 3px; flex-shrink: 0 }
 .terra-btn-danger { color: #ef4444 !important; border-color: #ef4444 !important }
 .terra-btn-danger:hover { background: #ef4444 !important; color: #fff !important }
-.terra-color-swatch { width: 18px; height: 18px; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; padding: 0; flex-shrink: 0; background: none }
+.terra-color-swatch { width: 18px; height: 18px; border: 1px solid var(--border); border-radius: 50%; cursor: pointer; padding: 0; flex-shrink: 0; background: none }
 .terra-color-swatch:hover { border-color: #fff; transform: scale(1.15) }
 .terra-color-field { display: flex; align-items: center; gap: 8px }
 .terra-color-input-lg { width: 40px; height: 32px; border: 1px solid var(--border); border-radius: var(--radius); cursor: pointer; padding: 2px; background: var(--bg2) }
