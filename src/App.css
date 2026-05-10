@@ -5860,7 +5860,7 @@ html[data-theme="light"] .ph-monthly-arrow { background: #fff; border-color: var
 @media (max-width: 500px) { .import-instructions { grid-template-columns: 1fr } }
 
 /* ─── Patrimônio Page ──────────────────────────────────────── */
-.patr-page { display: flex; flex-direction: column; gap: 20px; padding: 20px; max-width: 900px; margin: 0 auto; width: 100% }
+.patr-page { display: flex; flex-direction: column; gap: 20px; padding: 24px 32px; max-width: 1400px; margin: 0 auto; width: 100% }
 
 .patr-summary { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px }
 .patr-summary-card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 16px 18px; display: flex; flex-direction: column; gap: 4px }
