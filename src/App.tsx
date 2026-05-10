@@ -534,18 +534,29 @@ export default function App() {
   const [customLogo, setCustomLogo] = useState<string>(() => localStorage.getItem('lion-logo') || '')
 
   useEffect(() => {
-    const onLogoChange = () => setCustomLogo(localStorage.getItem('lion-logo') || '')
+    const onLogoChange = () => {
+      const newLogo = localStorage.getItem('lion-logo') || ''
+      setCustomLogo(newLogo)
+      if (!localStorage.getItem('lion-favicon') && newLogo) {
+        const link = document.querySelector<HTMLLinkElement>('link[rel~="icon"]') || (() => {
+          const l = document.createElement('link'); l.rel = 'icon'; document.head.appendChild(l); return l
+        })()
+        link.href = newLogo
+      }
+    }
     window.addEventListener('lion-logo-changed', onLogoChange)
     return () => window.removeEventListener('lion-logo-changed', onLogoChange)
   }, [])
 
   useEffect(() => {
     const fav = localStorage.getItem('lion-favicon')
-    if (fav) {
+    const logoData = localStorage.getItem('lion-logo')
+    const src = fav || logoData
+    if (src) {
       const link = document.querySelector<HTMLLinkElement>('link[rel~="icon"]') || (() => {
         const l = document.createElement('link'); l.rel = 'icon'; document.head.appendChild(l); return l
       })()
-      link.href = fav
+      link.href = src
     }
   }, [])
   const [searchQ, setSearchQ] = useState('')
@@ -763,7 +774,7 @@ export default function App() {
         <div className="topbar-brand">
           <div className="topbar-brand-mark">
             {customLogo
-              ? <img src={customLogo} alt="Logo" style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 6 }} />
+              ? <img src={customLogo} alt="Logo" style={{ width: 64, height: 64, objectFit: 'contain', borderRadius: 12 }} />
               : <svg viewBox="0 0 32 32" fill="none">
                   <rect width="32" height="32" rx="10" fill="#1a1a1a"/>
                   <text x="16" y="22" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="18" fill="white" letterSpacing="-1">L<tspan fill="#3b82f6">I</tspan></text>
