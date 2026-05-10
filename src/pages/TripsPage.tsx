@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useCloudTable } from '../hooks'
 import { TRIP_FORM_INIT, TRIP_STATUS_COLOR } from '../constants'
-
 import type { Trip } from '../types'
 
 export default 

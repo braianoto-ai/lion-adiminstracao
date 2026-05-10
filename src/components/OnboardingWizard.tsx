@@ -2,7 +2,13 @@ import { useState } from 'react'
 
 const OB_STEPS = [
   {
-    icon: <svg viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="14" fill="url(#obg)"/><path d="M12 34L18 18l8 13 6-8 6 15" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/><defs><linearGradient id="obg" x1="0" y1="0" x2="48" y2="48"><stop stopColor="#3b82f6"/><stop offset="1" stopColor="#1d4ed8"/></linearGradient></defs></svg>,
+    icon: (
+      <svg viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="14" fill="url(#obg)"/>
+        <path d="M12 34L18 18l8 13 6-8 6 15" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+        <defs><linearGradient id="obg" x1="0" y1="0" x2="48" y2="48"><stop stopColor="#3b82f6"/><stop offset="1" stopColor="#1d4ed8"/></linearGradient></defs>
+      </svg>
+    ),
     title: 'Bem-vindo ao Lion Admin',
     body: 'Seu painel completo de gestão financeira e patrimonial. Em menos de 2 minutos você estará configurado e pronto para usar.',
     cta: 'Começar tour',
