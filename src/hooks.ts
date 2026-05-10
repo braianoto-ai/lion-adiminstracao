@@ -48,6 +48,7 @@ export function useCloudTable<T extends { id: string }>(
   useEffect(() => { dataRef.current = data }, [data])
 
   const ownerMap = useRef<Map<string, string>>(new Map())
+  const channelId = useRef(`${tableName}:${lsKey}:${Math.random().toString(36).slice(2)}`)
 
   const syncTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -155,7 +156,7 @@ export function useCloudTable<T extends { id: string }>(
       ? { event: '*' as const, schema: 'public', table: tableName }
       : { event: '*' as const, schema: 'public', table: tableName, filter: `user_id=eq.${userId}` }
     const channel = supabase
-      .channel(`${tableName}:${userId}`)
+      .channel(channelId.current)
       .on(
         'postgres_changes',
         channelConfig,
