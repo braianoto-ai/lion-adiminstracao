@@ -19,7 +19,6 @@ export default function TerraPage() {
   const [editFazendaId, setEditFazendaId] = useState<string | null>(null)
   const [showTalhaoForm, setShowTalhaoForm] = useState(false)
   const [editTalhaoId, setEditTalhaoId] = useState<string | null>(null)
-  const mapRef = useRef<HTMLDivElement>(null)
   const leafletMap = useRef<L.Map | null>(null)
   const miniMapRef = useRef<HTMLDivElement>(null)
   const miniMapInstance = useRef<L.Map | null>(null)
@@ -153,19 +152,54 @@ export default function TerraPage() {
   }
   const deleteNota = (id: string) => { if (window.confirm('Excluir esta nota?')) setNotas(prev => prev.filter(n => n.id !== id)) }
 
-  // ─── Map
-  useEffect(() => {
-    if (tab !== 'mapa' || !mapRef.current || leafletMap.current) return
-    const center: [number, number] = fazenda ? [fazenda.latitude, fazenda.longitude] : [-15.78, -47.93]
-    const map = L.map(mapRef.current).setView(center, fazenda ? 14 : 4)
-    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' })
-    osm.addTo(map)
-    tileRef.current = osm
-    layerGroup.current = L.layerGroup().addTo(map)
-    drawMarkersRef.current = L.layerGroup().addTo(map)
-    notasLayerRef.current = L.layerGroup().addTo(map)
-    leafletMap.current = map
-    return () => { map.remove(); leafletMap.current = null; drawMarkersRef.current = null; notasLayerRef.current = null }
+  // ─── Map: useCallback ref fires exactly when the div mounts/unmounts,
+  //     AFTER the browser has applied the fullmap CSS and computed layout.
+  const mapRoRef = useRef<ResizeObserver | null>(null)
+  const mapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const mapRefCb = useCallback((node: HTMLDivElement | null) => {
+    // Unmount: cancel pending init, clean up
+    if (!node) {
+      if (mapTimerRef.current) { clearTimeout(mapTimerRef.current); mapTimerRef.current = null }
+      mapRoRef.current?.disconnect()
+      mapRoRef.current = null
+      if (leafletMap.current) { leafletMap.current.remove(); leafletMap.current = null }
+      drawMarkersRef.current = null
+      notasLayerRef.current = null
+      initialViewSet.current = false   // reset so next mount can position correctly
+      return
+    }
+    if (leafletMap.current) return
+    // Defer init by one macro-task so browser completes CSS layout (fullmap class)
+    mapTimerRef.current = setTimeout(() => {
+      if (!node || leafletMap.current) return
+      const center: [number, number] = fazenda ? [fazenda.latitude, fazenda.longitude] : [-15.78, -47.93]
+      const zoom = fazenda ? 14 : 4
+      const map = L.map(node, { zoomControl: true })
+      // Mark initialView as set BEFORE setView so the layer-draw useEffect
+      // never calls a redundant second setView that scrambles tile positions
+      if (fazenda) initialViewSet.current = true
+      map.setView(center, zoom)
+      const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' })
+      osm.addTo(map)
+      tileRef.current = osm
+      layerGroup.current = L.layerGroup().addTo(map)
+      drawMarkersRef.current = L.layerGroup().addTo(map)
+      notasLayerRef.current = L.layerGroup().addTo(map)
+      leafletMap.current = map
+      // ResizeObserver keeps Leaflet in sync when sidebar or window resizes.
+      // Debounce so rapid micro-resizes during initial render don't shift the
+      // pixel origin mid tile-load and produce a scrambled grid.
+      let roTimer: ReturnType<typeof setTimeout> | null = null
+      const ro = new ResizeObserver(() => {
+        if (roTimer) clearTimeout(roTimer)
+        roTimer = setTimeout(() => { map.invalidateSize({ animate: false }) }, 80)
+      })
+      // Delay observation by one frame so the initial layout reflow
+      // doesn't immediately fire invalidateSize before tiles settle
+      requestAnimationFrame(() => { ro.observe(node) })
+      mapRoRef.current = ro
+    }, 50)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab])
 
   useEffect(() => {
@@ -585,7 +619,9 @@ export default function TerraPage() {
   const renderMapa = () => (
     <div className="terra-mapa">
       <div className="terra-map-layout">
-        <div ref={mapRef} className="terra-map-container">
+        <div className="terra-map-container">
+          {/* Dedicated inner div for Leaflet — isolated from overlay children */}
+          <div ref={mapRefCb} style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }} />
           <div className="terra-map-overlay-tl">
             {(['mapa', 'satelite', 'relevo'] as const).map(l => (
               <button key={l} className={`terra-map-toggle ${mapLayer === l ? 'active' : ''}`} onClick={() => setMapLayer(l)}>
