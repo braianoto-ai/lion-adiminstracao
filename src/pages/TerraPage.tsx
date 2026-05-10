@@ -49,7 +49,7 @@ export default function TerraPage() {
   const [showNotaForm, setShowNotaForm] = useState(false)
   const [editNotaId, setEditNotaId] = useState<string | null>(null)
   const [pendingNotaLatLng, setPendingNotaLatLng] = useState<[number, number] | null>(null)
-  const [notaForm, setNotaForm] = useState({ titulo: '', conteudo: '', cor: '#3b82f6', icone: 'geral' as NotaCategoria, fotoUrl: '' })
+  const [notaForm, setNotaForm] = useState({ titulo: '', conteudo: '', cor: '#3b82f6', icone: 'geral' as NotaCategoria, fotoUrl: '', publico: true })
   const notasLayerRef = useRef<L.LayerGroup | null>(null)
   const [hiddenNotas, setHiddenNotas] = useState(false)
   const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
@@ -181,10 +181,10 @@ export default function TerraPage() {
       setNotas(prev => [...prev, nn])
     }
     setShowNotaForm(false); setEditNotaId(null); setPendingNotaLatLng(null)
-    setNotaForm({ titulo: '', conteudo: '', cor: '#3b82f6', icone: 'geral', fotoUrl: '' })
+    setNotaForm({ titulo: '', conteudo: '', cor: '#3b82f6', icone: 'geral', fotoUrl: '', publico: true })
   }
   const editNota = (n: TerraNote) => {
-    setNotaForm({ titulo: n.titulo, conteudo: n.conteudo, cor: n.cor, icone: n.icone, fotoUrl: n.fotoUrl || '' })
+    setNotaForm({ titulo: n.titulo, conteudo: n.conteudo, cor: n.cor, icone: n.icone, fotoUrl: n.fotoUrl || '', publico: n.publico ?? true })
     setEditNotaId(n.id); setShowNotaForm(true)
   }
   const deleteNota = (id: string) => { if (window.confirm('Excluir esta nota?')) setNotas(prev => prev.filter(n => n.id !== id)) }
@@ -359,7 +359,7 @@ export default function TerraPage() {
         const lat = parseFloat(e.latlng.lat.toFixed(6))
         const lng = parseFloat(e.latlng.lng.toFixed(6))
         setPendingNotaLatLng([lat, lng])
-        setNotaForm({ titulo: '', conteudo: '', cor: '#3b82f6', icone: 'geral', fotoUrl: '' })
+        setNotaForm({ titulo: '', conteudo: '', cor: '#3b82f6', icone: 'geral', fotoUrl: '', publico: true })
         setShowNotaForm(true)
         setDrawMode('none')
       }
@@ -844,6 +844,7 @@ export default function TerraPage() {
                     }} />
                     <span style={{ fontSize: 11, color: '#888' }}>Comprimida automaticamente</span>
                   </div>, true)}
+                  {renderField('Visível no link público', <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}><input type="checkbox" checked={notaForm.publico ?? true} onChange={e => setNotaForm(p => ({ ...p, publico: e.target.checked }))} /><span style={{ fontSize: 13, color: '#aaa' }}>Aparece no mapa compartilhável</span></label>)}
                 </div>
                 <div className="terra-form-actions">
                   <button className="terra-btn-primary" onClick={saveNota} disabled={!notaForm.titulo.trim()}>Salvar</button>
@@ -926,6 +927,7 @@ export default function TerraPage() {
                         <span className="terra-talhao-badge" style={{ background: n.cor || catInfo?.cor, fontSize: 'calc(.6rem * var(--fs))', padding: '1px 8px' }}>{catInfo?.label}</span>
                         <span className="terra-sidebar-pct">{new Date(n.createdAt).toLocaleDateString('pt-BR')}</span>
                       </div>
+                      {n.publico === false && <div style={{ fontSize: 11, opacity: 0.7, color: 'var(--text2)' }}>🔒 Oculto no link público</div>}
                       {terraEditMode && drawMode === 'none' && !editingMapTalhaoId && (
                         <div className="terra-sidebar-row3">
                           <button className="terra-btn-draw-sm" onClick={e => { e.stopPropagation(); editNota(n) }} title="Editar">

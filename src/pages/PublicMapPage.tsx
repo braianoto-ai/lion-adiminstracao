@@ -103,7 +103,7 @@ function PublicMapPage() {
         poly.addTo(layerGroup.current!)
       }
     })
-    const pubFazNotas = pubNotas.filter(n => n.fazendaId === fazenda?.id)
+    const pubFazNotas = pubNotas.filter(n => n.fazendaId === fazenda?.id && n.publico !== false)
     pubFazNotas.forEach(n => {
       const catInfo = NOTA_CATEGORIAS.find(c => c.value === n.icone)
       const cor = n.cor || catInfo?.cor || '#6b7280'
