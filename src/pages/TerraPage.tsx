@@ -181,14 +181,8 @@ export default function TerraPage() {
     }
     if (leafletMap.current) return
     // Defer init so browser finishes CSS layout (fullmap class changes container height).
-    // Use rAF inside the timeout to align with a paint frame — guarantees the container
-    // has its final dimensions before we read them.
     mapTimerRef.current = setTimeout(() => {
-      requestAnimationFrame(() => {
         if (!node || leafletMap.current) return
-        // Bail out if container still has no dimensions (defensive guard).
-        const { width, height } = node.getBoundingClientRect()
-        if (!width || !height) return
         const center: [number, number] = fazenda ? [fazenda.latitude, fazenda.longitude] : [-15.78, -47.93]
         const zoom = fazenda ? 14 : 4
         const map = L.map(node, { zoomControl: true })
@@ -197,9 +191,10 @@ export default function TerraPage() {
         // setView (sidebar render, CSS animation) shifts _pixelOrigin mid tile-load
         // and produces two misaligned tile grids separated by a black band.
         map.invalidateSize({ animate: false })
-        // Mark initialView as set BEFORE setView so the layer-draw useEffect
-        // never calls a redundant second setView that scrambles tile positions.
-        if (fazenda) initialViewSet.current = true
+        // Always mark initialView as set BEFORE setView, even when fazenda is null
+        // (incognito/first-load). If fazenda-gated, the layer-draw effect fires a
+        // second setView once cloud data arrives mid tile-load → scrambled grid.
+        initialViewSet.current = true
         map.setView(center, zoom)
         const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' })
         osm.addTo(map)
@@ -229,8 +224,7 @@ export default function TerraPage() {
         })
         // Fallback: treat as loaded after 4s so sidebar resize still works on slow connections.
         setTimeout(() => { tilesLoaded = true }, 4000)
-      })
-    }, 50)
+    }, 200)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab])
 
