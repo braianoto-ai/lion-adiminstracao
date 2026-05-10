@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import L from 'leaflet'
 import './App.css'
 import { supabase } from './lib/supabase'
@@ -426,6 +426,64 @@ function AppearancePage({ themeId, setThemeId, fontSize, setFontSize, accentId, 
 
 
 
+// ─── Dashboard Terra Overview ─────────────────────────────────────────────────
+
+function FazendaMiniMap({ faz, talhoes }: { faz: TerraFazenda; talhoes: TerraTalhao[] }) {
+  const divRef = useCallback((node: HTMLDivElement | null) => {
+    if (!node) return
+    const map = L.map(node, {
+      zoomControl: false, dragging: false, scrollWheelZoom: false,
+      doubleClickZoom: false, touchZoom: false, boxZoom: false,
+      keyboard: false, attributionControl: false,
+    })
+    L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map)
+    if (faz.perimetro?.length >= 3) {
+      const perim = L.polygon(faz.perimetro, { color: '#dc2626', weight: 2, fillOpacity: 0.08, dashArray: '6 3' }).addTo(map)
+      talhoes.filter(t => t.fazendaId === faz.id && t.poligono?.length >= 3).forEach(t => {
+        const cor = t.cor || TALHAO_USOS.find(u => u.value === t.uso)?.cor || '#6b7280'
+        L.polygon(t.poligono, { color: cor, weight: 1, fillColor: cor, fillOpacity: 0.2 }).addTo(map)
+      })
+      map.fitBounds(perim.getBounds(), { padding: [8, 8] })
+    } else if (faz.latitude && faz.longitude) {
+      map.setView([faz.latitude, faz.longitude], 14)
+    } else {
+      map.setView([-15.77, -47.93], 4)
+    }
+    setTimeout(() => map.invalidateSize(), 150)
+    return () => { map.remove() }
+  }, [faz.id])
+  return <div ref={divRef} style={{ width: '100%', height: 140, background: 'var(--bg3)' }} />
+}
+
+function DashTerraOverview({ onNavigate }: { onNavigate: () => void }) {
+  const fazArr: TerraFazenda[] = (() => { try { return JSON.parse(localStorage.getItem('lion-terra') || '[]') } catch { return [] } })()
+  const talArr: TerraTalhao[] = (() => { try { return JSON.parse(localStorage.getItem('lion-talhoes') || '[]') } catch { return [] } })()
+  const fmtHa = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' ha'
+  return (
+    <main className="dash-content">
+      {fazArr.length === 0 ? (
+        <div className="bc" style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text)', opacity: .6 }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ width: 40, height: 40, marginBottom: 10, opacity: .4 }}><path d="M3 21C7 13 17 13 21 21" strokeLinecap="round"/><path d="M12 3c2 4 7 6 9 5-1 3-6 6-9 4-3 2-8 0-9-4 2 1 7 0 9-5z" strokeLinejoin="round"/></svg>
+          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Nenhuma fazenda cadastrada</div>
+          <button className="feed-empty-btn" onClick={onNavigate}>Ir para Terra</button>
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+          {fazArr.map(fz => (
+            <div key={fz.id} className="bc" style={{ cursor: 'pointer', padding: 0, overflow: 'hidden' }} onClick={onNavigate} title="Ver Terra">
+              <FazendaMiniMap faz={fz} talhoes={talArr} />
+              <div style={{ padding: '10px 12px' }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text3)', marginBottom: 2 }}>{fz.nome}</div>
+                <div style={{ fontSize: 11, color: 'var(--text)', opacity: .7 }}>{fmtHa(fz.areaTotal)}{fz.municipio ? ` · ${fz.municipio}` : ''}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </main>
+  )
+}
+
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -613,54 +671,6 @@ export default function App() {
     return () => { window.removeEventListener('keydown', onKey); clearTimeout(hintTimer) }
   }, [showCalc, showNp, showFin, showSim, showDocs, showAlerts])
 
-  const dashMiniMapInstance = useRef<L.Map | null>(null)
-  const dashMapInitTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const dashMiniMapRef = useCallback((node: HTMLDivElement | null) => {
-    if (dashMapInitTimer.current) { clearTimeout(dashMapInitTimer.current); dashMapInitTimer.current = null }
-    if (dashMiniMapInstance.current) { dashMiniMapInstance.current.remove(); dashMiniMapInstance.current = null }
-    if (!node) return
-    dashMapInitTimer.current = setTimeout(() => {
-      try {
-        const fazArr: TerraFazenda[] = (() => { try { return JSON.parse(localStorage.getItem('lion-terra') || '[]') } catch { return [] } })()
-        const talArr: TerraTalhao[] = (() => { try { return JSON.parse(localStorage.getItem('lion-talhoes') || '[]') } catch { return [] } })()
-        const map = L.map(node, {
-          zoomControl: true, dragging: true, scrollWheelZoom: true,
-          doubleClickZoom: true, touchZoom: true, boxZoom: true,
-          keyboard: true, attributionControl: false,
-        })
-        L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map)
-        const allBounds = L.latLngBounds([])
-        fazArr.forEach(fz => {
-          if (fz.perimetro?.length >= 3) {
-            const perim = L.polygon(fz.perimetro, { color: '#dc2626', weight: 2, fillOpacity: 0.08, dashArray: '6 3' }).addTo(map)
-            perim.bindTooltip(fz.nome, { permanent: false, direction: 'center', className: 'dash-map-tooltip' })
-            talArr.filter(t => t.fazendaId === fz.id && t.poligono?.length >= 3).forEach(t => {
-              const cor = t.cor || TALHAO_USOS.find(u => u.value === t.uso)?.cor || '#6b7280'
-              L.polygon(t.poligono, { color: cor, weight: 1, fillColor: cor, fillOpacity: 0.15 }).addTo(map)
-            })
-            allBounds.extend(perim.getBounds())
-          } else if (fz.latitude && fz.longitude) {
-            L.marker([fz.latitude, fz.longitude]).addTo(map).bindTooltip(fz.nome)
-            allBounds.extend(L.latLng(fz.latitude, fz.longitude))
-          }
-        })
-        if (allBounds.isValid()) {
-          map.fitBounds(allBounds, { padding: [40, 40] })
-        } else {
-          map.setView([-15.77, -47.93], 4)
-        }
-        dashMiniMapInstance.current = map
-        let debounce: ReturnType<typeof setTimeout>
-        const ro = new ResizeObserver(() => {
-          clearTimeout(debounce)
-          debounce = setTimeout(() => map.invalidateSize(), 80)
-        })
-        requestAnimationFrame(() => ro.observe(node))
-      } catch (err) {
-        console.warn('Minimap dash init error:', err)
-      }
-    }, 100)
-  }, [sidebarPage])
 
   if (!authReady) return null
 
@@ -872,15 +882,8 @@ export default function App() {
         </div>
       )}
 
-      {/* ── Dashboard: mapa das fazendas ── */}
-      {(() => {
-        if (sidebarPage !== 'dashboard') return null
-        return (
-          <main className="dash-content" style={{ padding: 0, position: 'relative' }}>
-            <div className="dash-map-full" ref={dashMiniMapRef} />
-          </main>
-        )
-      })()}
+      {/* ── Dashboard: visão geral Terra ── */}
+      {sidebarPage === 'dashboard' && <DashTerraOverview onNavigate={() => setSidebarPage('terra')} />}
 
       {/* keep legacy section components referenced to avoid unused-locals TS error */}
       {false && <><PatrimonySection /><NotesSection onOpenNotepad={toggleNp} /><RentalsSection /><MaintenanceSection /><VehicleHistorySection />{fxRates}{toggleShare}{showKbLegend}</>}
