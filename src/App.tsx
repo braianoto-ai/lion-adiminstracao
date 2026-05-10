@@ -1,15 +1,12 @@
-import { useState, useEffect, useRef, useMemo } from 'react'
+import { useState, useEffect } from 'react'
 import './App.css'
 import 'leaflet/dist/leaflet.css'
-import L from 'leaflet'
 import { supabase } from './lib/supabase'
 import LoginPage from './LoginPage'
 import type { User } from '@supabase/supabase-js'
-import emailjs from '@emailjs/browser'
-import { UserCtx, DATA_KEYS, CLOUD_BUS } from './context'
+import { UserCtx, DATA_KEYS } from './context'
 import { useCloudTable } from './hooks'
-import type { ModalType, SidebarPage, TerraFazenda, TerraTalhao, Imovel, Produto, Note, Folder, TerraNote } from './types'
-import { NOTA_CATEGORIAS } from './constants'
+import type { ModalType, SidebarPage, Folder, Goal, Rental, Maintenance, Vehicle } from './types'
 import TerraPage from './pages/TerraPage'
 import PublicMapPage from './pages/PublicMapPage'
 import PaymentHubPage from './pages/PaymentHubPage'
@@ -76,13 +73,12 @@ interface FamilyMember {
 
 // ─── Notepad ──────────────────────────────────────────────────────────────────
 
-const FOLDER_COLORS = ['#7c3aed', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#06b6d4', '#84cc16']
 
 
 
 // ─── New Item Modal ───────────────────────────────────────────────────────────
 
-interface FieldDef {
+export interface FieldDef {
   key: string
   label: string
   type: string
@@ -90,7 +86,7 @@ interface FieldDef {
   options?: string[]
 }
 
-const MODAL_CONFIG: Record<string, { title: string; icon: React.ReactNode; color: string; fields: FieldDef[] }> = {
+export const MODAL_CONFIG: Record<string, { title: string; icon: React.ReactNode; color: string; fields: FieldDef[] }> = {
   imovel: {
     title: 'Novo Imóvel',
     icon: (
@@ -165,10 +161,6 @@ interface Transaction {
   recurringId?: string
 }
 
-const TX_CATEGORIES = {
-  receita: ['Salário', 'Aluguel recebido', 'Dividendos', 'Freelance', 'Vendas', 'Outros'],
-  despesa: ['Moradia', 'Alimentação', 'Transporte', 'Saúde', 'Educação', 'Lazer', 'Impostos', 'Outros'],
-}
 
 // ─── Bank import parsers ──────────────────────────────────────────────────────
 
@@ -176,92 +168,6 @@ const TX_CATEGORIES = {
 // ─── Patrimony Chart Section ──────────────────────────────────────────────────
 
 
-// ─── Rentals Section ─────────────────────────────────────────────────────────
-
-interface Rental {
-  id: string
-  property: string
-  tenant: string
-  phone: string
-  value: number
-  dueDay: number
-  startDate: string
-  notes: string
-  payments: Record<string, 'pago' | 'pendente' | 'atrasado'>
-}
-
-const RENTAL_FORM_INIT = { property: '', tenant: '', phone: '', value: '', dueDay: '5', startDate: '', notes: '' }
-
-
-// ─── Maintenance Section ──────────────────────────────────────────────────────
-
-interface Maintenance {
-  id: string
-  asset: string
-  type: string
-  description: string
-  scheduledDate: string
-  doneDate: string
-  status: 'pendente' | 'feito' | 'atrasado'
-  cost: string
-  notes: string
-}
-
-const MAINT_TYPES = ['Revisão geral', 'Elétrica', 'Hidráulica', 'Pintura', 'Telhado', 'Jardim', 'Limpeza', 'IPTU/taxas', 'Seguro', 'Troca de óleo', 'Pneus', 'Outros']
-const MAINT_FORM_INIT = { asset: '', type: MAINT_TYPES[0], description: '', scheduledDate: '', doneDate: '', cost: '', notes: '' }
-
-
-// ─── Documents Panel ─────────────────────────────────────────────────────────
-
-interface DocMeta {
-  id: string
-  name: string
-  category: string
-  asset: string
-  notes: string
-  fileUrl: string
-  fileName: string
-  createdAt: string
-}
-
-const DOC_CATEGORIES = ['Escritura', 'IPTU', 'Contrato', 'Seguro', 'Planta', 'Comprovante', 'Laudo', 'Outros']
-const BUCKET = 'lion-docs'
-
-
-// ─── Vehicle History Section ──────────────────────────────────────────────────
-
-interface Vehicle {
-  id: string
-  name: string
-  plate: string
-  year: string
-  currentKm: number
-  nextRevisionKm: number
-  nextRevisionDate: string
-  notes: string
-  ipvaExpiry: string
-  insuranceExpiry: string
-}
-
-interface Revision {
-  id: string
-  vehicleId: string
-  date: string
-  km: number
-  type: string
-  description: string
-  cost: string
-  shop: string
-}
-
-const REVISION_TYPES = ['Revisão geral', 'Troca de óleo', 'Pneus', 'Freios', 'Correia dentada', 'Filtros', 'Suspensão', 'Elétrica', 'Outros']
-const VEH_FORM_INIT = { name: '', plate: '', year: '', currentKm: '', nextRevisionKm: '', nextRevisionDate: '', notes: '', ipvaExpiry: '', insuranceExpiry: '' }
-const REV_FORM_INIT = { vehicleId: '', date: new Date().toISOString().slice(0, 10), km: '', type: REVISION_TYPES[0], description: '', cost: '', shop: '' }
-
-
-// ─── Notes Section ───────────────────────────────────────────────────────────
-
-type FlatNote = Note & { folderName: string; folderColor: string; folderId: string }
 
 
 // ─── Alerts Panel ────────────────────────────────────────────────────────────
@@ -340,15 +246,6 @@ function buildAlerts(): AppAlert[] {
   alerts.sort((a, b) => (a.severity === 'danger' ? 0 : 1) - (b.severity === 'danger' ? 0 : 1))
   return alerts
 }
-
-const EMAILJS_CONFIG_KEY = 'lion-emailjs'
-interface EmailJSConfig { serviceId: string; templateId: string; publicKey: string; toEmail: string }
-const EMAILJS_INIT: EmailJSConfig = { serviceId: '', templateId: '', publicKey: '', toEmail: '' }
-
-
-// ─── Share Panel ─────────────────────────────────────────────────────────────
-
-const SHARE_KEYS = ['lion-txs', 'lion-goals', 'lion-rentals', 'lion-maintenance', 'lion-docs-meta', 'lion-vehicles', 'lion-revisions']
 
 
 // ─── Dashboard data ───────────────────────────────────────────────────────────
@@ -468,7 +365,7 @@ function buildActivity(): ActivityItem[] {
 
 // ─── Onboarding ───────────────────────────────────────────────────────────────
 
-const OB_STEPS = [
+export const OB_STEPS = [
   {
     icon: (
       <svg viewBox="0 0 48 48" fill="none">
@@ -560,77 +457,7 @@ function buildSearchIndex(q: string): SearchResult[] {
   return results
 }
 
-// ─── Calendar Page ───────────────────────────────────────────────────────────
 
-interface CalEvent {
-  id: string
-  title: string
-  date: string   // YYYY-MM-DD
-  time: string
-  category: 'financeiro' | 'pessoal' | 'viagem' | 'manutencao' | 'sistema'
-  notes: string
-  auto?: boolean
-}
-
-const CAL_COLORS: Record<CalEvent['category'], string> = {
-  financeiro: '#3b82f6',
-  pessoal:    '#8b5cf6',
-  viagem:     '#f59e0b',
-  manutencao: '#10b981',
-  sistema:    '#94a3b8',
-}
-const CAL_LABELS: Record<CalEvent['category'], string> = {
-  financeiro: 'Financeiro', pessoal: 'Pessoal', viagem: 'Viagem', manutencao: 'Manutenção', sistema: 'Sistema'
-}
-
-function buildAutoEvents(): CalEvent[] {
-  const evs: CalEvent[] = []
-  const now = new Date()
-
-  // Vehicles: nextRevisionDate, ipvaExpiry, insuranceExpiry
-  const vehicles: Vehicle[] = (() => { try { return JSON.parse(localStorage.getItem('lion-vehicles') || '[]') } catch { return [] } })()
-  for (const v of vehicles) {
-    if (v.nextRevisionDate) evs.push({ id: `veh-rev-${v.id}`, title: `Revisão: ${v.name}`, date: v.nextRevisionDate, time: '', category: 'manutencao', notes: '', auto: true })
-    if (v.ipvaExpiry)       evs.push({ id: `veh-ipva-${v.id}`, title: `IPVA: ${v.name}`, date: v.ipvaExpiry, time: '', category: 'financeiro', notes: '', auto: true })
-    if (v.insuranceExpiry)  evs.push({ id: `veh-seg-${v.id}`, title: `Seguro: ${v.name}`, date: v.insuranceExpiry, time: '', category: 'financeiro', notes: '', auto: true })
-  }
-
-  // Maintenance: scheduledDate
-  const maint: Maintenance[] = (() => { try { return JSON.parse(localStorage.getItem('lion-maintenance') || '[]') } catch { return [] } })()
-  for (const m of maint) {
-    if (m.scheduledDate && m.status !== 'feito') evs.push({ id: `maint-${m.id}`, title: `${m.type}: ${m.asset}`, date: m.scheduledDate, time: '', category: 'manutencao', notes: m.notes, auto: true })
-  }
-
-  // Rentals: dueDay every month for next 3 months
-  const rentals: Rental[] = (() => { try { return JSON.parse(localStorage.getItem('lion-rentals') || '[]') } catch { return [] } })()
-  for (const r of rentals) {
-    for (let m = 0; m < 3; m++) {
-      const d = new Date(now.getFullYear(), now.getMonth() + m, r.dueDay)
-      const dateStr = d.toISOString().slice(0, 10)
-      evs.push({ id: `rent-${r.id}-${m}`, title: `Aluguel: ${r.property}`, date: dateStr, time: '', category: 'financeiro', notes: `Locatário: ${r.tenant}`, auto: true })
-    }
-  }
-
-  return evs
-}
-
-const CAL_FORM_INIT: Omit<CalEvent, 'id' | 'auto'> = { title: '', date: '', time: '', category: 'pessoal', notes: '' }
-
-
-// ─── Goals Page ──────────────────────────────────────────────────────────────
-
-const GOAL_CATS = ['Reserva de emergência','Imóvel','Veículo','Viagem','Educação','Aposentadoria','Investimento','Outro']
-const GOAL_COLORS: Record<string, string> = {
-  'Reserva de emergência': 'var(--amber)',
-  'Imóvel':                'var(--blue)',
-  'Veículo':               'var(--purple-l)',
-  'Viagem':                'var(--green)',
-  'Educação':              '#8b5cf6',
-  'Aposentadoria':         '#ec4899',
-  'Investimento':          'var(--blue-l)',
-  'Outro':                 'var(--text)',
-}
-const GOAL_FORM_INIT = { name: '', category: GOAL_CATS[0], target: '', current: '', deadline: '' }
 
 
 
@@ -882,14 +709,6 @@ function AppearancePage({ themeId, setThemeId, fontSize, setFontSize, accentId, 
 // ─── Settings Page ────────────────────────────────────────────────────────────
 
 
-// ─── Patrimônio Page ─────────────────────────────────────────────────────────
-
-const IMOVEL_TIPOS = ['Residencial', 'Comercial', 'Rural', 'Terreno', 'Galpão']
-const PRODUTO_CATS = ['Eletrônico', 'Móvel', 'Eletrodoméstico', 'Veículo', 'Arte', 'Joia', 'Equipamento', 'Outros']
-const IMOVEL_INIT = { descricao: '', tipo: 'Residencial', valor: '', valorAtual: '', endereco: '', area: '' }
-const PRODUTO_INIT = { nome: '', categoria: 'Eletrônico', valor: '', quantidade: '1', fornecedor: '', descricao: '' }
-
-
 // ─── Payment Hub ──────────────────────────────────────────────────────────────
 
 const BILL_STATUS_LABEL: Record<BillStatus, string> = {
@@ -908,13 +727,12 @@ function effectiveStatus(bill: Bill): BillStatus {
   return isOverdue(bill) ? 'vencido' : bill.status
 }
 
-const fmtCurrency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
 const fmtDate = (s: string) => { if (!s) return '—'; const d = new Date(s + 'T12:00:00'); return isNaN(d.getTime()) ? '—' : d.toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' }) }
 
 const COLL_INIT = { name: '', category: BILL_CATEGORIES[0], color: BILL_COLORS[0] }
 const BILL_INIT = { collectorId: '', description: '', amount: '', dueDate: '', status: 'em_aberto' as BillStatus, recurrence: 'mensal' as BillRecurrence, paymentLink: '', barcode: '', notes: '' }
 
-function CollectorForm({ initial, onSave, onCancel }: { initial: typeof COLL_INIT; onSave: (v: typeof COLL_INIT) => void; onCancel: () => void }) {
+export function CollectorForm({ initial, onSave, onCancel }: { initial: typeof COLL_INIT; onSave: (v: typeof COLL_INIT) => void; onCancel: () => void }) {
   const [form, setForm] = useState(initial)
   const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
   return (
@@ -946,7 +764,7 @@ function CollectorForm({ initial, onSave, onCancel }: { initial: typeof COLL_INI
   )
 }
 
-function BillForm({ initial, collectors, onSave, onCancel, onCreateCollector }: {
+export function BillForm({ initial, collectors, onSave, onCancel, onCreateCollector }: {
   initial: typeof BILL_INIT; collectors: Collector[]
   onSave: (v: typeof BILL_INIT) => void; onCancel: () => void
   onCreateCollector?: (name: string) => string
@@ -1039,7 +857,7 @@ function BillForm({ initial, collectors, onSave, onCancel, onCreateCollector }: 
   )
 }
 
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+export function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
     <div className="ph-modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
       <div className="ph-modal">

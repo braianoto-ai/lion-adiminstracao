@@ -3,6 +3,7 @@ import { useCloudTable } from '../hooks'
 import { BILL_INIT, BILL_RECURRENCE_LABEL, BILL_STATUS_LABEL, COLL_INIT } from '../constants'
 import { fmtCurrency, fmtDate, effectiveStatus } from '../utils'
 import { CLOUD_BUS } from '../context'
+import { Modal, CollectorForm, BillForm } from '../App'
 import type { Collector, Bill, BillStatus, Transaction } from '../types'
 
 export default 

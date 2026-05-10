@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { OB_STEPS } from '../App'
 
 export default 
 function OnboardingWizard({ onDone }: { onDone: () => void }) {

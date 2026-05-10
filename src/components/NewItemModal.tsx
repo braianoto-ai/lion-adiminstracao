@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useCloudTable } from '../hooks'
+import { MODAL_CONFIG } from '../App'
 import type { ModalType, SidebarPage, Imovel, Produto, Vehicle } from '../types'
 
 export default 
