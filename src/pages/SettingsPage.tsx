@@ -29,6 +29,12 @@ function SettingsPage({ user }: { user: User | null }) {
     setLogo(data)
     localStorage.setItem('lion-logo', data)
     window.dispatchEvent(new Event('lion-logo-changed'))
+    if (!localStorage.getItem('lion-favicon')) {
+      const link = document.querySelector<HTMLLinkElement>('link[rel~="icon"]') || (() => {
+        const l = document.createElement('link'); l.rel = 'icon'; document.head.appendChild(l); return l
+      })()
+      link.href = data
+    }
     setLogoSaved(true); setTimeout(() => setLogoSaved(false), 2000)
   }
 

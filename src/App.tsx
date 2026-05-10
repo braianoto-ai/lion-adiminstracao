@@ -6,8 +6,9 @@ import LoginPage from './LoginPage'
 import type { User } from '@supabase/supabase-js'
 import { UserCtx, DATA_KEYS } from './context'
 import { useCloudTable, useSyncError } from './hooks'
-import type { ModalType, SidebarPage, TerraFazenda, TerraTalhao, Folder, Goal, Transaction, Rental, Vehicle, Maintenance, Collector, Bill, AppAlert, SearchResult, FamilyMember } from './types'
+import type { ModalType, SidebarPage, TerraFazenda, TerraTalhao, Folder, Goal, Transaction, Rental, Vehicle, Maintenance, Collector, Bill, AppAlert, SearchResult, FamilyMember, Imovel, Produto, CalEvent } from './types'
 import { TALHAO_USOS } from './constants'
+import { effectiveStatus, buildAutoEvents, fmtCurrency } from './utils'
 import TerraPage from './pages/TerraPage'
 import PublicMapPage from './pages/PublicMapPage'
 import PaymentHubPage from './pages/PaymentHubPage'
@@ -455,31 +456,222 @@ function FazendaMiniMap({ faz, talhoes }: { faz: TerraFazenda; talhoes: TerraTal
   return <div ref={divRef} style={{ width: '100%', height: 140, background: 'var(--bg3)' }} />
 }
 
-function DashTerraOverview({ onNavigate }: { onNavigate: () => void }) {
-  const fazArr: TerraFazenda[] = (() => { try { return JSON.parse(localStorage.getItem('lion-terra') || '[]') } catch { return [] } })()
-  const talArr: TerraTalhao[] = (() => { try { return JSON.parse(localStorage.getItem('lion-talhoes') || '[]') } catch { return [] } })()
+function Dashboard({ onNavigate }: { onNavigate: (page: SidebarPage) => void }) {
+  const parse = <T,>(key: string): T[] => { try { return JSON.parse(localStorage.getItem(key) || '[]') } catch { return [] } }
+  const fazArr = parse<TerraFazenda>('lion-terra')
+  const talArr = parse<TerraTalhao>('lion-talhoes')
+  const imoveis = parse<Imovel>('lion-imoveis')
+  const produtos = parse<Produto>('lion-produtos')
+  const vehicles = parse<Vehicle>('lion-vehicles')
+  const txs = parse<Transaction>('lion-txs')
+  const bills = parse<Bill>('lion-bills')
+  const collectors = parse<Collector>('lion-collectors')
+  const userEvents = parse<CalEvent>('lion-calendar')
+  const autoEvents = buildAutoEvents()
+  const allEvents = [...userEvents, ...autoEvents]
+
+  const totalImoveis = imoveis.reduce((s, i) => s + (parseFloat(i.valorAtual || i.valor || '0') || 0), 0)
+  const totalProdutos = produtos.reduce((s, p) => s + (parseFloat(p.valor || '0') || 0) * (parseInt(p.quantidade || '1') || 1), 0)
+  const totalVeiculos = vehicles.reduce((s, v) => {
+    const m = v.notes?.match(/Atual:\s*R\$\s*([\d.,]+)/)
+    return m ? s + (parseFloat(m[1].replace(/\./g, '').replace(',', '.')) || 0) : s
+  }, 0)
+  const totalPatrimonio = totalImoveis + totalProdutos + totalVeiculos
+
+  const now = new Date()
+  const curMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
+  const txsAteMes = txs.filter(t => t.date <= curMonth)
+  const totalReceitas = txsAteMes.reduce((s, t) => t.type === 'receita' ? s + t.amount : s, 0)
+  const totalDespesas = txsAteMes.reduce((s, t) => t.type === 'despesa' ? s + t.amount : s, 0)
+  const saldo = totalReceitas - totalDespesas
+
+  const pendingBills = bills.filter(b => effectiveStatus(b) === 'em_aberto' || effectiveStatus(b) === 'vencido')
+  const countAberto = bills.filter(b => effectiveStatus(b) === 'em_aberto').length
+  const countVencido = bills.filter(b => effectiveStatus(b) === 'vencido').length
+  const totalAberto = pendingBills.reduce((s, b) => s + b.amount, 0)
+  const upcomingBills = pendingBills.sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 5)
+
+  const today = now.toISOString().slice(0, 10)
+  const in7 = new Date(now.getTime() + 7 * 86400000).toISOString().slice(0, 10)
+  const eventsToday = allEvents.filter(e => e.date === today).length
+  const eventsWeek = allEvents.filter(e => e.date >= today && e.date <= in7).length
+  const upcomingEvents = allEvents.filter(e => e.date >= today).sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)).slice(0, 6)
+
+  const recentTxs = txs.filter(t => t.date <= curMonth).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5)
+
+  const calColors: Record<string, string> = { financeiro: '#3b82f6', pessoal: '#8b5cf6', viagem: '#f59e0b', manutencao: '#10b981', sistema: '#94a3b8' }
   const fmtHa = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' ha'
+  const fmtDay = (d: string) => { const [,m,dd] = d.split('-'); return `${dd}/${m}` }
+
   return (
     <main className="dash-content">
-      {fazArr.length === 0 ? (
-        <div className="bc" style={{ textAlign: 'center', padding: '48px 24px', color: 'var(--text)', opacity: .6 }}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ width: 40, height: 40, marginBottom: 10, opacity: .4 }}><path d="M3 21C7 13 17 13 21 21" strokeLinecap="round"/><path d="M12 3c2 4 7 6 9 5-1 3-6 6-9 4-3 2-8 0-9-4 2 1 7 0 9-5z" strokeLinejoin="round"/></svg>
-          <div style={{ fontSize: 14, fontWeight: 600, marginBottom: 6 }}>Nenhuma fazenda cadastrada</div>
-          <button className="feed-empty-btn" onClick={onNavigate}>Ir para Terra</button>
+      {/* ── Summary Widgets ── */}
+      <div className="dash-widgets">
+        <div className="bc dash-widget" onClick={() => onNavigate('patrimonio')} title="Ver Patrimônio">
+          <div className="metric-ico mi-blue">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l7-6 7 6v9H3V9z" strokeLinejoin="round"/><path d="M7 18V12h6v6" strokeLinecap="round"/></svg>
+          </div>
+          <div className="dash-widget-body">
+            <div className="dash-widget-title">Patrimônio</div>
+            <div className="dash-widget-value">{fmtCurrency(totalPatrimonio)}</div>
+            <div className="dash-widget-sub">{imoveis.length} imóveis · {produtos.length} bens · {vehicles.length} veículos</div>
+          </div>
         </div>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
-          {fazArr.map(fz => (
-            <div key={fz.id} className="bc" style={{ cursor: 'pointer', padding: 0, overflow: 'hidden' }} onClick={onNavigate} title="Ver Terra">
-              <FazendaMiniMap faz={fz} talhoes={talArr} />
-              <div style={{ padding: '10px 12px' }}>
-                <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text3)', marginBottom: 2 }}>{fz.nome}</div>
-                <div style={{ fontSize: 11, color: 'var(--text)', opacity: .7 }}>{fmtHa(fz.areaTotal)}{fz.municipio ? ` · ${fz.municipio}` : ''}</div>
-              </div>
+
+        <div className="bc dash-widget" onClick={() => onNavigate('financas')} title="Ver Finanças">
+          <div className="metric-ico" style={{ background: saldo >= 0 ? 'rgba(16,185,129,.15)' : 'rgba(239,68,68,.15)', color: saldo >= 0 ? 'var(--green)' : 'var(--red)' }}>
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 2v16M6 6l4-4 4 4" strokeLinecap="round" strokeLinejoin="round"/><path d="M3 10h14" strokeLinecap="round"/></svg>
+          </div>
+          <div className="dash-widget-body">
+            <div className="dash-widget-title">Finanças</div>
+            <div className="dash-widget-value" style={{ color: saldo >= 0 ? 'var(--green)' : 'var(--red)' }}>{fmtCurrency(saldo)}</div>
+            <div className="dash-widget-sub">Receitas: {fmtCurrency(totalReceitas)} · Despesas: {fmtCurrency(totalDespesas)}</div>
+          </div>
+        </div>
+
+        <div className="bc dash-widget" onClick={() => onNavigate('payment-hub')} title="Ver Hub de Pagamentos">
+          <div className="metric-ico" style={{ background: 'rgba(245,158,11,.15)', color: 'var(--amber)' }}>
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="4" width="14" height="13" rx="2"/><path d="M3 8h14" strokeLinecap="round"/><path d="M7 12h3" strokeLinecap="round"/></svg>
+          </div>
+          <div className="dash-widget-body">
+            <div className="dash-widget-title">Hub de Pagamentos</div>
+            <div className="dash-widget-value">{countAberto + countVencido} pendentes</div>
+            <div className="dash-widget-sub">
+              {countVencido > 0 && <span style={{ color: 'var(--red)' }}>{countVencido} vencida{countVencido !== 1 ? 's' : ''} · </span>}
+              {fmtCurrency(totalAberto)} em aberto
             </div>
-          ))}
+          </div>
         </div>
-      )}
+
+        <div className="bc dash-widget" onClick={() => onNavigate('calendar')} title="Ver Calendário">
+          <div className="metric-ico" style={{ background: 'rgba(139,92,246,.15)', color: '#8b5cf6' }}>
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="4" width="14" height="14" rx="2"/><path d="M3 8h14" strokeLinecap="round"/><path d="M7 2v4M13 2v4" strokeLinecap="round"/><circle cx="10" cy="13" r="1.5" fill="currentColor" stroke="none"/></svg>
+          </div>
+          <div className="dash-widget-body">
+            <div className="dash-widget-title">Calendário</div>
+            <div className="dash-widget-value">{eventsToday} evento{eventsToday !== 1 ? 's' : ''} hoje</div>
+            <div className="dash-widget-sub">{eventsWeek} nos próximos 7 dias</div>
+          </div>
+        </div>
+      </div>
+
+      {/* ── Detail Grid: 2 columns ── */}
+      <div className="dash-detail-grid">
+        {/* Left column */}
+        <div className="dash-detail-col">
+          {/* Próximos eventos */}
+          <div className="bc dash-list-card">
+            <div className="dash-list-header" onClick={() => onNavigate('calendar')} style={{ cursor: 'pointer' }}>
+              <span className="dash-list-title">Próximos eventos</span>
+              <span className="dash-list-link">Ver todos &rsaquo;</span>
+            </div>
+            {upcomingEvents.length === 0 ? (
+              <div className="dash-list-empty">Nenhum evento próximo</div>
+            ) : (
+              <div className="dash-list-items">
+                {upcomingEvents.map((ev, i) => (
+                  <div key={ev.id + i} className="dash-list-item" onClick={() => onNavigate('calendar')} style={{ cursor: 'pointer' }}>
+                    <div className="dash-ev-dot" style={{ background: calColors[ev.category] || '#94a3b8' }} />
+                    <div className="dash-list-item-body">
+                      <div className="dash-list-item-title">{ev.title}</div>
+                      <div className="dash-list-item-meta">{fmtDay(ev.date)}{ev.time ? ` · ${ev.time}` : ''}</div>
+                    </div>
+                    {ev.date === today && <span className="dash-badge dash-badge-today">Hoje</span>}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Últimas transações */}
+          <div className="bc dash-list-card">
+            <div className="dash-list-header" onClick={() => onNavigate('financas')} style={{ cursor: 'pointer' }}>
+              <span className="dash-list-title">Últimas transações</span>
+              <span className="dash-list-link">Ver todas &rsaquo;</span>
+            </div>
+            {recentTxs.length === 0 ? (
+              <div className="dash-list-empty">Nenhuma transação registrada</div>
+            ) : (
+              <div className="dash-list-items">
+                {recentTxs.map(tx => (
+                  <div key={tx.id} className="dash-list-item" onClick={() => onNavigate('financas')} style={{ cursor: 'pointer' }}>
+                    <div className="dash-tx-icon" style={{ background: tx.type === 'receita' ? 'rgba(16,185,129,.15)' : 'rgba(239,68,68,.15)', color: tx.type === 'receita' ? 'var(--green)' : 'var(--red)' }}>
+                      {tx.type === 'receita' ? '+' : '-'}
+                    </div>
+                    <div className="dash-list-item-body">
+                      <div className="dash-list-item-title">{tx.description}</div>
+                      <div className="dash-list-item-meta">{tx.category} · {tx.date}</div>
+                    </div>
+                    <div className="dash-list-item-amount" style={{ color: tx.type === 'receita' ? 'var(--green)' : 'var(--red)' }}>
+                      {tx.type === 'receita' ? '+' : '-'}{fmtCurrency(tx.amount)}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right column */}
+        <div className="dash-detail-col">
+          {/* Contas a pagar */}
+          <div className="bc dash-list-card">
+            <div className="dash-list-header" onClick={() => onNavigate('payment-hub')} style={{ cursor: 'pointer' }}>
+              <span className="dash-list-title">Contas pendentes</span>
+              <span className="dash-list-link">Ver todas &rsaquo;</span>
+            </div>
+            {upcomingBills.length === 0 ? (
+              <div className="dash-list-empty">Nenhuma conta pendente</div>
+            ) : (
+              <div className="dash-list-items">
+                {upcomingBills.map(bill => {
+                  const st = effectiveStatus(bill)
+                  const coll = collectors.find(c => c.id === bill.collectorId)
+                  return (
+                    <div key={bill.id} className="dash-list-item" onClick={() => onNavigate('payment-hub')} style={{ cursor: 'pointer' }}>
+                      <div className="dash-bill-dot" style={{ background: coll?.color || 'var(--amber)' }} />
+                      <div className="dash-list-item-body">
+                        <div className="dash-list-item-title">{bill.description || coll?.name || 'Conta'}</div>
+                        <div className="dash-list-item-meta">
+                          Vence {fmtDay(bill.dueDate)}
+                          {st === 'vencido' && <span style={{ color: 'var(--red)', fontWeight: 600 }}> · Vencida</span>}
+                        </div>
+                      </div>
+                      <div className="dash-list-item-amount">{fmtCurrency(bill.amount)}</div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* Fazendas */}
+          <div className="bc dash-list-card">
+            <div className="dash-list-header" onClick={() => onNavigate('terra')} style={{ cursor: 'pointer' }}>
+              <span className="dash-list-title">Fazendas</span>
+              <span className="dash-list-link">Ver todas &rsaquo;</span>
+            </div>
+            {fazArr.length === 0 ? (
+              <div className="dash-list-empty">
+                <div style={{ marginBottom: 8 }}>Nenhuma fazenda cadastrada</div>
+                <button className="feed-empty-btn" onClick={() => onNavigate('terra')}>Ir para Terra</button>
+              </div>
+            ) : (
+              <div className="dash-fazenda-grid">
+                {fazArr.map(fz => (
+                  <div key={fz.id} className="dash-fazenda-card" onClick={() => onNavigate('terra')} title="Ver Terra">
+                    <FazendaMiniMap faz={fz} talhoes={talArr} />
+                    <div style={{ padding: '8px 10px' }}>
+                      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text3)', marginBottom: 1 }}>{fz.nome}</div>
+                      <div style={{ fontSize: 10, color: 'var(--text)', opacity: .7 }}>{fmtHa(fz.areaTotal)}{fz.municipio ? ` · ${fz.municipio}` : ''}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
     </main>
   )
 }
@@ -534,18 +726,29 @@ export default function App() {
   const [customLogo, setCustomLogo] = useState<string>(() => localStorage.getItem('lion-logo') || '')
 
   useEffect(() => {
-    const onLogoChange = () => setCustomLogo(localStorage.getItem('lion-logo') || '')
+    const onLogoChange = () => {
+      const newLogo = localStorage.getItem('lion-logo') || ''
+      setCustomLogo(newLogo)
+      if (!localStorage.getItem('lion-favicon') && newLogo) {
+        const link = document.querySelector<HTMLLinkElement>('link[rel~="icon"]') || (() => {
+          const l = document.createElement('link'); l.rel = 'icon'; document.head.appendChild(l); return l
+        })()
+        link.href = newLogo
+      }
+    }
     window.addEventListener('lion-logo-changed', onLogoChange)
     return () => window.removeEventListener('lion-logo-changed', onLogoChange)
   }, [])
 
   useEffect(() => {
     const fav = localStorage.getItem('lion-favicon')
-    if (fav) {
+    const logoData = localStorage.getItem('lion-logo')
+    const src = fav || logoData
+    if (src) {
       const link = document.querySelector<HTMLLinkElement>('link[rel~="icon"]') || (() => {
         const l = document.createElement('link'); l.rel = 'icon'; document.head.appendChild(l); return l
       })()
-      link.href = fav
+      link.href = src
     }
   }, [])
   const [searchQ, setSearchQ] = useState('')
@@ -763,7 +966,7 @@ export default function App() {
         <div className="topbar-brand">
           <div className="topbar-brand-mark">
             {customLogo
-              ? <img src={customLogo} alt="Logo" style={{ width: 32, height: 32, objectFit: 'contain', borderRadius: 6 }} />
+              ? <img src={customLogo} alt="Logo" style={{ width: 64, height: 64, objectFit: 'contain', borderRadius: 12 }} />
               : <svg viewBox="0 0 32 32" fill="none">
                   <rect width="32" height="32" rx="10" fill="#1a1a1a"/>
                   <text x="16" y="22" textAnchor="middle" fontFamily="Arial, Helvetica, sans-serif" fontWeight="800" fontSize="18" fill="white" letterSpacing="-1">L<tspan fill="#3b82f6">I</tspan></text>
@@ -880,7 +1083,7 @@ export default function App() {
       )}
 
       {/* ── Dashboard: visão geral Terra ── */}
-      {sidebarPage === 'dashboard' && <DashTerraOverview onNavigate={() => setSidebarPage('terra')} />}
+      {sidebarPage === 'dashboard' && <Dashboard onNavigate={(p) => { setSidebarPage(p); setShowSidebar(false) }} />}
 
       {/* keep legacy section components referenced to avoid unused-locals TS error */}
       {false && <><PatrimonySection /><NotesSection onOpenNotepad={toggleNp} /><RentalsSection /><MaintenanceSection /><VehicleHistorySection />{fxRates}{toggleShare}{showKbLegend}</>}
