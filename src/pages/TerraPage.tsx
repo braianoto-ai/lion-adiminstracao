@@ -48,6 +48,10 @@ export default function TerraPage() {
   const [notaForm, setNotaForm] = useState({ titulo: '', conteudo: '', cor: '#3b82f6', icone: 'geral' as NotaCategoria, fotoUrl: '' })
   const notasLayerRef = useRef<L.LayerGroup | null>(null)
   const [hiddenNotas, setHiddenNotas] = useState(false)
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(new Set())
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
+  const toggleSection = (k: string) => setCollapsedSections(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n })
+  const toggleGroup = (k: string) => setCollapsedGroups(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n })
 
   const emptyFazenda: Omit<TerraFazenda, 'id' | 'createdAt'> = {
     nome: '', municipio: '', uf: 'PR', matricula: '', carNumero: '', itrNumero: '', ccir: '',
@@ -68,6 +72,11 @@ export default function TerraPage() {
   useEffect(() => { if (fazendas.length && !activeFazendaId) setActiveFazendaId(fazendas[0].id) }, [fazendas, activeFazendaId])
   const fazTalhoes = useMemo(() => talhoes.filter(t => t.fazendaId === fazenda?.id), [talhoes, fazenda])
   const fazNotas = useMemo(() => notas.filter(n => n.fazendaId === fazenda?.id), [notas, fazenda])
+  const talhoesByUso = useMemo(() => {
+    const groups: Record<string, typeof fazTalhoes> = {}
+    for (const t of fazTalhoes) { const key = t.uso || 'outro'; (groups[key] ??= []).push(t) }
+    return TALHAO_USOS.filter(u => groups[u.value]).map(u => ({ uso: u, items: groups[u.value]! }))
+  }, [fazTalhoes])
 
   const reservaMinPct = useMemo(() => {
     if (!fazenda) return 20
@@ -827,158 +836,192 @@ export default function TerraPage() {
           )}
         </div>
         {showMapSidebar && <div className="terra-map-sidebar">
+          {/* ── Seção Fazenda ── */}
           {fazenda && (
-            <div className="terra-sidebar-fazenda">
-              <div className="terra-sidebar-fazenda-name">{fazenda.nome}</div>
-              {fazenda.municipio && <div className="terra-sidebar-fazenda-loc">{fazenda.municipio}{fazenda.uf ? ` — ${fazenda.uf}` : ''}</div>}
-              <div className="terra-sidebar-stats">
-                <div className="terra-sidebar-stat">
-                  <span className="terra-sidebar-stat-val">{fmtHa(fazenda.areaTotal)}</span>
-                  <span className="terra-sidebar-stat-lbl">Área Total</span>
-                </div>
-                <div className="terra-sidebar-stat">
-                  <span className="terra-sidebar-stat-val">{fmtHa(fazenda.areaUtil)}</span>
-                  <span className="terra-sidebar-stat-lbl">Área Útil</span>
-                </div>
-                <div className="terra-sidebar-stat">
-                  <span className="terra-sidebar-stat-val">{fmtHa(fazenda.areaReservaLegal + fazenda.areaApp)}</span>
-                  <span className="terra-sidebar-stat-lbl">Reserva + APP</span>
-                </div>
-              </div>
-              {fazenda.areaTotal > 0 && (
-                <div className="terra-sidebar-utiliz">
-                  <div className="terra-sidebar-utiliz-bar">
-                    <div className="terra-sidebar-utiliz-fill" style={{ width: `${Math.min(100, (fazenda.areaUtil / fazenda.areaTotal) * 100)}%` }} />
-                  </div>
-                  <span className="terra-sidebar-utiliz-lbl">{((fazenda.areaUtil / fazenda.areaTotal) * 100).toFixed(0)}% utilização</span>
-                </div>
-              )}
-              <div className="terra-sidebar-meta">
-                {fazenda.bioma && <span>{fazenda.bioma}</span>}
-                {fazenda.tipoSolo && <span>{fazenda.tipoSolo}</span>}
-                {fazenda.relevo && <span>{fazenda.relevo}</span>}
-              </div>
-            </div>
-          )}
-          {fazTalhoes.length > 0 && (
             <>
-            <div className="terra-map-sidebar-title">
-              Talhões ({fazTalhoes.length})
-              <button className="terra-toggle-all" onClick={() => {
+            <div className="terra-section-toggle" onClick={() => toggleSection('fazenda')}>
+              <span className="terra-section-chevron" data-collapsed={collapsedSections.has('fazenda')}>&#9662;</span>
+              <span>Fazenda</span>
+            </div>
+            {!collapsedSections.has('fazenda') && (
+              <div className="terra-sidebar-fazenda">
+                <div className="terra-sidebar-fazenda-name">{fazenda.nome}</div>
+                {fazenda.municipio && <div className="terra-sidebar-fazenda-loc">{fazenda.municipio}{fazenda.uf ? ` — ${fazenda.uf}` : ''}</div>}
+                <div className="terra-sidebar-stats">
+                  <div className="terra-sidebar-stat">
+                    <span className="terra-sidebar-stat-val">{fmtHa(fazenda.areaTotal)}</span>
+                    <span className="terra-sidebar-stat-lbl">Área Total</span>
+                  </div>
+                  <div className="terra-sidebar-stat">
+                    <span className="terra-sidebar-stat-val">{fmtHa(fazenda.areaUtil)}</span>
+                    <span className="terra-sidebar-stat-lbl">Área Útil</span>
+                  </div>
+                  <div className="terra-sidebar-stat">
+                    <span className="terra-sidebar-stat-val">{fmtHa(fazenda.areaReservaLegal + fazenda.areaApp)}</span>
+                    <span className="terra-sidebar-stat-lbl">Reserva + APP</span>
+                  </div>
+                </div>
+                {fazenda.areaTotal > 0 && (
+                  <div className="terra-sidebar-utiliz">
+                    <div className="terra-sidebar-utiliz-bar">
+                      <div className="terra-sidebar-utiliz-fill" style={{ width: `${Math.min(100, (fazenda.areaUtil / fazenda.areaTotal) * 100)}%` }} />
+                    </div>
+                    <span className="terra-sidebar-utiliz-lbl">{((fazenda.areaUtil / fazenda.areaTotal) * 100).toFixed(0)}% utilização</span>
+                  </div>
+                )}
+                <div className="terra-sidebar-meta">
+                  {fazenda.bioma && <span>{fazenda.bioma}</span>}
+                  {fazenda.tipoSolo && <span>{fazenda.tipoSolo}</span>}
+                  {fazenda.relevo && <span>{fazenda.relevo}</span>}
+                </div>
+              </div>
+            )}
+            </>
+          )}
+
+          {/* ── Seção Talhões ── */}
+          <div className="terra-section-toggle" onClick={() => toggleSection('talhoes')}>
+            <span className="terra-section-chevron" data-collapsed={collapsedSections.has('talhoes')}>&#9662;</span>
+            <span>Talhões ({fazTalhoes.length})</span>
+            {fazTalhoes.length > 0 && (
+              <button className="terra-toggle-all" onClick={e => {
+                e.stopPropagation()
                 if (hiddenTalhoes.size === 0) setHiddenTalhoes(new Set(fazTalhoes.map(t => t.id)))
                 else setHiddenTalhoes(new Set())
               }}>{hiddenTalhoes.size === 0 ? 'Ocultar todos' : 'Mostrar todos'}</button>
-            </div>
-            <div className="terra-sidebar-mapped">
-              {somaTalhoes > 0 && fazenda && fazenda.areaTotal > 0 && (
-                <span className="terra-sidebar-mapped-lbl">{fmtHa(somaTalhoes)} mapeados ({((somaTalhoes / fazenda.areaTotal) * 100).toFixed(0)}%)</span>
-              )}
-            </div>
-            {fazTalhoes.map(t => {
-              const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
-              const drawn = t.poligono.length >= 3
-              const visible = !hiddenTalhoes.has(t.id)
-              const cor = t.cor || usoInfo?.cor || '#6b7280'
-              const pct = fazenda && fazenda.areaTotal > 0 ? ((t.areaHa / fazenda.areaTotal) * 100).toFixed(1) : '—'
-              return (
-                <div key={t.id} className={`terra-map-talhao-item${!visible ? ' terra-talhao-hidden' : ''}`}>
-                  <div className="terra-sidebar-color-dot" style={{ background: cor }} />
-                  <div className="terra-map-talhao-info">
-                    <div className="terra-sidebar-row1">
-                      <strong>{t.nome}</strong>
-                      <span className="terra-sidebar-area">{fmtHa(t.areaHa)}</span>
-                    </div>
-                    <div className="terra-sidebar-row2">
-                      <span className="terra-talhao-badge" style={{ background: cor, fontSize: 'calc(.6rem * var(--fs))', padding: '1px 8px' }}>{usoInfo?.label}</span>
-                      <span className="terra-sidebar-pct">{pct}%{t.cultura ? ` · ${t.cultura}` : ''}</span>
-                    </div>
-                    <div className="terra-sidebar-row3">
-                      <input type="checkbox" checked={visible} onChange={() => setHiddenTalhoes(prev => {
-                        const next = new Set(prev)
-                        if (next.has(t.id)) next.delete(t.id); else next.add(t.id)
-                        return next
-                      })} className="terra-talhao-check" style={{ accentColor: cor }} title={visible ? 'Ocultar' : 'Mostrar'} />
-                      {terraEditMode && (
-                        <>
-                          <input type="color" value={cor} onChange={e => setTalhoes(prev => prev.map(x => x.id === t.id ? { ...x, cor: e.target.value } : x))} className="terra-color-swatch" title="Alterar cor" />
-                          {drawMode === 'none' && !showQuickTalhao && !editingMapTalhaoId && (
-                            <>
-                              <span className="terra-sidebar-action-sep" />
-                              {drawn && (
-                                <button className="terra-btn-draw-sm terra-btn-edit-map" onClick={() => startEditMapTalhao(t.id)} title="Editar no mapa">
-                                  <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="10" height="10" rx="1" strokeDasharray="3 2"/><circle cx="3" cy="3" r="1.5" fill="currentColor" stroke="none"/><circle cx="13" cy="3" r="1.5" fill="currentColor" stroke="none"/><circle cx="3" cy="13" r="1.5" fill="currentColor" stroke="none"/><circle cx="13" cy="13" r="1.5" fill="currentColor" stroke="none"/></svg>
-                                </button>
-                              )}
-                              <button className="terra-btn-draw-sm" onClick={() => { setDrawTalhaoId(t.id); setDrawMode('talhao'); setDrawPoints([]) }} title={drawn ? 'Redesenhar' : 'Desenhar'}>
-                                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 2l3 3-9 9H2v-3z" strokeLinejoin="round"/></svg>
-                              </button>
-                              {drawn && (
-                                <button className="terra-btn-draw-sm terra-btn-clear-poly" onClick={() => setTalhoes(prev => prev.map(x => x.id === t.id ? { ...x, poligono: [] } : x))} title="Limpar polígono">
-                                  <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 14h7M3.5 10.5l7-7 3 3-5 5H5.5L3.5 10.5z" strokeLinejoin="round"/></svg>
-                                </button>
-                              )}
-                              <button className="terra-btn-draw-sm terra-btn-del-talhao" onClick={() => deleteTalhao(t.id)} title="Excluir">
-                                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h8v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4zM6 2h4M3 4h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                              </button>
-                            </>
-                          )}
-                        </>
-                      )}
-                    </div>
+            )}
+          </div>
+          {!collapsedSections.has('talhoes') && (
+            <>
+            {fazTalhoes.length > 0 ? (
+              <>
+              <div className="terra-sidebar-mapped">
+                {somaTalhoes > 0 && fazenda && fazenda.areaTotal > 0 && (
+                  <span className="terra-sidebar-mapped-lbl">{fmtHa(somaTalhoes)} mapeados ({((somaTalhoes / fazenda.areaTotal) * 100).toFixed(0)}%)</span>
+                )}
+              </div>
+              {talhoesByUso.map(({ uso, items }) => (
+                <div key={uso.value} className="terra-talhao-group">
+                  <div className="terra-group-header" onClick={() => toggleGroup(uso.value)}>
+                    <span className="terra-section-chevron" data-collapsed={collapsedGroups.has(uso.value)}>&#9662;</span>
+                    <span className="terra-legend-dot" style={{ background: uso.cor }} />
+                    <span>{uso.label} ({items.length})</span>
+                    <span className="terra-group-area">{fmtHa(items.reduce((s, t) => s + t.areaHa, 0))}</span>
                   </div>
+                  {!collapsedGroups.has(uso.value) && items.map(t => {
+                    const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
+                    const drawn = t.poligono.length >= 3
+                    const visible = !hiddenTalhoes.has(t.id)
+                    const cor = t.cor || usoInfo?.cor || '#6b7280'
+                    const pct = fazenda && fazenda.areaTotal > 0 ? ((t.areaHa / fazenda.areaTotal) * 100).toFixed(1) : '—'
+                    return (
+                      <div key={t.id} className={`terra-map-talhao-item${!visible ? ' terra-talhao-hidden' : ''}`}>
+                        <div className="terra-sidebar-color-dot" style={{ background: cor }} />
+                        <div className="terra-map-talhao-info">
+                          <div className="terra-sidebar-row1">
+                            <strong>{t.nome}</strong>
+                            <span className="terra-sidebar-area">{fmtHa(t.areaHa)}</span>
+                          </div>
+                          <div className="terra-sidebar-row2">
+                            <span className="terra-talhao-badge" style={{ background: cor, fontSize: 'calc(.6rem * var(--fs))', padding: '1px 8px' }}>{usoInfo?.label}</span>
+                            <span className="terra-sidebar-pct">{pct}%{t.cultura ? ` · ${t.cultura}` : ''}</span>
+                          </div>
+                          <div className="terra-sidebar-row3">
+                            <input type="checkbox" checked={visible} onChange={() => setHiddenTalhoes(prev => {
+                              const next = new Set(prev)
+                              if (next.has(t.id)) next.delete(t.id); else next.add(t.id)
+                              return next
+                            })} className="terra-talhao-check" style={{ accentColor: cor }} title={visible ? 'Ocultar' : 'Mostrar'} />
+                            {terraEditMode && (
+                              <>
+                                <input type="color" value={cor} onChange={e => setTalhoes(prev => prev.map(x => x.id === t.id ? { ...x, cor: e.target.value } : x))} className="terra-color-swatch" title="Alterar cor" />
+                                {drawMode === 'none' && !showQuickTalhao && !editingMapTalhaoId && (
+                                  <>
+                                    <span className="terra-sidebar-action-sep" />
+                                    {drawn && (
+                                      <button className="terra-btn-draw-sm terra-btn-edit-map" onClick={() => startEditMapTalhao(t.id)} title="Editar no mapa">
+                                        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="10" height="10" rx="1" strokeDasharray="3 2"/><circle cx="3" cy="3" r="1.5" fill="currentColor" stroke="none"/><circle cx="13" cy="3" r="1.5" fill="currentColor" stroke="none"/><circle cx="3" cy="13" r="1.5" fill="currentColor" stroke="none"/><circle cx="13" cy="13" r="1.5" fill="currentColor" stroke="none"/></svg>
+                                      </button>
+                                    )}
+                                    <button className="terra-btn-draw-sm" onClick={() => { setDrawTalhaoId(t.id); setDrawMode('talhao'); setDrawPoints([]) }} title={drawn ? 'Redesenhar' : 'Desenhar'}>
+                                      <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 2l3 3-9 9H2v-3z" strokeLinejoin="round"/></svg>
+                                    </button>
+                                    {drawn && (
+                                      <button className="terra-btn-draw-sm terra-btn-clear-poly" onClick={() => setTalhoes(prev => prev.map(x => x.id === t.id ? { ...x, poligono: [] } : x))} title="Limpar polígono">
+                                        <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 14h7M3.5 10.5l7-7 3 3-5 5H5.5L3.5 10.5z" strokeLinejoin="round"/></svg>
+                                      </button>
+                                    )}
+                                    <button className="terra-btn-draw-sm terra-btn-del-talhao" onClick={() => deleteTalhao(t.id)} title="Excluir">
+                                      <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h8v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4zM6 2h4M3 4h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                    </button>
+                                  </>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
-              )
-            })}
-            <div className="terra-map-legend-section">
-              {TALHAO_USOS.filter(u => fazTalhoes.some(t => t.uso === u.value)).map(u => (
-                <span key={u.value} className="terra-legend-item"><span className="terra-legend-dot" style={{ background: u.cor }} />{u.label}</span>
               ))}
-            </div>
+              </>
+            ) : (
+              fazenda && <p className="terra-muted" style={{ padding: '8px 0', fontSize: 'calc(.75rem * var(--fs))' }}>Nenhum talhão cadastrado.</p>
+            )}
             </>
           )}
-          {!fazTalhoes.length && fazenda && <p className="terra-muted" style={{ padding: '8px 0', fontSize: 'calc(.75rem * var(--fs))' }}>Nenhum talhão cadastrado.</p>}
+
+          {/* ── Seção Notas ── */}
           {fazenda && (
             <>
-            <div className="terra-map-sidebar-title">
-              Notas ({fazNotas.length})
+            <div className="terra-section-toggle" onClick={() => toggleSection('notas')}>
+              <span className="terra-section-chevron" data-collapsed={collapsedSections.has('notas')}>&#9662;</span>
+              <span>Notas ({fazNotas.length})</span>
               {fazNotas.length > 0 && (
-                <button className="terra-toggle-all" onClick={() => setHiddenNotas(v => !v)}>
+                <button className="terra-toggle-all" onClick={e => { e.stopPropagation(); setHiddenNotas(v => !v) }}>
                   {hiddenNotas ? 'Mostrar' : 'Ocultar'}
                 </button>
               )}
             </div>
-            {fazNotas.map(n => {
-              const catInfo = NOTA_CATEGORIAS.find(c => c.value === n.icone)
-              return (
-                <div key={n.id} className="terra-map-nota-item" onClick={() => {
-                  if (leafletMap.current) leafletMap.current.setView([n.lat, n.lng], 16)
-                }}>
-                  <div className="terra-nota-dot" style={{ background: n.cor || catInfo?.cor }}>
-                    {catInfo?.emoji || '📝'}
-                  </div>
-                  <div className="terra-map-talhao-info">
-                    <strong style={{ fontSize: 'calc(.78rem * var(--fs))' }}>{n.titulo}</strong>
-                    <div className="terra-sidebar-row2">
-                      <span className="terra-talhao-badge" style={{ background: n.cor || catInfo?.cor, fontSize: 'calc(.6rem * var(--fs))', padding: '1px 8px' }}>{catInfo?.label}</span>
-                      <span className="terra-sidebar-pct">{new Date(n.createdAt).toLocaleDateString('pt-BR')}</span>
+            {!collapsedSections.has('notas') && (
+              <>
+              {fazNotas.map(n => {
+                const catInfo = NOTA_CATEGORIAS.find(c => c.value === n.icone)
+                return (
+                  <div key={n.id} className="terra-map-nota-item" onClick={() => {
+                    if (leafletMap.current) leafletMap.current.setView([n.lat, n.lng], 16)
+                  }}>
+                    <div className="terra-nota-dot" style={{ background: n.cor || catInfo?.cor }}>
+                      {catInfo?.emoji || '📝'}
                     </div>
-                    {terraEditMode && drawMode === 'none' && !editingMapTalhaoId && (
-                      <div className="terra-sidebar-row3">
-                        <button className="terra-btn-draw-sm" onClick={e => { e.stopPropagation(); editNota(n) }} title="Editar">
-                          <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 2l3 3-9 9H2v-3z" strokeLinejoin="round"/></svg>
-                        </button>
-                        <button className="terra-btn-draw-sm terra-btn-del-talhao" onClick={e => { e.stopPropagation(); deleteNota(n.id) }} title="Excluir">
-                          <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h8v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4zM6 2h4M3 4h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                        </button>
+                    <div className="terra-map-talhao-info">
+                      <strong style={{ fontSize: 'calc(.78rem * var(--fs))' }}>{n.titulo}</strong>
+                      <div className="terra-sidebar-row2">
+                        <span className="terra-talhao-badge" style={{ background: n.cor || catInfo?.cor, fontSize: 'calc(.6rem * var(--fs))', padding: '1px 8px' }}>{catInfo?.label}</span>
+                        <span className="terra-sidebar-pct">{new Date(n.createdAt).toLocaleDateString('pt-BR')}</span>
                       </div>
-                    )}
+                      {terraEditMode && drawMode === 'none' && !editingMapTalhaoId && (
+                        <div className="terra-sidebar-row3">
+                          <button className="terra-btn-draw-sm" onClick={e => { e.stopPropagation(); editNota(n) }} title="Editar">
+                            <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 2l3 3-9 9H2v-3z" strokeLinejoin="round"/></svg>
+                          </button>
+                          <button className="terra-btn-draw-sm terra-btn-del-talhao" onClick={e => { e.stopPropagation(); deleteNota(n.id) }} title="Excluir">
+                            <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h8v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4zM6 2h4M3 4h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              )
-            })}
-            {!fazNotas.length && <p className="terra-muted" style={{ padding: '4px 0', fontSize: 'calc(.7rem * var(--fs))' }}>Nenhuma nota no mapa.</p>}
+                )
+              })}
+              {!fazNotas.length && <p className="terra-muted" style={{ padding: '4px 0', fontSize: 'calc(.7rem * var(--fs))' }}>Nenhuma nota no mapa.</p>}
+              </>
+            )}
             </>
           )}
+
+          {/* ── Opacidade (sempre visível) ── */}
           <div className="terra-opacity-slider">
             <label>Opacidade <span>{Math.round(adminTalhaoOpacity * 100)}%</span></label>
             <input type="range" min="0" max="100" value={Math.round(adminTalhaoOpacity * 100)} onChange={e => setAdminTalhaoOpacity(Number(e.target.value) / 100)} />
