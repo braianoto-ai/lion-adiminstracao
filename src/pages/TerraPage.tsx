@@ -798,20 +798,6 @@ export default function TerraPage() {
                 <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 1C5.24 1 3 3.24 3 6c0 3.75 5 9 5 9s5-5.25 5-9c0-2.76-2.24-5-5-5z" strokeLinejoin="round"/><circle cx="8" cy="6" r="1.5"/></svg>
                 <span>Nota</span>
               </button>
-              <button className="terra-fab-btn" onClick={() => { setDrawMode('perimetro'); setDrawPoints([]) }} title={fazenda.perimetro.length >= 3 ? 'Redesenhar Perímetro' : 'Desenhar Perímetro'}>
-                <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="2,14 8,2 14,14" strokeLinejoin="round"/></svg>
-                <span>Perímetro</span>
-              </button>
-              {fazenda.perimetro.length >= 3 && (
-                <button className="terra-fab-btn" onClick={() => startEditMapTalhao(PERIM_EDIT_ID)} title="Editar Perímetro">
-                  <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 8a6 6 0 1112 0A6 6 0 012 8z"/><circle cx="5" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/><circle cx="11" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>
-                  <span>Editar Per.</span>
-                </button>
-              )}
-              <button className="terra-fab-btn" onClick={() => { setShowQuickTalhao(true); setQuickTalhaoName(''); setQuickTalhaoUso('lavoura') }} title="Desenhar Talhão">
-                <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="12" height="12" rx="2" strokeLinejoin="round"/><path d="M8 5v6M5 8h6" strokeLinecap="round"/></svg>
-                <span>Talhão</span>
-              </button>
             </div>
           )}
           {showNotaForm && (
@@ -890,6 +876,36 @@ export default function TerraPage() {
             </>
           )}
 
+          {/* ── Seção Perímetro ── */}
+          {fazenda && drawMode === 'none' && !editingMapTalhaoId && !showQuickTalhao && (
+            <>
+            <div className="terra-section-toggle" onClick={() => toggleSection('perimetro')}>
+              <span className="terra-section-chevron" data-collapsed={collapsedSections.has('perimetro')}>&#9662;</span>
+              <span>Perímetro</span>
+            </div>
+            {!collapsedSections.has('perimetro') && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 6, padding: '6px 0 8px' }}>
+                <button className="terra-btn-draw" onClick={() => { setDrawMode('perimetro'); setDrawPoints([]) }}>
+                  <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="2,14 8,2 14,14" strokeLinejoin="round"/></svg>
+                  {fazenda.perimetro.length >= 3 ? 'Redesenhar Perímetro' : 'Desenhar Perímetro'}
+                </button>
+                {fazenda.perimetro.length >= 3 && (
+                  <button className="terra-btn-draw terra-btn-edit-active" onClick={() => startEditMapTalhao(PERIM_EDIT_ID)}>
+                    <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 8a6 6 0 1112 0A6 6 0 012 8z"/><circle cx="5" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/><circle cx="11" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>
+                    Editar Perímetro
+                  </button>
+                )}
+                {fazenda.perimetro.length >= 3 && (
+                  <button className="terra-btn-draw terra-btn-danger" onClick={() => { if (window.confirm('Limpar o perímetro atual? Os talhões não serão afetados.')) setFazendas(prev => prev.map(f => f.id === fazenda.id ? { ...f, perimetro: [] } : f)) }}>
+                    <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h8v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4zM6 2h4M3 4h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Limpar Perímetro
+                  </button>
+                )}
+              </div>
+            )}
+            </>
+          )}
+
           {/* ── Seção Talhões ── */}
           <div className="terra-section-toggle" onClick={() => toggleSection('talhoes')}>
             <span className="terra-section-chevron" data-collapsed={collapsedSections.has('talhoes')}>&#9662;</span>
@@ -900,6 +916,11 @@ export default function TerraPage() {
                 if (hiddenTalhoes.size === 0) setHiddenTalhoes(new Set(fazTalhoes.map(t => t.id)))
                 else setHiddenTalhoes(new Set())
               }}>{hiddenTalhoes.size === 0 ? 'Ocultar todos' : 'Mostrar todos'}</button>
+            )}
+            {fazenda && drawMode === 'none' && !editingMapTalhaoId && !showQuickTalhao && (
+              <button className="terra-toggle-all" style={{ marginLeft: 4 }} onClick={e => { e.stopPropagation(); setShowQuickTalhao(true); setQuickTalhaoName(''); setQuickTalhaoUso('lavoura') }} title="Adicionar talhão">
+                + Talhão
+              </button>
             )}
           </div>
           {!collapsedSections.has('talhoes') && (
