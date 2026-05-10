@@ -260,6 +260,17 @@ export function buildAutoEvents(): CalEvent[] {
     }
   }
 
+  const bills: Bill[] = (() => { try { return JSON.parse(localStorage.getItem('lion-bills') || '[]') } catch { return [] } })()
+  const collectors: Collector[] = (() => { try { return JSON.parse(localStorage.getItem('lion-collectors') || '[]') } catch { return [] } })()
+  for (const b of bills) {
+    if (b.dueDate && b.status !== 'cancelado') {
+      const coll = collectors.find(c => c.id === b.collectorId)
+      const collName = coll?.name || 'Conta'
+      const statusLabel = b.status === 'pago' ? ' ✓' : ''
+      evs.push({ id: `bill-${b.id}`, title: `${collName}: ${b.description}${statusLabel}`, date: b.dueDate, time: '', category: 'financeiro', notes: `R$ ${b.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, auto: true })
+    }
+  }
+
   return evs
 }
 
