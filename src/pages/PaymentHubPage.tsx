@@ -1,9 +1,25 @@
 import { useState } from 'react'
 import { useCloudTable } from '../hooks'
-import { BILL_CATEGORIES, BILL_COLORS, BILL_INIT, BILL_RECURRENCE_LABEL, BILL_STATUS_LABEL, COLL_INIT } from '../constants'
+import { BILL_INIT, BILL_RECURRENCE_LABEL, BILL_STATUS_LABEL, COLL_INIT, BILL_CATEGORIES, BILL_COLORS } from '../constants'
 import { fmtCurrency, fmtDate, effectiveStatus } from '../utils'
 import { CLOUD_BUS } from '../context'
 import type { Collector, Bill, BillStatus, BillRecurrence, Transaction } from '../types'
+
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="ph-modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="ph-modal">
+        <div className="ph-modal-header">
+          <span className="ph-modal-title">{title}</span>
+          <button className="ph-modal-close" onClick={onClose}>
+            <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
+}
 
 function CollectorForm({ initial, onSave, onCancel }: { initial: typeof COLL_INIT; onSave: (v: typeof COLL_INIT) => void; onCancel: () => void }) {
   const [form, setForm] = useState(initial)
@@ -127,22 +143,6 @@ function BillForm({ initial, collectors, onSave, onCancel, onCreateCollector }: 
         <button type="submit" className="btn-accent">Salvar</button>
       </div>
     </form>
-  )
-}
-
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="ph-modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="ph-modal">
-        <div className="ph-modal-header">
-          <span className="ph-modal-title">{title}</span>
-          <button className="ph-modal-close" onClick={onClose}>
-            <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
   )
 }
 
