@@ -456,10 +456,10 @@ function FazendaMiniMap({ faz, talhoes }: { faz: TerraFazenda; talhoes: TerraTal
   return <div ref={divRef} style={{ width: '100%', height: 140, background: 'var(--bg3)' }} />
 }
 
-function Dashboard({ onNavigate }: { onNavigate: (page: SidebarPage) => void }) {
+function Dashboard({ onNavigate, fazendas, talhoes }: { onNavigate: (page: SidebarPage) => void; fazendas: TerraFazenda[]; talhoes: TerraTalhao[] }) {
   const parse = <T,>(key: string): T[] => { try { return JSON.parse(localStorage.getItem(key) || '[]') } catch { return [] } }
-  const fazArr = parse<TerraFazenda>('lion-terra')
-  const talArr = parse<TerraTalhao>('lion-talhoes')
+  const fazArr = fazendas
+  const talArr = talhoes
   const imoveis = parse<Imovel>('lion-imoveis')
   const produtos = parse<Produto>('lion-produtos')
   const vehicles = parse<Vehicle>('lion-vehicles')
@@ -724,6 +724,12 @@ export default function App() {
   const [showSidebar, setShowSidebar] = useState(false)
   const [sidebarPage, setSidebarPage] = useState<SidebarPage>('dashboard')
   const [customLogo, setCustomLogo] = useState<string>(() => localStorage.getItem('lion-logo') || '')
+  const [dashFazendas, setDashFazendas] = useState<TerraFazenda[]>(() => {
+    try { return JSON.parse(localStorage.getItem('lion-terra') || '[]') } catch { return [] }
+  })
+  const [dashTalhoes, setDashTalhoes] = useState<TerraTalhao[]>(() => {
+    try { return JSON.parse(localStorage.getItem('lion-talhoes') || '[]') } catch { return [] }
+  })
 
   useEffect(() => {
     const onLogoChange = () => {
@@ -751,6 +757,12 @@ export default function App() {
       link.href = src
     }
   }, [])
+  // Recarrega dados de Terra sempre que o usuário volta ao Dashboard
+  useEffect(() => {
+    if (sidebarPage !== 'dashboard') return
+    try { setDashFazendas(JSON.parse(localStorage.getItem('lion-terra') || '[]')) } catch { setDashFazendas([]) }
+    try { setDashTalhoes(JSON.parse(localStorage.getItem('lion-talhoes') || '[]')) } catch { setDashTalhoes([]) }
+  }, [sidebarPage])
   const [searchQ, setSearchQ] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
   const [mobileSearchOpen, setMobileSearchOpen] = useState(false)
@@ -1083,7 +1095,7 @@ export default function App() {
       )}
 
       {/* ── Dashboard: visão geral Terra ── */}
-      {sidebarPage === 'dashboard' && <Dashboard onNavigate={(p) => { setSidebarPage(p); setShowSidebar(false) }} />}
+      {sidebarPage === 'dashboard' && <Dashboard onNavigate={(p) => { setSidebarPage(p); setShowSidebar(false) }} fazendas={dashFazendas} talhoes={dashTalhoes} />}
 
       {/* keep legacy section components referenced to avoid unused-locals TS error */}
       {false && <><PatrimonySection /><NotesSection onOpenNotepad={toggleNp} /><RentalsSection /><MaintenanceSection /><VehicleHistorySection />{fxRates}{toggleShare}{showKbLegend}</>}

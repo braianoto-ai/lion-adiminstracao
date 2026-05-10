@@ -83,7 +83,7 @@ function CalendarPage() {
                   <span className="cal-day-num">{day}</span>
                   <div className="cal-dots">
                     {dayEvents.slice(0, 3).map(ev => (
-                      <span key={ev.id} className="cal-dot" style={{ background: CAL_COLORS[ev.category] }} />
+                      <span key={ev.id} className="cal-dot" style={{ background: ev.paid ? '#10b981' : CAL_COLORS[ev.category] }} />
                     ))}
                     {dayEvents.length > 3 && <span className="cal-dot-more">+{dayEvents.length - 3}</span>}
                   </div>
@@ -161,9 +161,9 @@ function CalendarPage() {
               ) : (
                 <div className="cal-events-list">
                   {selectedEvents.map(ev => (
-                    <div key={ev.id} className="cal-event-item" style={{ borderLeftColor: CAL_COLORS[ev.category] }}>
+                    <div key={ev.id} className="cal-event-item" style={{ borderLeftColor: ev.paid ? '#10b981' : CAL_COLORS[ev.category] }}>
                       <div className="cal-event-top">
-                        <span className="cal-event-cat" style={{ color: CAL_COLORS[ev.category] }}>{CAL_LABELS[ev.category]}</span>
+                        <span className="cal-event-cat" style={{ color: ev.paid ? '#10b981' : CAL_COLORS[ev.category] }}>{ev.paid ? 'Pago' : CAL_LABELS[ev.category]}</span>
                         {ev.time && <span className="cal-event-time">{ev.time}</span>}
                         {!ev.auto && <button className="goal-action-btn goal-del-btn" onClick={() => delEvent(ev.id)} style={{ marginLeft:'auto' }}>
                           <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>

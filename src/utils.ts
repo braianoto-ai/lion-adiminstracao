@@ -267,7 +267,7 @@ export function buildAutoEvents(): CalEvent[] {
       const coll = collectors.find(c => c.id === b.collectorId)
       const collName = coll?.name || 'Conta'
       const statusLabel = b.status === 'pago' ? ' ✓' : ''
-      evs.push({ id: `bill-${b.id}`, title: `${collName}: ${b.description}${statusLabel}`, date: b.dueDate, time: '', category: 'financeiro', notes: `R$ ${b.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, auto: true })
+      evs.push({ id: `bill-${b.id}`, title: `${collName}: ${b.description}${statusLabel}`, date: b.dueDate, time: '', category: 'financeiro', notes: `R$ ${b.amount.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`, auto: true, paid: b.status === 'pago' })
     }
   }
 
