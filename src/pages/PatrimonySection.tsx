@@ -1,20 +1,30 @@
 import { useState, useEffect } from 'react'
 import type { Transaction, Goal } from '../types'
+import { CLOUD_BUS } from '../context'
 
-export default 
+export default
 function PatrimonySection() {
-  const txs: Transaction[] = (() => {
+  const [collapsed, setCollapsed] = useState(false)
+  const [txs, setTxs] = useState<Transaction[]>(() => {
     try { return JSON.parse(localStorage.getItem('lion-txs') || '[]') } catch { return [] }
-  })()
-  const goals: Goal[] = (() => {
+  })
+  const [goals, setGoals] = useState<Goal[]>(() => {
     try { return JSON.parse(localStorage.getItem('lion-goals') || '[]') } catch { return [] }
-  })()
+  })
 
-  const [, forceRender] = useState(0)
   useEffect(() => {
-    const handler = () => forceRender(n => n + 1)
-    window.addEventListener('storage', handler)
-    return () => window.removeEventListener('storage', handler)
+    const handleTxs = () => {
+      try { setTxs(JSON.parse(localStorage.getItem('lion-txs') || '[]')) } catch { /* ignore */ }
+    }
+    const handleGoals = () => {
+      try { setGoals(JSON.parse(localStorage.getItem('lion-goals') || '[]')) } catch { /* ignore */ }
+    }
+    CLOUD_BUS.addEventListener('lion-txs', handleTxs)
+    CLOUD_BUS.addEventListener('lion-goals', handleGoals)
+    return () => {
+      CLOUD_BUS.removeEventListener('lion-txs', handleTxs)
+      CLOUD_BUS.removeEventListener('lion-goals', handleGoals)
+    }
   }, [])
 
   const totalGoals = goals.reduce((s, g) => s + (g.current || 0), 0)
@@ -97,8 +107,6 @@ function PatrimonySection() {
       </section>
     )
   }
-
-  const [collapsed, setCollapsed] = useState(false)
 
   return (
     <section className="pat-section">

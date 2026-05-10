@@ -1,7 +1,18 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { supabase } from '../lib/supabase'
 import { DOC_CATEGORIES, BUCKET } from '../constants'
 import type { Imovel, DocMeta } from '../types'
+
+const ICON_FOR_CAT: Record<string, React.ReactElement> = {
+  Escritura: <svg viewBox="0 0 16 16" fill="none"><path d="M4 2a1 1 0 0 1 1-1h5l3 3v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2z" stroke="currentColor" strokeWidth="1.3"/><path d="M10 1v3h3" stroke="currentColor" strokeWidth="1.3"/><path d="M6 8h4M6 11h2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
+  IPTU:      <svg viewBox="0 0 16 16" fill="none"><path d="M2 7l6-5 6 5v7H2V7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 14V9h4v5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
+  Contrato:  <svg viewBox="0 0 16 16" fill="none"><path d="M4 2a1 1 0 0 1 1-1h5l3 3v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2z" stroke="currentColor" strokeWidth="1.3"/><path d="M10 1v3h3" stroke="currentColor" strokeWidth="1.3"/><path d="M6 6h4M6 8.5h4M6 11h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
+  Seguro:    <svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5L2 4v4c0 3.5 2.5 5.8 6 6.5 3.5-.7 6-3 6-6.5V4L8 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M5.5 8l2 2 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
+  Planta:    <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1" stroke="currentColor" strokeWidth="1.3"/><path d="M2 6h12M6 6v8M6 2v4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
+  Comprovante:<svg viewBox="0 0 16 16" fill="none"><path d="M3 1h10v14l-2-1.5-2 1.5-2-1.5-2 1.5L3 15V1z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 6h4M6 8.5h3M6 11h4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
+  Laudo:     <svg viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.3"/><path d="M10.5 10.5l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
+  Outros:    <svg viewBox="0 0 16 16" fill="none"><path d="M4 2a1 1 0 0 1 1-1h5l3 3v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2z" stroke="currentColor" strokeWidth="1.3"/><path d="M10 1v3h3" stroke="currentColor" strokeWidth="1.3"/></svg>,
+}
 
 interface Props {
   imovel: Imovel
@@ -26,9 +37,15 @@ export default function ImovelExpansion({ imovel, docs, setDocs, setImoveis }: P
 
   const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
 
-  const myDocs = docs.filter(d => d.assetId === imovel.id || (!d.assetId && d.asset === imovel.descricao))
+  const myDocs = useMemo(
+    () => docs.filter(d => d.assetId === imovel.id || (!d.assetId && d.asset === imovel.descricao)),
+    [docs, imovel.id, imovel.descricao]
+  )
   const categories = ['Todos', ...DOC_CATEGORIES]
-  const filtered = filterCat === 'Todos' ? myDocs : myDocs.filter(d => d.category === filterCat)
+  const filtered = useMemo(
+    () => filterCat === 'Todos' ? myDocs : myDocs.filter(d => d.category === filterCat),
+    [myDocs, filterCat]
+  )
   const fmtDate = (s: string) => new Date(s).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', year: '2-digit' })
 
   async function upload(e: React.FormEvent) {
@@ -113,17 +130,6 @@ export default function ImovelExpansion({ imovel, docs, setDocs, setImoveis }: P
 
   const paidCount = last6Months.filter(m => imovel.condominioPayments?.[m] === 'pago').length
 
-  const iconForCat: Record<string, React.ReactElement> = {
-    Escritura: <svg viewBox="0 0 16 16" fill="none"><path d="M4 2a1 1 0 0 1 1-1h5l3 3v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2z" stroke="currentColor" strokeWidth="1.3"/><path d="M10 1v3h3" stroke="currentColor" strokeWidth="1.3"/><path d="M6 8h4M6 11h2.5" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
-    IPTU:      <svg viewBox="0 0 16 16" fill="none"><path d="M2 7l6-5 6 5v7H2V7z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 14V9h4v5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>,
-    Contrato:  <svg viewBox="0 0 16 16" fill="none"><path d="M4 2a1 1 0 0 1 1-1h5l3 3v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2z" stroke="currentColor" strokeWidth="1.3"/><path d="M10 1v3h3" stroke="currentColor" strokeWidth="1.3"/><path d="M6 6h4M6 8.5h4M6 11h2" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
-    Seguro:    <svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5L2 4v4c0 3.5 2.5 5.8 6 6.5 3.5-.7 6-3 6-6.5V4L8 1.5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M5.5 8l2 2 3-3" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>,
-    Planta:    <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="1" stroke="currentColor" strokeWidth="1.3"/><path d="M2 6h12M6 6v8M6 2v4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
-    Comprovante:<svg viewBox="0 0 16 16" fill="none"><path d="M3 1h10v14l-2-1.5-2 1.5-2-1.5-2 1.5L3 15V1z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/><path d="M6 6h4M6 8.5h3M6 11h4" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>,
-    Laudo:     <svg viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="4.5" stroke="currentColor" strokeWidth="1.3"/><path d="M10.5 10.5l3 3" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>,
-    Outros:    <svg viewBox="0 0 16 16" fill="none"><path d="M4 2a1 1 0 0 1 1-1h5l3 3v9a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V2z" stroke="currentColor" strokeWidth="1.3"/><path d="M10 1v3h3" stroke="currentColor" strokeWidth="1.3"/></svg>,
-  }
-
   return (
     <div className="patr-expansion">
       <div className="patr-expansion-tabs">
@@ -192,7 +198,7 @@ export default function ImovelExpansion({ imovel, docs, setDocs, setImoveis }: P
             <div className="docs-list">
               {filtered.map(doc => (
                 <div key={doc.id} className="doc-item">
-                  <div className="doc-icon-emoji">{iconForCat[doc.category] || iconForCat.Outros}</div>
+                  <div className="doc-icon-emoji">{ICON_FOR_CAT[doc.category] || ICON_FOR_CAT.Outros}</div>
                   <div className="doc-item-body">
                     <span className="doc-item-name">{doc.name}</span>
                     <div className="doc-item-meta">
