@@ -18,6 +18,8 @@ export default function TerraPage() {
   const [activeFazendaId, setActiveFazendaId] = useState<string | null>(null)
   const [showFazendaForm, setShowFazendaForm] = useState(false)
   const [editFazendaId, setEditFazendaId] = useState<string | null>(null)
+  const [dragSrcId, setDragSrcId] = useState<string | null>(null)
+  const [dragOverId, setDragOverId] = useState<string | null>(null)
   const [showTalhaoForm, setShowTalhaoForm] = useState(false)
   const [editTalhaoId, setEditTalhaoId] = useState<string | null>(null)
   const [mapReady, setMapReady] = useState(false)
@@ -65,6 +67,15 @@ export default function TerraPage() {
   }
   const [fazForm, setFazForm] = useState(emptyFazenda)
 
+  const sortedFazendas = useMemo(() =>
+    [...fazendas].sort((a, b) => {
+      const pa = a.position ?? fazendas.indexOf(a) * 1000
+      const pb = b.position ?? fazendas.indexOf(b) * 1000
+      return pa - pb
+    }),
+    [fazendas]
+  )
+
   const emptyTalhao: Omit<TerraTalhao, 'id' | 'createdAt'> = {
     fazendaId: '', nome: '', uso: 'lavoura', areaHa: 0, cultura: '', safra: '', poligono: [], cor: '#f59e0b', notas: '', publico: true,
   }
@@ -73,8 +84,7 @@ export default function TerraPage() {
   const fazenda = fazendas.find(f => f.id === activeFazendaId) || fazendas[0] || null
   useEffect(() => { if (fazendas.length && !activeFazendaId) setActiveFazendaId(fazendas[0].id) }, [fazendas, activeFazendaId])
 
-  const dragFazendaIdx = useRef<number | null>(null)
-  const [dragOverFazendaIdx, setDragOverFazendaIdx] = useState<number | null>(null)
+
   const fazTalhoes = useMemo(() => talhoes.filter(t => t.fazendaId === fazenda?.id), [talhoes, fazenda])
   const fazNotas = useMemo(() => notas.filter(n => n.fazendaId === fazenda?.id), [notas, fazenda])
   const talhoesByUso = useMemo(() => {
@@ -100,7 +110,7 @@ export default function TerraPage() {
   const saveFazenda = () => {
     if (!fazForm.nome.trim()) return
     if (editFazendaId) {
-      setFazendas(prev => prev.map(f => f.id === editFazendaId ? { ...f, ...fazForm } : f))
+      setFazendas(prev => prev.map(f => f.id === editFazendaId ? { ...f, ...fazForm, position: f.position } : f))
     } else {
       const nf: TerraFazenda = { ...fazForm, id: crypto.randomUUID(), createdAt: new Date().toISOString() } as TerraFazenda
       setFazendas(prev => [...prev, nf])
@@ -122,6 +132,19 @@ export default function TerraPage() {
     setNotas(prev => prev.filter(n => n.fazendaId !== id))
     if (activeFazendaId === id) setActiveFazendaId(null)
   }
+
+  const handleFazendaDrop = useCallback((targetId: string) => {
+    if (!dragSrcId || dragSrcId === targetId) return
+    const ordered = [...sortedFazendas]
+    const srcIdx = ordered.findIndex(f => f.id === dragSrcId)
+    const tgtIdx = ordered.findIndex(f => f.id === targetId)
+    if (srcIdx < 0 || tgtIdx < 0) return
+    const [moved] = ordered.splice(srcIdx, 1)
+    ordered.splice(tgtIdx, 0, moved)
+    setFazendas(ordered.map((f, i) => ({ ...f, position: i * 1000 })))
+    setDragSrcId(null)
+    setDragOverId(null)
+  }, [dragSrcId, sortedFazendas, setFazendas])
 
   // ─── Talhão CRUD
   const saveTalhao = () => {
@@ -1295,31 +1318,29 @@ export default function TerraPage() {
         </div>
       )}
       <div className="terra-fazenda-list">
-        {fazendas.map((f, i) => (
+        {sortedFazendas.map(f => (
           <div
             key={f.id}
-            className={`terra-fazenda-card${f.id === activeFazendaId ? ' terra-fazenda-active' : ''}${dragOverFazendaIdx === i ? ' terra-fazenda-drag-over' : ''}`}
-            draggable
-            onDragStart={() => { dragFazendaIdx.current = i }}
-            onDragOver={e => { e.preventDefault(); setDragOverFazendaIdx(i) }}
-            onDrop={e => {
-              e.preventDefault()
-              const from = dragFazendaIdx.current
-              if (from === null || from === i) return
-              setFazendas(prev => {
-                const next = [...prev]
-                const [item] = next.splice(from, 1)
-                next.splice(i, 0, item)
-                return next
-              })
-              dragFazendaIdx.current = null
-              setDragOverFazendaIdx(null)
-            }}
-            onDragEnd={() => { dragFazendaIdx.current = null; setDragOverFazendaIdx(null) }}
+            className={[
+              'terra-fazenda-card',
+              f.id === activeFazendaId ? 'terra-fazenda-active' : '',
+              f.id === dragSrcId ? 'terra-fazenda-dragging' : '',
+              f.id === dragOverId && f.id !== dragSrcId ? 'terra-fazenda-dragover' : '',
+            ].filter(Boolean).join(' ')}
             onClick={() => setActiveFazendaId(f.id)}
+            onDragOver={e => { e.preventDefault(); setDragOverId(f.id) }}
+            onDrop={e => { e.preventDefault(); handleFazendaDrop(f.id) }}
+            onDragLeave={() => setDragOverId(null)}
           >
-            <div className="terra-fazenda-drag-handle" onMouseDown={e => e.stopPropagation()}>⠿</div>
             <div className="terra-fazenda-card-header">
+              <div
+                className="terra-fazenda-drag-handle"
+                draggable
+                onDragStart={e => { e.stopPropagation(); setDragSrcId(f.id); setDragOverId(null) }}
+                onDragEnd={() => { setDragSrcId(null); setDragOverId(null) }}
+                onClick={e => e.stopPropagation()}
+                title="Arrastar para reordenar"
+              >⠿</div>
               <strong>{f.nome}</strong>
               <span className="terra-fazenda-loc">{f.municipio}{f.uf ? ` — ${f.uf}` : ''}</span>
             </div>

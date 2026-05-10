@@ -70,6 +70,7 @@ export interface TerraFazenda {
   geoReferenciado: boolean
   licencaAmbiental: boolean
   notas: string
+  position?: number
   createdAt: string
 }
 
