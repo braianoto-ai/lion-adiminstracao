@@ -773,6 +773,12 @@
   opacity: .8;
 }
 .dash-list-header:hover .dash-list-link { opacity: 1 }
+.dash-collapse-chevron { display:inline-flex; align-items:center; justify-content:center; width:20px; height:20px; border-radius:4px; cursor:pointer; transition:transform .2s ease; transform:rotate(0deg); color:var(--text); opacity:.5; flex-shrink:0 }
+.dash-collapse-chevron:hover { opacity:1; background:var(--bg3) }
+.dash-collapse-open { transform:rotate(90deg) }
+.dash-patrimonio-overview { cursor:pointer }
+.dash-patrimonio-overview:hover .patr-summary-card { border-color:var(--accent) }
+.dash-patrimonio-overview .patr-summary { grid-template-columns:repeat(3,1fr) }
 .dash-list-empty {
   padding: 24px 16px;
   text-align: center;
