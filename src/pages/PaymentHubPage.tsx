@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { useCloudTable } from '../hooks'
-import { BILL_INIT, BILL_RECURRENCE_LABEL, BILL_STATUS_LABEL, COLL_INIT } from '../constants'
+import { BILL_INIT, BILL_RECURRENCE_LABEL, BILL_STATUS_LABEL, COLL_INIT, BILL_CATEGORIES, BILL_COLORS } from '../constants'
 import { fmtCurrency, fmtDate, effectiveStatus } from '../utils'
 import { CLOUD_BUS } from '../context'
-import type { Collector, Bill, BillStatus, Transaction } from '../types'
+import type { Collector, Bill, BillStatus, BillRecurrence, Transaction } from '../types'
 
 export default 
 function PaymentHubPage() {
@@ -535,5 +535,64 @@ function PaymentHubPage() {
         </Modal>
       )}
     </div>
+  )
+}
+
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="ph-modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="ph-modal">
+        <div className="ph-modal-header">
+          <span className="ph-modal-title">{title}</span>
+          <button className="ph-modal-close" onClick={onClose}>
+            <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
+}
+
+function CollectorForm({ initial, onSave, onCancel }: { initial: typeof COLL_INIT; onSave: (v: typeof COLL_INIT) => void; onCancel: () => void }) {
+  const [form, setForm] = useState(initial)
+  const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
+  return (
+    <form className="ph-modal-form" onSubmit={e => { e.preventDefault(); if (!form.name.trim()) return; onSave(form) }}>
+      <div className="ph-field"><label>Nome *</label><input autoFocus value={form.name} onChange={e => f('name', e.target.value)} placeholder="Ex: CEMIG, Claro, Condomínio…" required /></div>
+      <div className="ph-field"><label>Categoria</label><select value={form.category} onChange={e => f('category', e.target.value)}>{BILL_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}</select></div>
+      <div className="ph-field"><label>Cor</label><div className="ph-color-picker">{BILL_COLORS.map(c => <button key={c} type="button" className={`ph-color-dot${form.color === c ? ' ph-color-active' : ''}`} style={{ background: c }} onClick={() => f('color', c)} />)}</div></div>
+      <div className="ph-form-actions"><button type="button" className="btn-ghost" onClick={onCancel}>Cancelar</button><button type="submit" className="btn-accent">Salvar</button></div>
+    </form>
+  )
+}
+
+function BillForm({ initial, collectors, onSave, onCancel, onCreateCollector }: {
+  initial: typeof BILL_INIT; collectors: Collector[]
+  onSave: (v: typeof BILL_INIT) => void; onCancel: () => void
+  onCreateCollector?: (name: string) => string
+}) {
+  const [form, setForm] = useState(initial)
+  const [newCollName, setNewCollName] = useState('')
+  const [showNewColl, setShowNewColl] = useState(false)
+  const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
+  const handleAddCollector = () => { if (!newCollName.trim() || !onCreateCollector) return; const id = onCreateCollector(newCollName.trim()); f('collectorId', id); setNewCollName(''); setShowNewColl(false) }
+  return (
+    <form className="ph-modal-form" onSubmit={e => { e.preventDefault(); if (!form.amount || !form.dueDate) return; onSave(form) }}>
+      <div className="ph-field"><label>Cobrador</label>
+        {!showNewColl ? (
+          <div className="ph-coll-select-row"><select value={form.collectorId} onChange={e => f('collectorId', e.target.value)}><option value="">Selecione…</option>{collectors.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}</select><button type="button" className="ph-coll-add-btn" onClick={() => setShowNewColl(true)} title="Novo cobrador"><svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg></button></div>
+        ) : (
+          <div className="ph-coll-select-row"><input value={newCollName} onChange={e => setNewCollName(e.target.value)} placeholder="Nome do cobrador" autoFocus onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddCollector() } }} /><button type="button" className="ph-coll-add-btn ph-coll-confirm" onClick={handleAddCollector} title="Criar" disabled={!newCollName.trim()}><svg viewBox="0 0 14 14" fill="none"><path d="M2 7l4 4 6-6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg></button><button type="button" className="ph-coll-add-btn" onClick={() => { setShowNewColl(false); setNewCollName('') }} title="Cancelar"><svg viewBox="0 0 14 14" fill="none"><path d="M4 4l6 6M10 4l-6 6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg></button></div>
+        )}
+      </div>
+      <div className="ph-field"><label>Descrição</label><input value={form.description} onChange={e => f('description', e.target.value)} placeholder="Ex: Fatura março 2026" /></div>
+      <div className="ph-form-row"><div className="ph-field"><label>Valor (R$) *</label><input type="number" min="0.01" step="0.01" value={form.amount} onChange={e => f('amount', e.target.value)} placeholder="0,00" required /></div><div className="ph-field"><label>Vencimento *</label><input type="date" value={form.dueDate} onChange={e => f('dueDate', e.target.value)} required /></div></div>
+      <div className="ph-form-row"><div className="ph-field"><label>Recorrência</label><select value={form.recurrence} onChange={e => f('recurrence', e.target.value)}>{(Object.entries(BILL_RECURRENCE_LABEL) as [BillRecurrence, string][]).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></div><div className="ph-field"><label>Status</label><select value={form.status} onChange={e => f('status', e.target.value as BillStatus)}>{(Object.entries(BILL_STATUS_LABEL) as [BillStatus, string][]).map(([k, v]) => <option key={k} value={k}>{v}</option>)}</select></div></div>
+      <div className="ph-field"><label>Link de pagamento</label><input type="url" value={form.paymentLink} onChange={e => f('paymentLink', e.target.value)} placeholder="https://…" /></div>
+      <div className="ph-field"><label>Código de barras / PIX</label><input value={form.barcode} onChange={e => f('barcode', e.target.value)} placeholder="Cole o código aqui" /></div>
+      <div className="ph-field"><label>Observações</label><input value={form.notes} onChange={e => f('notes', e.target.value)} placeholder="Opcional" /></div>
+      <div className="ph-form-actions"><button type="button" className="btn-ghost" onClick={onCancel}>Cancelar</button><button type="submit" className="btn-accent">Salvar</button></div>
+    </form>
   )
 }

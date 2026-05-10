@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useMemo } from 'react'
 import L from 'leaflet'
 import { supabase } from '../lib/supabase'
-import { TALHAO_USOS } from '../constants'
+import { TALHAO_USOS, NOTA_CATEGORIAS } from '../constants'
 import type { TerraFazenda, TerraTalhao, TerraNote } from '../types'
 
 export default 

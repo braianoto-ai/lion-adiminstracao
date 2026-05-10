@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useCloudTable } from '../hooks'
 import { REVISION_TYPES, VEH_FORM_INIT, REV_FORM_INIT } from '../constants'
-import { fmtDate } from '../utils'
+
 import type { Vehicle, Revision } from '../types'
 
 export default 
