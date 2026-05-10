@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import L from 'leaflet'
-import 'leaflet/dist/leaflet.css'
 import './App.css'
 import { supabase } from './lib/supabase'
 import LoginPage from './LoginPage'
