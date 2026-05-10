@@ -2529,9 +2529,9 @@
   font-weight: 700;
 }
 .cal-selected { background: var(--bg4) !important; outline: 1px solid var(--border2) }
-.cal-dots { display: flex; gap: 2px; flex-wrap: wrap; justify-content: center; max-width: 40px }
-.cal-dot { width: 5px; height: 5px; border-radius: 50%; flex-shrink: 0 }
-.cal-dot-more { font-size: 9px; color: var(--text) }
+.cal-dots { display: flex; gap: 3px; flex-wrap: wrap; justify-content: center; max-width: 50px }
+.cal-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0 }
+.cal-dot-more { font-size: 11px; color: var(--text) }
 
 .cal-legend {
   display: flex; gap: 14px; flex-wrap: wrap; margin-top: 16px;
