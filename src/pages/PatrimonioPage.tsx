@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useCloudTable } from '../hooks'
 import { IMOVEL_INIT, IMOVEL_TIPOS, PRODUTO_CATS, PRODUTO_INIT } from '../constants'
 import type { Imovel, Produto, Vehicle, DocMeta } from '../types'
@@ -23,14 +23,32 @@ function PatrimonioPage() {
   const fmtR = (v: string | number) => parseFloat(String(v) || '0').toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
   const fmtKm = (k: number) => k > 0 ? `${k.toLocaleString('pt-BR')} km` : ''
 
-  const totalImoveis = imoveis.reduce((s, i) => s + (parseFloat(i.valorAtual || i.valor || '0') || 0), 0)
-  const totalProdutos = produtos.reduce((s, p) => s + (parseFloat(p.valor || '0') || 0) * (parseInt(p.quantidade || '1') || 1), 0)
-  const totalVeiculos = vehicles.reduce((s, v) => {
-    const notesVal = v.notes?.match(/Atual:\s*R\$\s*([\d.,]+)/)
-    if (notesVal) return s + parseFloat(notesVal[1].replace(/\./g, '').replace(',', '.')) || 0
-    return s
-  }, 0)
+  const totalImoveis = useMemo(
+    () => imoveis.reduce((s, i) => s + (parseFloat(i.valorAtual || i.valor || '0') || 0), 0),
+    [imoveis]
+  )
+  const totalProdutos = useMemo(
+    () => produtos.reduce((s, p) => s + (parseFloat(p.valor || '0') || 0) * (parseInt(p.quantidade || '1') || 1), 0),
+    [produtos]
+  )
+  const totalVeiculos = useMemo(
+    () => vehicles.reduce((s, v) => {
+      const m = v.notes?.match(/Atual:\s*R\$\s*([\d.,]+)/)
+      return m ? s + (parseFloat(m[1].replace(/\./g, '').replace(',', '.')) || 0) : s
+    }, 0),
+    [vehicles]
+  )
   const totalGeral = totalImoveis + totalProdutos + totalVeiculos
+
+  const docCountMap = useMemo(
+    () => Object.fromEntries(
+      imoveis.map(im => [
+        im.id,
+        docs.filter(d => d.assetId === im.id || (!d.assetId && d.asset === im.descricao)).length,
+      ])
+    ),
+    [imoveis, docs]
+  )
 
   const fi = (k: string, v: string) => setImovelForm(f => ({ ...f, [k]: v }))
   const fp = (k: string, v: string) => setProdForm(f => ({ ...f, [k]: v }))
@@ -176,7 +194,7 @@ function PatrimonioPage() {
               {imoveis.map(im => {
                 const gain = (parseFloat(im.valorAtual || '0') || 0) - (parseFloat(im.valor || '0') || 0)
                 const isExpanded = expandedImovelId === im.id
-                const docCount = docs.filter(d => d.assetId === im.id || (!d.assetId && d.asset === im.descricao)).length
+                const docCount = docCountMap[im.id] ?? 0
                 return (
                   <div key={im.id} className={`patr-card patr-card-expandable${isExpanded ? ' patr-card-expanded' : ''}`}>
                     <div className="patr-card-main" onClick={() => setExpandedImovelId(isExpanded ? null : im.id)}>
