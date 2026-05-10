@@ -57,7 +57,7 @@
 
 /* topbar brand (mobile-only — desktop brand is in sidebar) */
 .topbar-brand { display: none; align-items: center; gap: 10px; margin-right: 4px }
-.topbar-brand-mark { width: 30px; height: 30px; flex-shrink: 0 }
+.topbar-brand-mark { width: 60px; height: 60px; flex-shrink: 0 }
 .topbar-brand-mark svg { width: 100%; height: 100% }
 .topbar-brand-name { font-size: 15px; font-weight: 700; color: var(--text3) }
 
@@ -977,11 +977,11 @@
 
 /* Brand block */
 .sidebar-brand {
-  display: flex; align-items: center; gap: 10px;
+  display: flex; align-items: center; gap: 14px;
   padding: 16px 16px 12px;
 }
-.sidebar-brand-logo { width: 34px; height: 34px; flex-shrink: 0 }
-.sidebar-brand-img { width: 34px; height: 34px; object-fit: contain; border-radius: 8px; flex-shrink: 0 }
+.sidebar-brand-logo { width: 68px; height: 68px; flex-shrink: 0 }
+.sidebar-brand-img { width: 68px; height: 68px; object-fit: contain; border-radius: 16px; flex-shrink: 0 }
 .sidebar-brand-name { font-size: 16px; font-weight: 700; color: var(--text3); letter-spacing: -.3px }
 
 /* User block */
