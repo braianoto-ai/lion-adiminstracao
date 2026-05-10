@@ -5,6 +5,22 @@ import { fmtCurrency, fmtDate, effectiveStatus } from '../utils'
 import { CLOUD_BUS } from '../context'
 import type { Collector, Bill, BillStatus, BillRecurrence, Transaction } from '../types'
 
+function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div className="ph-modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="ph-modal">
+        <div className="ph-modal-header">
+          <span className="ph-modal-title">{title}</span>
+          <button className="ph-modal-close" onClick={onClose}>
+            <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  )
+}
+
 function CollectorForm({ initial, onSave, onCancel }: { initial: typeof COLL_INIT; onSave: (v: typeof COLL_INIT) => void; onCancel: () => void }) {
   const [form, setForm] = useState(initial)
   const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
@@ -12,7 +28,7 @@ function CollectorForm({ initial, onSave, onCancel }: { initial: typeof COLL_INI
     <form className="ph-modal-form" onSubmit={e => { e.preventDefault(); if (!form.name.trim()) return; onSave(form) }}>
       <div className="ph-field">
         <label>Nome *</label>
-        <input autoFocus value={form.name} onChange={e => f('name', e.target.value)} placeholder="Ex: CEMIG, Claro, Condomínio..." required />
+        <input autoFocus value={form.name} onChange={e => f('name', e.target.value)} placeholder="Ex: CEMIG, Claro, Condomínio…" required />
       </div>
       <div className="ph-field">
         <label>Categoria</label>
@@ -62,7 +78,7 @@ function BillForm({ initial, collectors, onSave, onCancel, onCreateCollector }: 
         {!showNewColl ? (
           <div className="ph-coll-select-row">
             <select value={form.collectorId} onChange={e => f('collectorId', e.target.value)}>
-              <option value="">Selecione...</option>
+              <option value="">Selecione…</option>
               {collectors.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
             <button type="button" className="ph-coll-add-btn" onClick={() => setShowNewColl(true)} title="Novo cobrador">
@@ -83,8 +99,8 @@ function BillForm({ initial, collectors, onSave, onCancel, onCreateCollector }: 
         )}
       </div>
       <div className="ph-field">
-        <label>Descricao</label>
-        <input value={form.description} onChange={e => f('description', e.target.value)} placeholder="Ex: Fatura marco 2026" />
+        <label>Descrição</label>
+        <input value={form.description} onChange={e => f('description', e.target.value)} placeholder="Ex: Fatura março 2026" />
       </div>
       <div className="ph-form-row">
         <div className="ph-field">
@@ -98,7 +114,7 @@ function BillForm({ initial, collectors, onSave, onCancel, onCreateCollector }: 
       </div>
       <div className="ph-form-row">
         <div className="ph-field">
-          <label>Recorrencia</label>
+          <label>Recorrência</label>
           <select value={form.recurrence} onChange={e => f('recurrence', e.target.value)}>
             {(Object.entries(BILL_RECURRENCE_LABEL) as [BillRecurrence, string][]).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </select>
@@ -112,14 +128,14 @@ function BillForm({ initial, collectors, onSave, onCancel, onCreateCollector }: 
       </div>
       <div className="ph-field">
         <label>Link de pagamento</label>
-        <input type="url" value={form.paymentLink} onChange={e => f('paymentLink', e.target.value)} placeholder="https://..." />
+        <input type="url" value={form.paymentLink} onChange={e => f('paymentLink', e.target.value)} placeholder="https://…" />
       </div>
       <div className="ph-field">
-        <label>Codigo de barras / PIX</label>
-        <input value={form.barcode} onChange={e => f('barcode', e.target.value)} placeholder="Cole o codigo aqui" />
+        <label>Código de barras / PIX</label>
+        <input value={form.barcode} onChange={e => f('barcode', e.target.value)} placeholder="Cole o código aqui" />
       </div>
       <div className="ph-field">
-        <label>Observacoes</label>
+        <label>Observações</label>
         <input value={form.notes} onChange={e => f('notes', e.target.value)} placeholder="Opcional" />
       </div>
       <div className="ph-form-actions">
@@ -127,22 +143,6 @@ function BillForm({ initial, collectors, onSave, onCancel, onCreateCollector }: 
         <button type="submit" className="btn-accent">Salvar</button>
       </div>
     </form>
-  )
-}
-
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="ph-modal-overlay" onClick={e => { if (e.target === e.currentTarget) onClose() }}>
-      <div className="ph-modal">
-        <div className="ph-modal-header">
-          <span className="ph-modal-title">{title}</span>
-          <button className="ph-modal-close" onClick={onClose}>
-            <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
   )
 }
 

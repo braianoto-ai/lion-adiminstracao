@@ -1,15 +1,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
-import './App.css'
-import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
+import './App.css'
 import { supabase } from './lib/supabase'
 import LoginPage from './LoginPage'
 import type { User } from '@supabase/supabase-js'
 import { UserCtx, DATA_KEYS } from './context'
 import { useCloudTable, useSyncError } from './hooks'
-import type { ModalType, SidebarPage, TerraFazenda, TerraTalhao, Folder, Goal, Transaction, Rental, Maintenance, Vehicle, Bill, Collector, FamilyMember } from './types'
+import type { ModalType, SidebarPage, TerraFazenda, TerraTalhao, Folder, Goal, Transaction, Rental, Vehicle, Maintenance, Collector, Bill, AppAlert, ActivityItem, SearchResult, FamilyMember } from './types'
 import { TALHAO_USOS } from './constants'
-import { effectiveStatus, fmtDate } from './utils'
+import { fmtDate, effectiveStatus } from './utils'
 import TerraPage from './pages/TerraPage'
 import PublicMapPage from './pages/PublicMapPage'
 import PaymentHubPage from './pages/PaymentHubPage'
@@ -34,22 +33,6 @@ import OnboardingWizard from './components/OnboardingWizard'
 
 
 
-
-
-
-// ─── Notes Section ───────────────────────────────────────────────────────────
-
-
-
-// ─── Alerts Panel ────────────────────────────────────────────────────────────
-
-interface AppAlert {
-  id: string
-  severity: 'danger' | 'warning'
-  category: string
-  title: string
-  detail: string
-}
 
 function buildAlerts(): AppAlert[] {
   const alerts: AppAlert[] = []
@@ -117,8 +100,6 @@ function buildAlerts(): AppAlert[] {
   alerts.sort((a, b) => (a.severity === 'danger' ? 0 : 1) - (b.severity === 'danger' ? 0 : 1))
   return alerts
 }
-
-
 
 // ─── Dashboard data ───────────────────────────────────────────────────────────
 
@@ -196,8 +177,6 @@ function relTime(ts: number): string {
   return `${Math.floor(days / 30)}mês atrás`
 }
 
-interface ActivityItem { id: string; icon: React.ReactNode; title: string; sub: string; time: string; color: string; ts: number }
-
 function buildActivity(): ActivityItem[] {
   const items: ActivityItem[] = []
 
@@ -235,18 +214,7 @@ function buildActivity(): ActivityItem[] {
   return items.sort((a, b) => b.ts - a.ts).slice(0, 8)
 }
 
-
-
 // ─── Search ───────────────────────────────────────────────────────────────────
-
-interface SearchResult {
-  id: string
-  type: string
-  label: string
-  sub: string
-  color: string
-  section: string
-}
 
 function buildSearchIndex(q: string): SearchResult[] {
   if (q.trim().length < 2) return []
@@ -288,8 +256,6 @@ function buildSearchIndex(q: string): SearchResult[] {
 
   return results
 }
-
-
 
 
 // ─── Family Page ─────────────────────────────────────────────────────────────
@@ -540,12 +506,6 @@ function AppearancePage({ themeId, setThemeId, fontSize, setFontSize, accentId, 
 // ─── Settings Page ────────────────────────────────────────────────────────────
 
 
-
-
-// ─── Payment Hub ──────────────────────────────────────────────────────────────
-
-
-// ─── Terra Page ──────────────────────────────────────────────────────────────
 
 
 
