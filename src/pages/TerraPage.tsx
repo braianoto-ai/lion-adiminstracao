@@ -621,7 +621,8 @@ export default function TerraPage() {
       <div className="terra-map-layout">
         <div className="terra-map-container">
           {/* Dedicated inner div for Leaflet — isolated from overlay children */}
-          <div ref={mapRefCb} style={{ width: '100%', height: '100%', position: 'absolute', top: 0, left: 0 }} />
+          {/* inset:0 é mais robusto que height:100% em flex items sem height explícito */}
+          <div ref={mapRefCb} style={{ position: 'absolute', inset: 0 }} />
           <div className="terra-map-overlay-tl">
             {(['mapa', 'satelite', 'relevo'] as const).map(l => (
               <button key={l} className={`terra-map-toggle ${mapLayer === l ? 'active' : ''}`} onClick={() => setMapLayer(l)}>
