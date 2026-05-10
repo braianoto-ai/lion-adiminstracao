@@ -6273,6 +6273,11 @@ html[data-theme="light"] .patr-upload-form { background: var(--bg2) }
 .terra-fazenda-card-header strong { font-size: calc(.88rem * var(--fs)); color: var(--text3) }
 .terra-fazenda-loc { font-size: calc(.75rem * var(--fs)); color: var(--text2) }
 .terra-fazenda-card-body { display: flex; gap: 16px; font-size: calc(.78rem * var(--fs)); color: var(--text2) }
+.terra-fazenda-drag-handle { cursor: grab; opacity: .35; font-size: 1.1rem; line-height: 1; padding: 0 8px 0 0; flex-shrink: 0; user-select: none; transition: opacity .15s }
+.terra-fazenda-drag-handle:hover { opacity: .75 }
+.terra-fazenda-drag-handle:active { cursor: grabbing }
+.terra-fazenda-dragging { opacity: .4; border-style: dashed }
+.terra-fazenda-dragover { border-color: var(--purple) !important; box-shadow: 0 -3px 0 0 var(--purple) }
 
 /* Form */
 .terra-form { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 18px; display: flex; flex-direction: column; gap: 14px }
