@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import './App.css'
 import { supabase } from './lib/supabase'
 import LoginPage from './LoginPage'
@@ -8,7 +9,6 @@ import { UserCtx, DATA_KEYS } from './context'
 import { useCloudTable, useSyncError } from './hooks'
 import type { ModalType, SidebarPage, TerraFazenda, TerraTalhao, Folder, Goal, Transaction, Rental, Vehicle, Maintenance, Collector, Bill, AppAlert, ActivityItem, SearchResult, FamilyMember } from './types'
 import { TALHAO_USOS } from './constants'
-import { fmtDate, effectiveStatus } from './utils'
 import TerraPage from './pages/TerraPage'
 import PublicMapPage from './pages/PublicMapPage'
 import PaymentHubPage from './pages/PaymentHubPage'
@@ -101,31 +101,6 @@ function buildAlerts(): AppAlert[] {
   return alerts
 }
 
-// ─── Dashboard data ───────────────────────────────────────────────────────────
-
-function computeDashData() {
-  const txs: Transaction[] = (() => { try { return JSON.parse(localStorage.getItem('lion-txs') || '[]') } catch { return [] } })()
-  const goals: Goal[] = (() => { try { return JSON.parse(localStorage.getItem('lion-goals') || '[]') } catch { return [] } })()
-  const rentals: Rental[] = (() => { try { return JSON.parse(localStorage.getItem('lion-rentals') || '[]') } catch { return [] } })()
-  const alerts = buildAlerts()
-
-  const now = new Date()
-  const thisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
-  const balance = txs.filter(t => t.date <= thisMonth).reduce((s, t) => s + (t.type === 'receita' ? t.amount : -t.amount), 0)
-  const totalGoals = goals.reduce((s, g) => s + (g.current || 0), 0)
-  const targetGoals = goals.reduce((s, g) => s + (g.target || 0), 0)
-  const goalsProgress = targetGoals > 0 ? Math.round(totalGoals / targetGoals * 100) : 0
-  const monthlyRent = rentals.reduce((s, r) => s + (r.value || 0), 0)
-  const dangerCount = alerts.filter(a => a.severity === 'danger').length
-  const warnCount = alerts.filter(a => a.severity === 'warning').length
-
-  // month-over-month balance change
-  const lastMonth = (() => { const d = new Date(now.getFullYear(), now.getMonth() - 1, 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}` })()
-  const thisMonthNet = txs.filter(t => t.date === thisMonth).reduce((s, t) => s + (t.type === 'receita' ? t.amount : -t.amount), 0)
-  const lastMonthNet = txs.filter(t => t.date === lastMonth).reduce((s, t) => s + (t.type === 'receita' ? t.amount : -t.amount), 0)
-
-  return { balance, totalGoals, targetGoals, goalsProgress, monthlyRent, dangerCount, warnCount, totalAlerts: alerts.length, txCount: txs.length, rentCount: rentals.length, goalsCount: goals.length, thisMonthNet, lastMonthNet }
-}
 
 // ─── Appearance constants ──────────────────────────────────────────────────────
 
@@ -156,63 +131,6 @@ const ACCENT_COLORS = [
 
 
 
-// ─── Activity data ────────────────────────────────────────────────────────────
-
-const ICON_TX_IN = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-const ICON_TX_OUT = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-const ICON_GOAL = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"/></svg>
-const ICON_RENTAL = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-const ICON_VEHICLE = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="9" width="22" height="11" rx="2"/><path d="M6 9V7a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><circle cx="6" cy="20" r="2"/><circle cx="18" cy="20" r="2"/></svg>
-const ICON_MAINT = <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-
-function relTime(ts: number): string {
-  const diff = Date.now() - ts
-  const mins = Math.floor(diff / 60000)
-  if (mins < 2) return 'agora'
-  if (mins < 60) return `${mins}min atrás`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h atrás`
-  const days = Math.floor(hrs / 24)
-  if (days < 30) return `${days}d atrás`
-  return `${Math.floor(days / 30)}mês atrás`
-}
-
-function buildActivity(): ActivityItem[] {
-  const items: ActivityItem[] = []
-
-  const txs: Transaction[] = (() => { try { return JSON.parse(localStorage.getItem('lion-txs') || '[]') } catch { return [] } })()
-  txs.forEach(t => {
-    const ts = parseInt(t.id) || 0
-    const sign = t.type === 'receita' ? '+' : '-'
-    items.push({ id: `tx-${t.id}`, icon: t.type === 'receita' ? ICON_TX_IN : ICON_TX_OUT, title: t.description || t.category, sub: `${t.type === 'receita' ? 'Receita' : 'Despesa'} · ${sign} R$ ${t.amount.toLocaleString('pt-BR')} · ${t.category}`, time: relTime(ts), color: t.type === 'receita' ? 'green' : 'red', ts })
-  })
-
-  const goals: Goal[] = (() => { try { return JSON.parse(localStorage.getItem('lion-goals') || '[]') } catch { return [] } })()
-  goals.forEach(g => {
-    const ts = parseInt(g.id) || 0
-    items.push({ id: `g-${g.id}`, icon: ICON_GOAL, title: g.name, sub: `Meta · R$ ${(g.current||0).toLocaleString('pt-BR')} / R$ ${(g.target||0).toLocaleString('pt-BR')}`, time: relTime(ts), color: 'blue', ts })
-  })
-
-  const rentals: Rental[] = (() => { try { return JSON.parse(localStorage.getItem('lion-rentals') || '[]') } catch { return [] } })()
-  rentals.forEach(r => {
-    const ts = parseInt(r.id) || 0
-    items.push({ id: `r-${r.id}`, icon: ICON_RENTAL, title: r.property, sub: `Aluguel · ${r.tenant} · R$ ${(r.value||0).toLocaleString('pt-BR')}/mês`, time: relTime(ts), color: 'amber', ts })
-  })
-
-  const vehicles: Vehicle[] = (() => { try { return JSON.parse(localStorage.getItem('lion-vehicles') || '[]') } catch { return [] } })()
-  vehicles.forEach(v => {
-    const ts = parseInt(v.id) || 0
-    items.push({ id: `v-${v.id}`, icon: ICON_VEHICLE, title: v.name, sub: `Veículo · ${v.plate} · ${v.year}`, time: relTime(ts), color: 'amber', ts })
-  })
-
-  const maint: Maintenance[] = (() => { try { return JSON.parse(localStorage.getItem('lion-maintenance') || '[]') } catch { return [] } })()
-  maint.forEach(m => {
-    const ts = parseInt(m.id) || 0
-    items.push({ id: `m-${m.id}`, icon: ICON_MAINT, title: m.asset, sub: `Manutenção · ${m.description}`, time: relTime(ts), color: 'purple', ts })
-  })
-
-  return items.sort((a, b) => b.ts - a.ts).slice(0, 8)
-}
 
 // ─── Search ───────────────────────────────────────────────────────────────────
 
@@ -518,7 +436,6 @@ export default function App() {
   const [showSim, setShowSim] = useState(false)
   const [showDocs, setShowDocs] = useState(false)
   const [showAlerts, setShowAlerts] = useState(false)
-  const [activityOpen, setActivityOpen] = useState(true)
   const [alertCount, setAlertCount] = useState(() => buildAlerts().length)
   const [showShare, setShowShare] = useState(false)
   const [viewMode, setViewMode] = useState(false)
@@ -549,8 +466,6 @@ export default function App() {
       .catch(() => {})
   }, [])
 
-  const [dashData, setDashData] = useState(() => computeDashData())
-  const [activity, setActivity] = useState(() => buildActivity())
   const [themeId, setThemeId] = useState(() => localStorage.getItem('lion-theme') || 'dark')
   const [fontSize, setFontSize] = useState(() => localStorage.getItem('lion-font') || 'normal')
   const [accentId, setAccentId] = useState(() => localStorage.getItem('lion-accent') || 'blue')
@@ -614,11 +529,6 @@ export default function App() {
     localStorage.setItem('lion-sidebar-fixed', sidebarFixed ? 'on' : 'off')
   }, [sidebarFixed])
 
-  useEffect(() => {
-    const refresh = () => { setDashData(computeDashData()); setActivity(buildActivity()) }
-    window.addEventListener('storage', refresh)
-    return () => window.removeEventListener('storage', refresh)
-  }, [])
 
   const [user, setUser] = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(false)
@@ -705,38 +615,52 @@ export default function App() {
   }, [showCalc, showNp, showFin, showSim, showDocs, showAlerts])
 
   const dashMiniMapInstance = useRef<L.Map | null>(null)
+  const dashMapInitTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const dashMiniMapRef = useCallback((node: HTMLDivElement | null) => {
+    if (dashMapInitTimer.current) { clearTimeout(dashMapInitTimer.current); dashMapInitTimer.current = null }
     if (dashMiniMapInstance.current) { dashMiniMapInstance.current.remove(); dashMiniMapInstance.current = null }
     if (!node) return
-    try {
-      const fazArr: TerraFazenda[] = (() => { try { return JSON.parse(localStorage.getItem('lion-terra') || '[]') } catch { return [] } })()
-      const talArr: TerraTalhao[] = (() => { try { return JSON.parse(localStorage.getItem('lion-talhoes') || '[]') } catch { return [] } })()
-      if (!fazArr.length) return
-      const fz = fazArr[0]
-      const map = L.map(node, {
-        zoomControl: false, dragging: false, scrollWheelZoom: false,
-        doubleClickZoom: false, touchZoom: false, boxZoom: false,
-        keyboard: false, attributionControl: false,
-      })
-      L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map)
-      if (fz.perimetro?.length >= 3) {
-        const perim = L.polygon(fz.perimetro, { color: '#dc2626', weight: 2, fillOpacity: 0.08, dashArray: '6 3' }).addTo(map)
-        talArr.filter(t => t.fazendaId === fz.id && t.poligono?.length >= 3).forEach(t => {
-          const cor = t.cor || TALHAO_USOS.find(u => u.value === t.uso)?.cor || '#6b7280'
-          L.polygon(t.poligono, { color: cor, weight: 1, fillColor: cor, fillOpacity: 0.15 }).addTo(map)
+    dashMapInitTimer.current = setTimeout(() => {
+      try {
+        const fazArr: TerraFazenda[] = (() => { try { return JSON.parse(localStorage.getItem('lion-terra') || '[]') } catch { return [] } })()
+        const talArr: TerraTalhao[] = (() => { try { return JSON.parse(localStorage.getItem('lion-talhoes') || '[]') } catch { return [] } })()
+        const map = L.map(node, {
+          zoomControl: true, dragging: true, scrollWheelZoom: true,
+          doubleClickZoom: true, touchZoom: true, boxZoom: true,
+          keyboard: true, attributionControl: false,
         })
-        map.fitBounds(perim.getBounds(), { padding: [10, 10] })
-      } else if (fz.latitude && fz.longitude) {
-        map.setView([fz.latitude, fz.longitude], 14)
-      } else {
-        // No coordinates at all — show Brazil center as fallback
-        map.setView([-15.77, -47.93], 4)
+        L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map)
+        const allBounds = L.latLngBounds([])
+        fazArr.forEach(fz => {
+          if (fz.perimetro?.length >= 3) {
+            const perim = L.polygon(fz.perimetro, { color: '#dc2626', weight: 2, fillOpacity: 0.08, dashArray: '6 3' }).addTo(map)
+            perim.bindTooltip(fz.nome, { permanent: false, direction: 'center', className: 'dash-map-tooltip' })
+            talArr.filter(t => t.fazendaId === fz.id && t.poligono?.length >= 3).forEach(t => {
+              const cor = t.cor || TALHAO_USOS.find(u => u.value === t.uso)?.cor || '#6b7280'
+              L.polygon(t.poligono, { color: cor, weight: 1, fillColor: cor, fillOpacity: 0.15 }).addTo(map)
+            })
+            allBounds.extend(perim.getBounds())
+          } else if (fz.latitude && fz.longitude) {
+            L.marker([fz.latitude, fz.longitude]).addTo(map).bindTooltip(fz.nome)
+            allBounds.extend(L.latLng(fz.latitude, fz.longitude))
+          }
+        })
+        if (allBounds.isValid()) {
+          map.fitBounds(allBounds, { padding: [40, 40] })
+        } else {
+          map.setView([-15.77, -47.93], 4)
+        }
+        dashMiniMapInstance.current = map
+        let debounce: ReturnType<typeof setTimeout>
+        const ro = new ResizeObserver(() => {
+          clearTimeout(debounce)
+          debounce = setTimeout(() => map.invalidateSize(), 80)
+        })
+        requestAnimationFrame(() => ro.observe(node))
+      } catch (err) {
+        console.warn('Minimap dash init error:', err)
       }
-      dashMiniMapInstance.current = map
-      setTimeout(() => map.invalidateSize(), 200)
-    } catch (err) {
-      console.warn('Minimap dash init error:', err)
-    }
+    }, 100)
   }, [sidebarPage])
 
   if (!authReady) return null
@@ -949,303 +873,12 @@ export default function App() {
         </div>
       )}
 
-      {/* ── Dashboard bento ── */}
+      {/* ── Dashboard: mapa das fazendas ── */}
       {(() => {
         if (sidebarPage !== 'dashboard') return null
-        const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
-
-        // Sparkline: last 6 months cumulative saldo
-        const txsRaw: Transaction[] = (() => { try { return JSON.parse(localStorage.getItem('lion-txs') || '[]') } catch { return [] } })()
-        const sparkMonths: number[] = []
-        let running = 0
-        for (let i = 5; i >= 0; i--) {
-          const d = new Date(); d.setMonth(d.getMonth() - i)
-          const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`
-          running += txsRaw.filter(t => t.date === key).reduce((s,t) => s+(t.type==='receita'?t.amount:-t.amount),0)
-          sparkMonths.push(running)
-        }
-        const sparkPath = sparkMonths.length >= 2 ? (() => {
-          const mn = Math.min(...sparkMonths), mx = Math.max(...sparkMonths), rng = mx - mn || 1
-          const pts = sparkMonths.map((v,i) => `${(i/(sparkMonths.length-1))*260},${42-((v-mn)/rng*38)}`)
-          return { line: `M${pts.join(' L')}`, area: `M${pts.join(' L')} L260,44 L0,44Z` }
-        })() : null
-
-        // Monthly income/expenses
-        const now2 = new Date()
-        const curKey = `${now2.getFullYear()}-${String(now2.getMonth()+1).padStart(2,'0')}`
-        const monthInc = txsRaw.filter(t=>t.date===curKey&&t.type==='receita').reduce((s,t)=>s+t.amount,0)
-        const monthExp = txsRaw.filter(t=>t.date===curKey&&t.type==='despesa').reduce((s,t)=>s+t.amount,0)
-
-        const momPct = dashData.lastMonthNet !== 0 ? Math.round((dashData.thisMonthNet-dashData.lastMonthNet)/Math.abs(dashData.lastMonthNet)*100) : 0
-
         return (
-          <main className="dash-content">
-            {/* ── Row 1: Hero + 3 metrics ── */}
-            <div className="bento-row bento-r1">
-
-              {/* Hero card */}
-              <div className="bc bc-hero">
-                <div className="hero-eyebrow">Saldo Financeiro</div>
-                <div className="hero-amount">{fmt(dashData.balance)}</div>
-                <span className={`hero-pill ${momPct >= 0 ? 'hero-pill-pos' : 'hero-pill-neg'}`}>
-                  {momPct >= 0 ? '↑' : '↓'} {Math.abs(momPct)}% vs mês anterior
-                </span>
-                {sparkPath && (
-                  <div className="hero-spark">
-                    <div className="hero-spark-lbl">Evolução — últimos 6 meses</div>
-                    <svg className="spark-svg" viewBox="0 0 260 44" preserveAspectRatio="none">
-                      <defs>
-                        <linearGradient id="sg2" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#3b82f6" stopOpacity=".3"/>
-                          <stop offset="100%" stopColor="#3b82f6" stopOpacity="0"/>
-                        </linearGradient>
-                      </defs>
-                      <path d={sparkPath.area} fill="url(#sg2)"/>
-                      <path d={sparkPath.line} stroke="#60a5fa" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
-                      <circle cx="260" cy={42-((sparkMonths[5]-Math.min(...sparkMonths))/(Math.max(...sparkMonths)-Math.min(...sparkMonths)||1)*38)} r="3" fill="#60a5fa"/>
-                    </svg>
-                  </div>
-                )}
-              </div>
-
-              {/* Metric: Receita */}
-              <div className="bc bc-metric">
-                <div className="metric-ico mi-green">
-                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M10 2v16M14 5H8a3 3 0 0 0 0 6h4a3 3 0 0 1 0 6H6" strokeLinecap="round"/></svg>
-                </div>
-                <div className="metric-lbl">Receita mensal</div>
-                <div className="metric-val">{fmt(monthInc)}</div>
-                <div className={`metric-chg ${monthInc > 0 ? 'mc-pos' : 'mc-neu'}`}>
-                  {monthInc > 0 ? '↑' : '—'} {curKey.split('-').reverse().join('/')}
-                </div>
-              </div>
-
-              {/* Metric: Gastos */}
-              <div className="bc bc-metric">
-                <div className="metric-ico mi-red">
-                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 7h14M3 7l2-3h10l2 3M3 7v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </div>
-                <div className="metric-lbl">Gastos mensais</div>
-                <div className="metric-val">{fmt(monthExp)}</div>
-                <div className={`metric-chg ${monthExp > monthInc ? 'mc-neg' : 'mc-neu'}`}>
-                  {monthExp > monthInc ? '↑ Acima da receita' : monthExp > 0 ? `${Math.round((monthExp/Math.max(monthInc,1))*100)}% da receita` : 'Sem gastos'}
-                </div>
-              </div>
-
-              {/* Metric: Alertas */}
-              <div className="bc bc-metric" style={{ cursor:'pointer' }} onClick={toggleAlerts}>
-                <div className={`metric-ico ${dashData.dangerCount > 0 ? 'mi-red' : dashData.warnCount > 0 ? 'mi-amber' : 'mi-green'}`}>
-                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8.57 3.43L1.5 15.5a1.5 1.5 0 0 0 1.29 2.25h14.42A1.5 1.5 0 0 0 18.5 15.5L11.43 3.43a1.65 1.65 0 0 0-2.86 0z" strokeLinejoin="round"/><path d="M10 8v4M10 14h.01" strokeLinecap="round"/></svg>
-                </div>
-                <div className="metric-lbl">Alertas ativos</div>
-                <div className="metric-val">{dashData.totalAlerts}</div>
-                <div className={`metric-chg ${dashData.dangerCount > 0 ? 'mc-neg' : dashData.warnCount > 0 ? 'mc-neu' : 'mc-pos'}`}>
-                  {dashData.totalAlerts === 0 ? '✓ Tudo em ordem' : `${dashData.dangerCount} crítico(s)`}
-                </div>
-              </div>
-
-            </div>
-
-            {/* ── Row 2: Activity + Goals + Quick Actions ── */}
-            <div className="bento-row bento-r2">
-
-              {/* Activity feed */}
-              <div className="bc">
-                <div className="bc-title" style={{ cursor: 'pointer', userSelect: 'none' }} onClick={() => setActivityOpen(v => !v)}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <svg viewBox="0 0 12 12" fill="none" style={{ width: '10px', height: '10px', transition: 'transform .2s', transform: activityOpen ? 'rotate(90deg)' : 'rotate(0deg)' }}><path d="M4 2l4 4-4 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                    Atividade Recente
-                  </span>
-                  <button className="bc-title-btn" onClick={e => { e.stopPropagation(); setSidebarPage('financas') }}>+ Transação</button>
-                </div>
-                {activityOpen && (activity.length === 0 ? (
-                  <div className="feed-empty">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ width: 32, height: 32, opacity: .3, marginBottom: 6 }}><rect x="3" y="3" width="18" height="18" rx="3"/><path d="M8 12h8M12 8v8" strokeLinecap="round"/></svg>
-                    <span>Nenhuma atividade ainda</span>
-                    <button className="feed-empty-btn" onClick={() => setSidebarPage('financas')}>Adicionar transação</button>
-                  </div>
-                ) : activity.slice(0,6).map(a => (
-                  <div key={a.id} className="feed-row">
-                    <div className="feed-dot" style={{ background: a.color === 'green' ? 'var(--green)' : a.color === 'red' ? 'var(--red)' : a.color === 'amber' ? 'var(--amber)' : 'var(--blue)' }}/>
-                    <div className="feed-info">
-                      <div className="feed-name">{a.title}</div>
-                      <div className="feed-time">{a.time}</div>
-                    </div>
-                    <div className="feed-amt" style={{ color: a.color === 'green' ? 'var(--green-l)' : a.color === 'red' ? '#f87171' : a.color === 'amber' ? 'var(--amber-l)' : 'var(--blue-l)' }}>{a.sub}</div>
-                  </div>
-                )))}
-              </div>
-
-              {/* Hub de Pagamentos summary */}
-              {(() => {
-                const hubBills: Bill[] = (() => { try { return JSON.parse(localStorage.getItem('lion-bills') || '[]') } catch { return [] } })()
-                const hubNow = new Date()
-                const hubMonth = `${hubNow.getFullYear()}-${String(hubNow.getMonth() + 1).padStart(2, '0')}`
-                const monthBills = hubBills.filter(b => b.dueDate?.startsWith(hubMonth) && b.status !== 'cancelado')
-                const aberto = monthBills.filter(b => effectiveStatus(b) === 'em_aberto')
-                const vencido = monthBills.filter(b => effectiveStatus(b) === 'vencido')
-                const pago = monthBills.filter(b => b.status === 'pago')
-                const totalAberto = aberto.reduce((s, b) => s + b.amount, 0) + vencido.reduce((s, b) => s + b.amount, 0)
-                const totalPago = pago.reduce((s, b) => s + b.amount, 0)
-                const progress = (totalAberto + totalPago) > 0 ? Math.round((totalPago / (totalAberto + totalPago)) * 100) : 0
-                return (
-                  <div className="bc">
-                    <div className="bc-title">
-                      Contas do Mês
-                      <button className="bc-title-btn" onClick={() => setSidebarPage('payment-hub')}>Ver todas</button>
-                    </div>
-                    {monthBills.length === 0 ? (
-                      <div className="feed-empty">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.2" style={{ width: 32, height: 32, opacity: .3, marginBottom: 6 }}><rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20" strokeLinecap="round"/><path d="M6 15h4" strokeLinecap="round"/></svg>
-                        <span>Nenhuma conta este mês</span>
-                        <button className="feed-empty-btn" onClick={() => setSidebarPage('payment-hub')}>Adicionar conta</button>
-                      </div>
-                    ) : (
-                      <>
-                        <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
-                          <div style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', background: 'rgba(239,68,68,.1)' }}>
-                            <div style={{ fontSize: 'calc(.65rem * var(--fs))', color: 'var(--text)', opacity: .6 }}>A pagar</div>
-                            <div style={{ fontSize: 'calc(.85rem * var(--fs))', fontWeight: 600, color: vencido.length > 0 ? 'var(--red)' : 'var(--text)' }}>{fmt(totalAberto)}</div>
-                            <div style={{ fontSize: 'calc(.6rem * var(--fs))', color: 'var(--text)', opacity: .5 }}>{aberto.length + vencido.length} conta{(aberto.length + vencido.length) !== 1 ? 's' : ''}{vencido.length > 0 ? ` · ${vencido.length} vencida` : ''}</div>
-                          </div>
-                          <div style={{ flex: 1, padding: '8px 12px', borderRadius: '8px', background: 'rgba(16,185,129,.1)' }}>
-                            <div style={{ fontSize: 'calc(.65rem * var(--fs))', color: 'var(--text)', opacity: .6 }}>Pago</div>
-                            <div style={{ fontSize: 'calc(.85rem * var(--fs))', fontWeight: 600, color: 'var(--green)' }}>{fmt(totalPago)}</div>
-                            <div style={{ fontSize: 'calc(.6rem * var(--fs))', color: 'var(--text)', opacity: .5 }}>{pago.length} quitada{pago.length !== 1 ? 's' : ''}</div>
-                          </div>
-                        </div>
-                        <div style={{ background: 'var(--bg3)', borderRadius: '6px', height: '6px', overflow: 'hidden' }}>
-                          <div style={{ width: `${progress}%`, height: '100%', background: 'var(--green)', borderRadius: '6px', transition: 'width .3s' }} />
-                        </div>
-                        <div style={{ fontSize: 'calc(.6rem * var(--fs))', color: 'var(--text)', opacity: .5, marginTop: '4px', textAlign: 'right' }}>{progress}% quitado</div>
-                        {vencido.slice(0, 3).map(b => {
-                          const collectors: Collector[] = (() => { try { return JSON.parse(localStorage.getItem('lion-collectors') || '[]') } catch { return [] } })()
-                          const c = collectors.find(cl => cl.id === b.collectorId)
-                          return (
-                            <div key={b.id} className="feed-row">
-                              <div className="feed-dot" style={{ background: 'var(--red)' }} />
-                              <div className="feed-info">
-                                <div className="feed-name">{c?.name || 'Conta'}{b.description ? ` — ${b.description}` : ''}</div>
-                                <div className="feed-time">Vencida · {fmtDate(b.dueDate)}</div>
-                              </div>
-                              <div className="feed-amt" style={{ color: '#f87171' }}>{fmt(b.amount)}</div>
-                            </div>
-                          )
-                        })}
-                      </>
-                    )}
-                  </div>
-                )
-              })()}
-
-
-            </div>
-
-            {/* ── Row 3: Terra overview ── */}
-            {(() => {
-              const dashFazendas: TerraFazenda[] = (() => { try { return JSON.parse(localStorage.getItem('lion-terra') || '[]') } catch { return [] } })()
-              const dashTalhoes: TerraTalhao[] = (() => { try { return JSON.parse(localStorage.getItem('lion-talhoes') || '[]') } catch { return [] } })()
-              if (dashFazendas.length === 0) return null
-              const faz = dashFazendas[0]
-              const fazTal = dashTalhoes.filter(t => t.fazendaId === faz.id)
-              const areaUtilVal = faz.areaUtil || 0
-              const utilizPct = faz.areaTotal > 0 ? ((areaUtilVal / faz.areaTotal) * 100).toFixed(1) : '0'
-              const somaTal = fazTal.reduce((s, t) => s + t.areaHa, 0)
-              const fmtHa2 = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 1 }) + ' ha'
-
-              const pieItems = fazTal.length > 0
-                ? fazTal.map(t => {
-                    const usoInfo = TALHAO_USOS.find(u => u.value === t.uso)
-                    return { label: t.nome, value: t.areaHa, cor: t.cor || usoInfo?.cor || '#6b7280' }
-                  }).filter(i => i.value > 0)
-                : [
-                    { label: 'Lavoura', value: faz.areaLavoura, cor: '#f59e0b' },
-                    { label: 'Pastagem', value: faz.areaPastagem, cor: '#22c55e' },
-                    { label: 'APP', value: faz.areaApp, cor: '#0d9488' },
-                    { label: 'Reflorestamento', value: faz.areaReflorestamento, cor: '#65a30d' },
-                    { label: 'Benfeitorias', value: faz.areaBenfeitorias, cor: '#8b5cf6' },
-                  ].filter(i => i.value > 0)
-
-              const pieTotal = pieItems.reduce((s, i) => s + i.value, 0)
-              let pieCum = 0
-              const slices = pieTotal > 0 ? pieItems.map(item => {
-                const startFrac = pieCum / pieTotal
-                pieCum += item.value
-                const frac = item.value / pieTotal
-                const r = 70
-                const circ = 2 * Math.PI * r
-                return { ...item, strokeDasharray: `${frac * circ} ${circ}`, strokeDashoffset: -startFrac * circ, pct: ((item.value / pieTotal) * 100).toFixed(0) }
-              }) : []
-
-              const docs = [faz.geoReferenciado, faz.licencaAmbiental, !!faz.matricula, !!faz.carNumero]
-              const docsOk = docs.filter(Boolean).length
-
-              return (
-                <div className="bento-row bento-r3">
-                  <div className="bc bc-metric">
-                    <div className="metric-ico mi-green">
-                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 18C6 10 14 10 18 18" strokeLinecap="round"/><path d="M10 2c2 4 6 5 8 4-1 3-5 5-8 3-3 2-7 0-8-3 2 1 6 0 8-4z" strokeLinejoin="round"/></svg>
-                    </div>
-                    <div className="metric-lbl">Área Útil</div>
-                    <div className="metric-val">{fmtHa2(areaUtilVal)}</div>
-                    <div className={`metric-chg ${Number(utilizPct) >= 70 ? 'mc-pos' : 'mc-neu'}`}>{utilizPct}% de utilização</div>
-                  </div>
-
-                  <div className="bc bc-metric">
-                    <div className="metric-ico mi-amber">
-                      <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="7" height="7" rx="1" strokeLinejoin="round"/><rect x="11" y="2" width="7" height="7" rx="1" strokeLinejoin="round"/><rect x="2" y="11" width="7" height="7" rx="1" strokeLinejoin="round"/><rect x="11" y="11" width="7" height="7" rx="1" strokeLinejoin="round"/></svg>
-                    </div>
-                    <div className="metric-lbl">Talhões</div>
-                    <div className="metric-val">{fazTal.length}</div>
-                    <div className="metric-chg mc-neu">{fmtHa2(somaTal)} mapeados</div>
-                  </div>
-
-                  <div className="bc">
-                    <div className="bc-title">
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <svg viewBox="0 0 20 20" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 18C6 10 14 10 18 18" strokeLinecap="round"/><path d="M10 2c2 4 6 5 8 4-1 3-5 5-8 3-3 2-7 0-8-3 2 1 6 0 8-4z" strokeLinejoin="round"/></svg>
-                        {faz.nome}
-                      </span>
-                      <button className="bc-title-btn" onClick={() => setSidebarPage('terra')}>Ver Terra</button>
-                    </div>
-                    <div style={{ display: 'flex', gap: '12px', marginTop: '8px' }}>
-                      <div ref={dashMiniMapRef} style={{ width: 120, height: 120, borderRadius: '10px', overflow: 'hidden', flexShrink: 0, background: 'var(--bg3)', cursor: 'pointer' }} onClick={() => setSidebarPage('terra')} title="Ver mapa completo" />
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        {faz.municipio && <div style={{ fontSize: 'calc(.7rem * var(--fs))', color: 'var(--text)', opacity: .7, marginBottom: '4px' }}>{faz.municipio}{faz.uf ? ` — ${faz.uf}` : ''}</div>}
-                        <div style={{ fontSize: 'calc(.72rem * var(--fs))', color: 'var(--text2)', fontWeight: 600 }}>Área Total: {fmtHa2(faz.areaTotal)}</div>
-                        <div style={{ fontSize: 'calc(.65rem * var(--fs))', color: 'var(--text)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <span style={{ width: 6, height: 6, borderRadius: '50%', background: docsOk === 4 ? 'var(--green)' : docsOk >= 2 ? 'var(--amber)' : 'var(--red)', display: 'inline-block', flexShrink: 0 }} />
-                          Documentação: {docsOk}/4 completo{docsOk !== 1 ? 's' : ''}
-                        </div>
-                        {slices.length > 0 && (
-                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 8px', marginTop: '8px' }}>
-                            {slices.slice(0, 5).map((s, i) => (
-                              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: 'calc(.6rem * var(--fs))', color: 'var(--text)' }}>
-                                <span style={{ width: 8, height: 8, borderRadius: '2px', background: s.cor, flexShrink: 0 }} />
-                                {s.label} {s.pct}%
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      {slices.length > 0 && (
-                        <div style={{ width: 80, height: 80, flexShrink: 0, alignSelf: 'center' }}>
-                          <svg viewBox="0 0 200 200" style={{ width: '100%', height: '100%' }}>
-                            {slices.map((s, i) => (
-                              <circle key={i} cx="100" cy="100" r="70" fill="none" stroke={s.cor} strokeWidth="28" strokeDasharray={s.strokeDasharray} strokeDashoffset={s.strokeDashoffset} transform="rotate(-90 100 100)" />
-                            ))}
-                            <circle cx="100" cy="100" r="56" fill="var(--bg2)" />
-                            <text x="100" y="96" textAnchor="middle" fill="var(--text3)" fontSize="24" fontWeight="700">{slices.length}</text>
-                            <text x="100" y="114" textAnchor="middle" fill="var(--text)" fontSize="11" opacity=".6">usos</text>
-                          </svg>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )
-            })()}
-
+          <main className="dash-content" style={{ padding: 0, position: 'relative' }}>
+            <div className="dash-map-full" ref={dashMiniMapRef} />
           </main>
         )
       })()}

@@ -701,6 +701,15 @@
   overflow-x: hidden;
 }
 
+.dash-map-full {
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  background: var(--bg3);
+}
+.dash-map-tooltip { font-size: 12px; font-weight: 600 }
+
 .bento-row { display: grid; gap: 12px; align-items: start }
 .bento-r1  { grid-template-columns: 2fr 1fr 1fr 1fr }
 .bento-r2  { grid-template-columns: 1fr 1fr 1fr }
