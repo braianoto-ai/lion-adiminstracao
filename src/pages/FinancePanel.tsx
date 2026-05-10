@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useCloudTable } from '../hooks'
 import { TX_CATEGORIES } from '../constants'
-import type { Transaction, TxType, Goal } from '../types'
+import type { Transaction, TxType } from '../types'
 
 
 function parseNubankCSV(text: string): Omit<Transaction, 'id'>[] {
@@ -513,17 +513,6 @@ function ImportView({ txs, setTxs, onDone }: { txs: Transaction[]; setTxs: React
       </div>
     </div>
   )
-}
-
-// ─── Goals Section ────────────────────────────────────────────────────────────
-
-interface Goal {
-  id: string
-  name: string
-  category: string
-  target: number
-  current: number
-  deadline: string
 }
 
 // ─── Financing Simulator ─────────────────────────────────────────────────────
