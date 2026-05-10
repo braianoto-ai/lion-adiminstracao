@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useContext, useMemo } from 'react'
 import L from 'leaflet'
+import 'leaflet/dist/leaflet.css'
 import { UserCtx } from '../context'
 import { useCloudTable, useSyncStatus } from '../hooks'
 import { TALHAO_USOS, TERRA_BIOMAS, TERRA_CULTURAS, TERRA_RELEVOS, TERRA_SOLOS, TERRA_UFS, NOTA_CATEGORIAS, compressImage } from '../constants'
