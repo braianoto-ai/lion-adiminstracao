@@ -19,8 +19,9 @@ export default function TerraPage() {
   const [editFazendaId, setEditFazendaId] = useState<string | null>(null)
   const [showTalhaoForm, setShowTalhaoForm] = useState(false)
   const [editTalhaoId, setEditTalhaoId] = useState<string | null>(null)
-  const mapRef = useRef<HTMLDivElement>(null)
   const leafletMap = useRef<L.Map | null>(null)
+  const miniMapRef = useRef<HTMLDivElement>(null)
+  const miniMapInstance = useRef<L.Map | null>(null)
   const layerGroup = useRef<L.LayerGroup | null>(null)
   const [mapLayer, setMapLayer] = useState<'mapa' | 'satelite' | 'relevo'>('mapa')
   const tileRef = useRef<L.TileLayer | null>(null)
@@ -151,19 +152,54 @@ export default function TerraPage() {
   }
   const deleteNota = (id: string) => { if (window.confirm('Excluir esta nota?')) setNotas(prev => prev.filter(n => n.id !== id)) }
 
-  // ─── Map
-  useEffect(() => {
-    if (tab !== 'mapa' || !mapRef.current || leafletMap.current) return
-    const center: [number, number] = fazenda ? [fazenda.latitude, fazenda.longitude] : [-15.78, -47.93]
-    const map = L.map(mapRef.current).setView(center, fazenda ? 14 : 4)
-    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' })
-    osm.addTo(map)
-    tileRef.current = osm
-    layerGroup.current = L.layerGroup().addTo(map)
-    drawMarkersRef.current = L.layerGroup().addTo(map)
-    notasLayerRef.current = L.layerGroup().addTo(map)
-    leafletMap.current = map
-    return () => { map.remove(); leafletMap.current = null; drawMarkersRef.current = null; notasLayerRef.current = null }
+  // ─── Map: useCallback ref fires exactly when the div mounts/unmounts,
+  //     AFTER the browser has applied the fullmap CSS and computed layout.
+  const mapRoRef = useRef<ResizeObserver | null>(null)
+  const mapTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const mapRefCb = useCallback((node: HTMLDivElement | null) => {
+    // Unmount: cancel pending init, clean up
+    if (!node) {
+      if (mapTimerRef.current) { clearTimeout(mapTimerRef.current); mapTimerRef.current = null }
+      mapRoRef.current?.disconnect()
+      mapRoRef.current = null
+      if (leafletMap.current) { leafletMap.current.remove(); leafletMap.current = null }
+      drawMarkersRef.current = null
+      notasLayerRef.current = null
+      initialViewSet.current = false   // reset so next mount can position correctly
+      return
+    }
+    if (leafletMap.current) return
+    // Defer init by one macro-task so browser completes CSS layout (fullmap class)
+    mapTimerRef.current = setTimeout(() => {
+      if (!node || leafletMap.current) return
+      const center: [number, number] = fazenda ? [fazenda.latitude, fazenda.longitude] : [-15.78, -47.93]
+      const zoom = fazenda ? 14 : 4
+      const map = L.map(node, { zoomControl: true })
+      // Mark initialView as set BEFORE setView so the layer-draw useEffect
+      // never calls a redundant second setView that scrambles tile positions
+      if (fazenda) initialViewSet.current = true
+      map.setView(center, zoom)
+      const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' })
+      osm.addTo(map)
+      tileRef.current = osm
+      layerGroup.current = L.layerGroup().addTo(map)
+      drawMarkersRef.current = L.layerGroup().addTo(map)
+      notasLayerRef.current = L.layerGroup().addTo(map)
+      leafletMap.current = map
+      // ResizeObserver keeps Leaflet in sync when sidebar or window resizes.
+      // Debounce so rapid micro-resizes during initial render don't shift the
+      // pixel origin mid tile-load and produce a scrambled grid.
+      let roTimer: ReturnType<typeof setTimeout> | null = null
+      const ro = new ResizeObserver(() => {
+        if (roTimer) clearTimeout(roTimer)
+        roTimer = setTimeout(() => { map.invalidateSize({ animate: false }) }, 80)
+      })
+      // Delay observation by one frame so the initial layout reflow
+      // doesn't immediately fire invalidateSize before tiles settle
+      requestAnimationFrame(() => { ro.observe(node) })
+      mapRoRef.current = ro
+    }, 50)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tab])
 
   useEffect(() => {
@@ -208,6 +244,32 @@ export default function TerraPage() {
       initialViewSet.current = true
     }
   }, [fazenda, fazTalhoes, tab, hiddenTalhoes, drawMode, editingMapTalhaoId, adminTalhaoOpacity])
+
+  useEffect(() => {
+    if (tab !== 'visao' || !fazenda || !miniMapRef.current) return
+    if (miniMapInstance.current) { miniMapInstance.current.remove(); miniMapInstance.current = null }
+    const map = L.map(miniMapRef.current, {
+      zoomControl: false, dragging: false, scrollWheelZoom: false,
+      doubleClickZoom: false, touchZoom: false, boxZoom: false,
+      keyboard: false, attributionControl: false,
+    })
+    L.tileLayer('https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}', { maxZoom: 20 }).addTo(map)
+    if (fazenda.perimetro.length >= 3) {
+      const perim = L.polygon(fazenda.perimetro, { color: '#dc2626', weight: 2, fillOpacity: 0.08, dashArray: '6 3' }).addTo(map)
+      fazTalhoes.forEach(t => {
+        if (t.poligono.length >= 3) {
+          const cor = t.cor || TALHAO_USOS.find(u => u.value === t.uso)?.cor || '#6b7280'
+          L.polygon(t.poligono, { color: cor, weight: 1, fillColor: cor, fillOpacity: 0.15 }).addTo(map)
+        }
+      })
+      map.fitBounds(perim.getBounds(), { padding: [10, 10] })
+    } else {
+      map.setView([fazenda.latitude, fazenda.longitude], 14)
+    }
+    miniMapInstance.current = map
+    setTimeout(() => map.invalidateSize(), 150)
+    return () => { map.remove(); miniMapInstance.current = null }
+  }, [tab, fazenda, fazTalhoes])
 
   // Render note markers
   useEffect(() => {
@@ -457,16 +519,34 @@ export default function TerraPage() {
           <div className="terra-card-stat"><span className="terra-stat-label">Talhões</span><span className="terra-stat-value">{fazTalhoes.length}</span><span className="terra-stat-sub">{fmtHa(somaTalhoes)} mapeados</span></div>
         </div>
 
+        <div className="terra-minimap-card" onClick={() => setTab('mapa')} title="Clique para abrir o mapa completo">
+          <div className="terra-minimap-container" ref={miniMapRef} />
+          <div className="terra-minimap-overlay">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="currentColor"><path d="M10 2a6 6 0 00-6 6c0 4.5 6 10 6 10s6-5.5 6-10a6 6 0 00-6-6zm0 8.5a2.5 2.5 0 110-5 2.5 2.5 0 010 5z"/></svg>
+            Ver mapa completo
+          </div>
+        </div>
+
         <div className="terra-visao-grid">
           <div className="terra-chart-card">
             <h4>Distribuição de Uso</h4>
             {pieSlices.length ? (
               <div className="terra-pie-wrap">
-                <svg viewBox="0 0 120 120" width="160" height="160">
-                  {pieSlices.map((s, i) => <path key={i} d={s.d} fill={s.cor} stroke="var(--bg)" strokeWidth="1.5" />)}
+                <svg viewBox="0 0 200 200" className="terra-donut">
+                  {pieSlices.map((s, i) => {
+                    const total = pieData.reduce((acc, it) => acc + it.value, 0)
+                    const startFrac = pieData.slice(0, i).reduce((acc, it) => acc + it.value, 0) / total
+                    const frac = s.value / total
+                    const r = 70
+                    const circ = 2 * Math.PI * r
+                    return <circle key={i} cx="100" cy="100" r={r} fill="none" stroke={s.cor} strokeWidth="32" strokeDasharray={`${frac * circ} ${circ}`} strokeDashoffset={-startFrac * circ} transform="rotate(-90 100 100)" />
+                  })}
+                  <circle cx="100" cy="100" r="54" fill="var(--bg2)" />
+                  <text x="100" y="96" textAnchor="middle" fill="var(--text3)" fontSize="22" fontWeight="700">{pieSlices.length}</text>
+                  <text x="100" y="114" textAnchor="middle" fill="var(--text)" fontSize="10">talhões</text>
                 </svg>
                 <div className="terra-legend">
-                  {pieSlices.map((s, i) => <div key={i} className="terra-legend-item"><span className="terra-legend-dot" style={{ background: s.cor }} />{s.label} — {s.pct}%</div>)}
+                  {pieSlices.map((s, i) => <div key={i} className="terra-legend-item"><span className="terra-legend-dot" style={{ background: s.cor }} /><span className="terra-legend-label">{s.label}</span><span className="terra-legend-pct">{s.pct}%</span></div>)}
                 </div>
               </div>
             ) : <p className="terra-muted">Preencha as áreas da fazenda para ver a distribuição.</p>}
@@ -504,6 +584,33 @@ export default function TerraPage() {
             )}
           </div>
         )}
+
+        {fazendas.length > 0 && (
+          <div className="terra-visao-fazendas">
+            <div className="terra-visao-fazendas-header">
+              <h4>Fazendas</h4>
+              <button className="terra-btn-link" onClick={() => setTab('fazendas')}>Ver todas</button>
+            </div>
+            <div className="terra-visao-fazendas-grid">
+              {fazendas.map(f => {
+                const fTalhoes = talhoes.filter(t => t.fazendaId === f.id)
+                return (
+                  <div key={f.id} className={`terra-visao-faz-card${f.id === activeFazendaId ? ' terra-visao-faz-active' : ''}`} onClick={() => setActiveFazendaId(f.id)} onDoubleClick={() => setTab('fazendas')}>
+                    <div className="terra-visao-faz-top">
+                      <strong>{f.nome}</strong>
+                      <span className="terra-visao-faz-loc">{f.municipio}{f.uf ? ` — ${f.uf}` : ''}</span>
+                    </div>
+                    <div className="terra-visao-faz-stats">
+                      <div><span>{fmtHa(f.areaTotal)}</span><small>Área Total</small></div>
+                      <div><span>{fTalhoes.length}</span><small>Talhões</small></div>
+                      <div><span>{f.bioma || '—'}</span><small>Bioma</small></div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -511,98 +618,140 @@ export default function TerraPage() {
   // ─── MAPA
   const renderMapa = () => (
     <div className="terra-mapa">
-      <div className="terra-map-controls">
-        {(['mapa', 'satelite', 'relevo'] as const).map(l => (
-          <button key={l} className={`terra-map-toggle ${mapLayer === l ? 'active' : ''}`} onClick={() => setMapLayer(l)}>
-            {{ mapa: 'Mapa', satelite: 'Satélite', relevo: 'Relevo' }[l]}
-          </button>
-        ))}
-        <div className="terra-map-spacer" />
-        {drawMode === 'none' && !editingMapTalhaoId && (
-          <>
-            <span className={`terra-sync-status${isSyncing ? ' syncing' : ''}`}>
-              {isSyncing ? (
-                <>
-                  <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5" className="terra-spin"><path d="M2 8a6 6 0 0110.47-4M14 8a6 6 0 01-10.47 4" strokeLinecap="round"/></svg>
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <svg viewBox="0 0 14 14" width="12" height="12" fill="none"><path d="M2 7l4 4 6-6" stroke="#0f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  Salvo
-                </>
-              )}
-            </span>
-            <button className={`terra-btn-draw terra-btn-share${shareCopied ? ' copied' : ''}`} onClick={() => {
-              const base = window.location.origin + window.location.pathname
-              const url = userId ? `${base}#/mapa/${userId}` : `${base}#/mapa`
-              navigator.clipboard.writeText(url).then(() => { setShareCopied(true); setTimeout(() => setShareCopied(false), 2500) })
-            }}>
-              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="3" r="2"/><circle cx="4" cy="8" r="2"/><circle cx="12" cy="13" r="2"/><path d="M5.8 9l4.4 3M5.8 7l4.4-3"/></svg>
-              {shareCopied ? 'Link copiado!' : 'Compartilhar Mapa'}
-            </button>
-          </>
-        )}
-        {drawMode === 'none' && !editingMapTalhaoId && !showQuickTalhao && (
-          <button className={`terra-btn-draw${terraEditMode ? ' terra-btn-edit-active' : ''}`} onClick={() => setTerraEditMode(v => !v)}>
-            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 14h3l9-9-3-3-9 9v3z" strokeLinejoin="round"/></svg>
-            {terraEditMode ? 'Sair da Edição' : 'Editar Mapa'}
-          </button>
-        )}
-        {showQuickTalhao && drawMode === 'none' && (
-          <div className="terra-draw-bar" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
-            <span style={{ fontSize: 'calc(.78rem * var(--fs))', color: 'var(--text2)', marginBottom: 2 }}>Digite o nome e clique em "Iniciar Desenho":</span>
-            <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
-              <input className="terra-quick-input" autoFocus placeholder="Nome do talhão (ex: Talhão 1)" value={quickTalhaoName} onChange={e => setQuickTalhaoName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && quickTalhaoName.trim() && fazenda) { const cor = TALHAO_USOS.find(u => u.value === quickTalhaoUso)?.cor || '#6b7280'; const nt: TerraTalhao = { id: crypto.randomUUID(), fazendaId: fazenda.id, nome: quickTalhaoName.trim(), uso: quickTalhaoUso, areaHa: 0, cultura: '', safra: '', poligono: [], cor, notas: '', publico: true, createdAt: new Date().toISOString() }; setTalhoes(prev => [...prev, nt]); setDrawTalhaoId(nt.id); setDrawMode('talhao'); setDrawPoints([]); setShowQuickTalhao(false) } }} />
-              <select className="terra-draw-select" value={quickTalhaoUso} onChange={e => setQuickTalhaoUso(e.target.value as TalhaoUso)}>
-                {TALHAO_USOS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
-              </select>
-              <button className="terra-btn-primary" disabled={!quickTalhaoName.trim()} onClick={() => {
-                if (!quickTalhaoName.trim() || !fazenda) return
-                const cor = TALHAO_USOS.find(u => u.value === quickTalhaoUso)?.cor || '#6b7280'
-                const nt: TerraTalhao = { id: crypto.randomUUID(), fazendaId: fazenda.id, nome: quickTalhaoName.trim(), uso: quickTalhaoUso, areaHa: 0, cultura: '', safra: '', poligono: [], cor, notas: '', publico: true, createdAt: new Date().toISOString() }
-                setTalhoes(prev => [...prev, nt])
-                setDrawTalhaoId(nt.id)
-                setDrawMode('talhao')
-                setDrawPoints([])
-                setShowQuickTalhao(false)
-              }}>Iniciar Desenho</button>
-              <button className="terra-btn-secondary" onClick={() => setShowQuickTalhao(false)}>Cancelar</button>
-            </div>
-          </div>
-        )}
-        {drawMode === 'nota' && (
-          <div className="terra-draw-bar">
-            <span className="terra-draw-label">
-              📌 Clique no mapa para posicionar a nota
-            </span>
-            <button className="terra-btn-secondary" onClick={cancelDraw}>Cancelar</button>
-          </div>
-        )}
-        {(drawMode === 'perimetro' || drawMode === 'talhao') && (
-          <div className="terra-draw-bar">
-            <span className="terra-draw-label">
-              {drawMode === 'perimetro' ? 'Desenhando perímetro' : 'Desenhando talhão'} — clique no mapa para adicionar pontos ({drawPoints.length} pontos)
-            </span>
-            <button className="terra-btn-draw terra-btn-undo" onClick={undoDrawPoint} disabled={drawPoints.length === 0}>Desfazer</button>
-            <button className="terra-btn-primary" onClick={finishDraw} disabled={drawPoints.length < 3}>Finalizar</button>
-            <button className="terra-btn-secondary" onClick={cancelDraw}>Cancelar</button>
-          </div>
-        )}
-        {editingMapTalhaoId && (
-          <div className="terra-draw-bar terra-edit-bar">
-            <span className="terra-draw-label">
-              <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 14h3l9-9-3-3-9 9v3z" strokeLinejoin="round"/></svg>
-              Editando <strong>{editingMapTalhaoId === PERIM_EDIT_ID ? 'Perímetro' : talhoes.find(t => t.id === editingMapTalhaoId)?.nome}</strong> — arraste os vértices para mover/redimensionar
-            </span>
-            <button className="terra-btn-draw terra-btn-undo" onClick={deleteEditVertex} disabled={editCoordsRef.current.length <= 3}>Remover Vértice</button>
-            <button className="terra-btn-primary" onClick={saveEditMapTalhao}>Salvar</button>
-            <button className="terra-btn-secondary" onClick={cancelEditMapTalhao}>Cancelar</button>
-          </div>
-        )}
-      </div>
       <div className="terra-map-layout">
-        <div ref={mapRef} className="terra-map-container">
+        <div className="terra-map-container">
+          {/* Dedicated inner div for Leaflet — isolated from overlay children */}
+          {/* inset:0 é mais robusto que height:100% em flex items sem height explícito */}
+          <div ref={mapRefCb} style={{ position: 'absolute', inset: 0 }} />
+          <div className="terra-map-overlay-tl">
+            {(['mapa', 'satelite', 'relevo'] as const).map(l => (
+              <button key={l} className={`terra-map-toggle ${mapLayer === l ? 'active' : ''}`} onClick={() => setMapLayer(l)}>
+                {{ mapa: 'Mapa', satelite: 'Satélite', relevo: 'Relevo' }[l]}
+              </button>
+            ))}
+          </div>
+          {drawMode === 'none' && !editingMapTalhaoId && (
+            <div className="terra-map-overlay-tr">
+              <span className={`terra-sync-status${isSyncing ? ' syncing' : ''}`}>
+                {isSyncing ? (
+                  <>
+                    <svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="1.5" className="terra-spin"><path d="M2 8a6 6 0 0110.47-4M14 8a6 6 0 01-10.47 4" strokeLinecap="round"/></svg>
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <svg viewBox="0 0 14 14" width="12" height="12" fill="none"><path d="M2 7l4 4 6-6" stroke="#0f6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                    Salvo
+                  </>
+                )}
+              </span>
+              <button className={`terra-btn-draw terra-btn-share${shareCopied ? ' copied' : ''}`} onClick={() => {
+                const base = window.location.origin + window.location.pathname
+                const url = userId ? `${base}#/mapa/${userId}` : `${base}#/mapa`
+                navigator.clipboard.writeText(url).then(() => { setShareCopied(true); setTimeout(() => setShareCopied(false), 2500) })
+              }}>
+                <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="12" cy="3" r="2"/><circle cx="4" cy="8" r="2"/><circle cx="12" cy="13" r="2"/><path d="M5.8 9l4.4 3M5.8 7l4.4-3"/></svg>
+                {shareCopied ? 'Link copiado!' : 'Compartilhar Mapa'}
+              </button>
+              {!showQuickTalhao && (
+                <button className={`terra-btn-draw${terraEditMode ? ' terra-btn-edit-active' : ''}`} onClick={() => setTerraEditMode(v => !v)}>
+                  <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 14h3l9-9-3-3-9 9v3z" strokeLinejoin="round"/></svg>
+                  {terraEditMode ? 'Sair da Edição' : 'Editar Mapa'}
+                </button>
+              )}
+            </div>
+          )}
+          {terraEditMode && drawMode === 'none' && fazenda && !showQuickTalhao && !editingMapTalhaoId && (
+            <div className="terra-map-overlay-bottom">
+              <div className="terra-draw-bar">
+                <button className="terra-btn-draw" onClick={() => { setDrawMode('perimetro'); setDrawPoints([]) }}>
+                  <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="2,14 8,2 14,14" strokeLinejoin="round"/></svg>
+                  {fazenda && fazenda.perimetro.length >= 3 ? 'Redesenhar Perímetro' : 'Desenhar Perímetro'}
+                </button>
+                {fazenda && fazenda.perimetro.length >= 3 && (
+                  <button className="terra-btn-draw terra-btn-edit-active" onClick={() => startEditMapTalhao(PERIM_EDIT_ID)}>
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 8a6 6 0 1112 0A6 6 0 012 8z"/><circle cx="5" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/><circle cx="11" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>
+                    Editar Perímetro
+                  </button>
+                )}
+                {fazenda && fazenda.perimetro.length >= 3 && (
+                  <button className="terra-btn-draw terra-btn-danger" onClick={() => { if (window.confirm('Limpar o perímetro atual? Os talhões não serão afetados.')) setFazendas(prev => prev.map(f => f.id === fazenda.id ? { ...f, perimetro: [] } : f)) }} title="Limpar perímetro desenhado">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3l10 10M13 3L3 13" strokeLinecap="round"/></svg>
+                    Limpar Perímetro
+                  </button>
+                )}
+                <button className="terra-btn-draw" onClick={() => { setShowQuickTalhao(true); setQuickTalhaoName(''); setQuickTalhaoUso('lavoura') }}>
+                  <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="12" height="12" rx="2" strokeLinejoin="round"/><path d="M8 5v6M5 8h6" strokeLinecap="round"/></svg>
+                  Desenhar Talhão
+                </button>
+                {fazTalhoes.length > 0 && (
+                  <select className="terra-draw-select" value="" onChange={e => { if (e.target.value) { setDrawTalhaoId(e.target.value); setDrawMode('talhao'); setDrawPoints([]) } }}>
+                    <option value="">Redesenhar Talhão...</option>
+                    {fazTalhoes.map(t => <option key={t.id} value={t.id}>{t.nome}{t.poligono.length >= 3 ? ' ✓' : ''}</option>)}
+                  </select>
+                )}
+              </div>
+            </div>
+          )}
+          {showQuickTalhao && drawMode === 'none' && (
+            <div className="terra-map-overlay-bottom">
+              <div className="terra-draw-bar" style={{ flexDirection: 'column', alignItems: 'stretch' }}>
+                <span style={{ fontSize: 'calc(.78rem * var(--fs))', color: 'var(--text2)', marginBottom: 2 }}>Digite o nome e clique em "Iniciar Desenho":</span>
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+                  <input className="terra-quick-input" autoFocus placeholder="Nome do talhão (ex: Talhão 1)" value={quickTalhaoName} onChange={e => setQuickTalhaoName(e.target.value)} onKeyDown={e => { if (e.key === 'Enter' && quickTalhaoName.trim() && fazenda) { const cor = TALHAO_USOS.find(u => u.value === quickTalhaoUso)?.cor || '#6b7280'; const nt: TerraTalhao = { id: crypto.randomUUID(), fazendaId: fazenda.id, nome: quickTalhaoName.trim(), uso: quickTalhaoUso, areaHa: 0, cultura: '', safra: '', poligono: [], cor, notas: '', publico: true, createdAt: new Date().toISOString() }; setTalhoes(prev => [...prev, nt]); setDrawTalhaoId(nt.id); setDrawMode('talhao'); setDrawPoints([]); setShowQuickTalhao(false) } }} />
+                  <select className="terra-draw-select" value={quickTalhaoUso} onChange={e => setQuickTalhaoUso(e.target.value as TalhaoUso)}>
+                    {TALHAO_USOS.map(u => <option key={u.value} value={u.value}>{u.label}</option>)}
+                  </select>
+                  <button className="terra-btn-primary" disabled={!quickTalhaoName.trim()} onClick={() => {
+                    if (!quickTalhaoName.trim() || !fazenda) return
+                    const cor = TALHAO_USOS.find(u => u.value === quickTalhaoUso)?.cor || '#6b7280'
+                    const nt: TerraTalhao = { id: crypto.randomUUID(), fazendaId: fazenda.id, nome: quickTalhaoName.trim(), uso: quickTalhaoUso, areaHa: 0, cultura: '', safra: '', poligono: [], cor, notas: '', publico: true, createdAt: new Date().toISOString() }
+                    setTalhoes(prev => [...prev, nt])
+                    setDrawTalhaoId(nt.id)
+                    setDrawMode('talhao')
+                    setDrawPoints([])
+                    setShowQuickTalhao(false)
+                  }}>Iniciar Desenho</button>
+                  <button className="terra-btn-secondary" onClick={() => setShowQuickTalhao(false)}>Cancelar</button>
+                </div>
+              </div>
+            </div>
+          )}
+          {drawMode === 'nota' && (
+            <div className="terra-map-overlay-bottom">
+              <div className="terra-draw-bar">
+                <span className="terra-draw-label">
+                  📌 Clique no mapa para posicionar a nota
+                </span>
+                <button className="terra-btn-secondary" onClick={cancelDraw}>Cancelar</button>
+              </div>
+            </div>
+          )}
+          {(drawMode === 'perimetro' || drawMode === 'talhao') && (
+            <div className="terra-map-overlay-bottom">
+              <div className="terra-draw-bar">
+                <span className="terra-draw-label">
+                  {drawMode === 'perimetro' ? 'Desenhando perímetro' : 'Desenhando talhão'} — clique no mapa para adicionar pontos ({drawPoints.length} pontos)
+                </span>
+                <button className="terra-btn-draw terra-btn-undo" onClick={undoDrawPoint} disabled={drawPoints.length === 0}>Desfazer</button>
+                <button className="terra-btn-primary" onClick={finishDraw} disabled={drawPoints.length < 3}>Finalizar</button>
+                <button className="terra-btn-secondary" onClick={cancelDraw}>Cancelar</button>
+              </div>
+            </div>
+          )}
+          {editingMapTalhaoId && (
+            <div className="terra-map-overlay-bottom">
+              <div className="terra-draw-bar terra-edit-bar">
+                <span className="terra-draw-label">
+                  <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 14h3l9-9-3-3-9 9v3z" strokeLinejoin="round"/></svg>
+                  Editando <strong>{editingMapTalhaoId === PERIM_EDIT_ID ? 'Perímetro' : talhoes.find(t => t.id === editingMapTalhaoId)?.nome}</strong> — arraste os vértices para mover/redimensionar
+                </span>
+                <button className="terra-btn-draw terra-btn-undo" onClick={deleteEditVertex} disabled={editCoordsRef.current.length <= 3}>Remover Vértice</button>
+                <button className="terra-btn-primary" onClick={saveEditMapTalhao}>Salvar</button>
+                <button className="terra-btn-secondary" onClick={cancelEditMapTalhao}>Cancelar</button>
+              </div>
+            </div>
+          )}
           <button className="terra-sidebar-toggle" onClick={() => setShowMapSidebar(v => !v)} title={showMapSidebar ? 'Ocultar painel' : 'Mostrar painel'}>
             <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5">
               {showMapSidebar
@@ -742,21 +891,22 @@ export default function TerraPage() {
                           <input type="color" value={cor} onChange={e => setTalhoes(prev => prev.map(x => x.id === t.id ? { ...x, cor: e.target.value } : x))} className="terra-color-swatch" title="Alterar cor" />
                           {drawMode === 'none' && !showQuickTalhao && !editingMapTalhaoId && (
                             <>
+                              <span className="terra-sidebar-action-sep" />
                               {drawn && (
                                 <button className="terra-btn-draw-sm terra-btn-edit-map" onClick={() => startEditMapTalhao(t.id)} title="Editar no mapa">
-                                  <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 8a6 6 0 1112 0A6 6 0 012 8z"/><circle cx="5" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/><circle cx="11" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>
+                                  <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="10" height="10" rx="1" strokeDasharray="3 2"/><circle cx="3" cy="3" r="1.5" fill="currentColor" stroke="none"/><circle cx="13" cy="3" r="1.5" fill="currentColor" stroke="none"/><circle cx="3" cy="13" r="1.5" fill="currentColor" stroke="none"/><circle cx="13" cy="13" r="1.5" fill="currentColor" stroke="none"/></svg>
                                 </button>
                               )}
                               <button className="terra-btn-draw-sm" onClick={() => { setDrawTalhaoId(t.id); setDrawMode('talhao'); setDrawPoints([]) }} title={drawn ? 'Redesenhar' : 'Desenhar'}>
-                                <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 2l3 3-9 9H2v-3z" strokeLinejoin="round"/></svg>
+                                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M11 2l3 3-9 9H2v-3z" strokeLinejoin="round"/></svg>
                               </button>
                               {drawn && (
                                 <button className="terra-btn-draw-sm terra-btn-clear-poly" onClick={() => setTalhoes(prev => prev.map(x => x.id === t.id ? { ...x, poligono: [] } : x))} title="Limpar polígono">
-                                  <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3l10 10M13 3L3 13" strokeLinecap="round"/></svg>
+                                  <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M6 14h7M3.5 10.5l7-7 3 3-5 5H5.5L3.5 10.5z" strokeLinejoin="round"/></svg>
                                 </button>
                               )}
                               <button className="terra-btn-draw-sm terra-btn-del-talhao" onClick={() => deleteTalhao(t.id)} title="Excluir">
-                                <svg viewBox="0 0 16 16" width="11" height="11" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h8v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4zM6 2h4M3 4h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M4 4h8v9a1 1 0 01-1 1H5a1 1 0 01-1-1V4zM6 2h4M3 4h10" strokeLinecap="round" strokeLinejoin="round"/></svg>
                               </button>
                             </>
                           )}
