@@ -6217,9 +6217,9 @@ html[data-theme="light"] .patr-upload-form { background: var(--bg2) }
 .terra-page-fullmap .terra-map-overlay-tl { top: 6px; left: 66px }
 .terra-page-fullmap .terra-map-overlay-tr { top: 6px; right: 46px }
 .terra-page-fullmap .terra-map-overlay-bottom { bottom: 80px }
-.terra-page-fullmap .terra-map-layout { height: calc(100dvh - 90px); max-height: none; gap: 0 }
+.terra-page-fullmap .terra-map-layout { height: calc(100dvh - 140px); max-height: none; gap: 0 }
 .terra-page-fullmap .terra-map-container { min-height: 0; border-radius: 0; border: none; position: relative }
-.terra-page-fullmap .terra-map-sidebar { max-height: calc(100dvh - 100px); width: 280px; padding: 10px; border-radius: 0; border-left: 1px solid var(--border); border-top: none; border-bottom: none; border-right: none }
+.terra-page-fullmap .terra-map-sidebar { max-height: calc(100dvh - 150px); width: 280px; padding: 10px; border-radius: 0; border-left: 1px solid var(--border); border-top: none; border-bottom: none; border-right: none }
 .terra-sidebar-toggle { position: absolute; top: 10px; right: 10px; z-index: 999; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--text2); transition: all .15s; box-shadow: 0 2px 8px rgba(0,0,0,.2) }
 .terra-sidebar-toggle:hover { background: var(--bg3); color: var(--text3) }
 
@@ -6357,7 +6357,7 @@ html[data-theme="light"] .patr-upload-form { background: var(--bg2) }
 .terra-quick-input:focus { border-color: var(--purple) }
 .terra-draw-bar { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; width: 100% }
 .terra-draw-label { font-size: calc(.75rem * var(--fs)); color: var(--text2); flex: 1; min-width: 200px }
-.terra-map-layout { display: flex; gap: 14px; height: 640px; max-height: calc(100vh - 200px) }
+.terra-map-layout { display: flex; gap: 14px; height: 580px; max-height: calc(100vh - 240px) }
 .terra-map-container { flex: 1; min-height: 0; border-radius: var(--radius-lg); overflow: hidden; border: 1px solid var(--border); box-shadow: 0 4px 24px rgba(0,0,0,.12); position: relative }
 .terra-map-sidebar { width: 340px; flex-shrink: 0; background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 14px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; max-height: 640px }
 .terra-sidebar-fazenda { padding: 12px; background: var(--bg3); border-radius: var(--radius); margin-bottom: 4px }
