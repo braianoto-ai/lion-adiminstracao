@@ -108,12 +108,14 @@ export default function TerraPage() {
     if (!radarOn || !radarFrames.length) return
     if (!map.getPane('radarPane')) {
       map.createPane('radarPane')
-      map.getPane('radarPane')!.style.zIndex = '450'
+      // shadowPane = 500, markerPane = 600 — ficar entre eles garante ficar acima dos labels
+      map.getPane('radarPane')!.style.zIndex = '550'
       map.getPane('radarPane')!.style.pointerEvents = 'none'
     }
     const path = radarFrames[radarIdx]
-    const layer = L.tileLayer(`https://tilecache.rainviewer.com${path}/512/{z}/{x}/{y}/2/1_1.png`, {
-      opacity: 0.6, pane: 'radarPane', attribution: 'RainViewer', maxNativeZoom: 8, maxZoom: 22
+    // colorScheme 8 = radar clássico (verde→amarelo→vermelho), smooth=1, snow=1
+    const layer = L.tileLayer(`https://tilecache.rainviewer.com${path}/512/{z}/{x}/{y}/8/1_1.png`, {
+      opacity: 0.75, pane: 'radarPane', attribution: 'RainViewer', maxNativeZoom: 8, maxZoom: 22
     })
     layer.addTo(map)
     radarLayerRef.current = layer
