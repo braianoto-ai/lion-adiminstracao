@@ -57,6 +57,28 @@ export default function TerraPage() {
   const toggleSection = (k: string) => setCollapsedSections(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n })
   const toggleGroup = (k: string) => setCollapsedGroups(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n })
 
+  // ─── Weather widget
+  type WeatherData = { temp: number; humidity: number; precipitation: number; windSpeed: number; weatherCode: number }
+  const [weather, setWeather] = useState<WeatherData | null>(null)
+  const [weatherLoading, setWeatherLoading] = useState(false)
+  const weatherFazendaId = useRef<string | null>(null)
+
+  useEffect(() => {
+    const faz = fazendas.find(f => f.id === activeFazendaId) ?? fazendas[0]
+    if (!faz || !faz.latitude || !faz.longitude) return
+    if (weatherFazendaId.current === faz.id) return
+    weatherFazendaId.current = faz.id
+    setWeatherLoading(true)
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${faz.latitude}&longitude=${faz.longitude}&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,weather_code&timezone=America%2FSao_Paulo`)
+      .then(r => r.json())
+      .then(d => {
+        const c = d.current
+        setWeather({ temp: c.temperature_2m, humidity: c.relative_humidity_2m, precipitation: c.precipitation, windSpeed: c.wind_speed_10m, weatherCode: c.weather_code })
+      })
+      .catch(() => setWeather(null))
+      .finally(() => setWeatherLoading(false))
+  }, [activeFazendaId, fazendas])
+
   const emptyFazenda: Omit<TerraFazenda, 'id' | 'createdAt'> = {
     nome: '', municipio: '', uf: 'PR', matricula: '', carNumero: '', itrNumero: '', ccir: '',
     areaTotal: 0, areaUtil: 0, areaReservaLegal: 0, areaApp: 0, areaPastagem: 0,
@@ -696,6 +718,20 @@ export default function TerraPage() {
     )
   }
 
+  const wmoLabel = (code: number): { label: string; icon: string } => {
+    if (code === 0) return { label: 'Céu limpo', icon: '☀️' }
+    if (code <= 2) return { label: 'Pouco nublado', icon: '🌤️' }
+    if (code === 3) return { label: 'Nublado', icon: '☁️' }
+    if (code <= 48) return { label: 'Nevoeiro', icon: '🌫️' }
+    if (code <= 57) return { label: 'Garoa', icon: '🌦️' }
+    if (code <= 67) return { label: 'Chuva', icon: '🌧️' }
+    if (code <= 77) return { label: 'Neve', icon: '🌨️' }
+    if (code <= 82) return { label: 'Aguaceiro', icon: '🌧️' }
+    if (code <= 86) return { label: 'Neve forte', icon: '❄️' }
+    if (code <= 99) return { label: 'Trovoada', icon: '⛈️' }
+    return { label: 'Desconhecido', icon: '🌡️' }
+  }
+
   // ─── MAPA
   const renderMapa = () => (
     <div className="terra-mapa">
@@ -710,6 +746,28 @@ export default function TerraPage() {
                 {{ mapa: 'Mapa', satelite: 'Satélite', relevo: 'Relevo' }[l]}
               </button>
             ))}
+          </div>
+          {/* Weather widget */}
+          <div className="terra-weather-widget">
+            {weatherLoading && <span className="terra-weather-loading">⏳ Carregando clima…</span>}
+            {!weatherLoading && weather && (() => {
+              const { label, icon } = wmoLabel(weather.weatherCode)
+              return (
+                <>
+                  <div className="terra-weather-main">
+                    <span className="terra-weather-icon">{icon}</span>
+                    <span className="terra-weather-temp">{weather.temp.toFixed(1)}°C</span>
+                  </div>
+                  <div className="terra-weather-label">{label}</div>
+                  <div className="terra-weather-stats">
+                    <span title="Umidade">💧 {weather.humidity}%</span>
+                    <span title="Vento">💨 {weather.windSpeed.toFixed(1)} km/h</span>
+                    <span title="Precipitação">🌧 {weather.precipitation.toFixed(1)} mm</span>
+                  </div>
+                </>
+              )
+            })()}
+            {!weatherLoading && !weather && <span className="terra-weather-na">Sem coord. GPS</span>}
           </div>
           {drawMode === 'none' && !editingMapTalhaoId && (
             <div className="terra-map-overlay-tr">
