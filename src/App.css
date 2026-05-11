@@ -6304,6 +6304,11 @@ html[data-theme="light"] .patr-upload-form { background: var(--bg2) }
 .terra-map-overlay-tl { position: absolute; top: 10px; left: 70px; z-index: 999; display: flex; gap: 4px; background: rgba(24,24,27,.85); backdrop-filter: blur(8px); border-radius: var(--radius); padding: 4px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,.2) }
 .terra-map-overlay-tr { position: absolute; top: 10px; right: 50px; z-index: 999; display: flex; gap: 6px; align-items: center; background: rgba(24,24,27,.85); backdrop-filter: blur(8px); border-radius: var(--radius); padding: 4px 8px; border: 1px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,.2) }
 .terra-map-overlay-bottom { position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 999; background: rgba(24,24,27,.9); backdrop-filter: blur(8px); border-radius: var(--radius); padding: 8px 12px; border: 1px solid var(--border); box-shadow: 0 2px 12px rgba(0,0,0,.3); max-width: calc(100% - 40px) }
+.terra-map-overlay-left { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); z-index: 999; background: rgba(24,24,27,.9); backdrop-filter: blur(8px); border-radius: var(--radius); padding: 8px; border: 1px solid var(--border); box-shadow: 0 2px 12px rgba(0,0,0,.3) }
+.terra-draw-bar-left { display: flex; flex-direction: column; gap: 4px; width: 175px }
+.terra-draw-bar-left .terra-btn-draw { justify-content: flex-start; text-align: left }
+.terra-draw-divider { height: 1px; background: var(--border); margin: 4px 0 }
+.terra-draw-select-left { width: 100%; padding: 6px 10px; font-size: calc(.78rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer }
 .terra-map-overlay-tl .terra-map-toggle { padding: 5px 12px; font-size: calc(.72rem * var(--fs)) }
 .terra-map-toggle { padding: 7px 16px; font-size: calc(.78rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all .2s; font-weight: 500 }
 .terra-map-toggle:hover { border-color: var(--purple); color: var(--text3) }
