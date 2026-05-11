@@ -108,7 +108,7 @@ export default function TerraPage() {
     if (!radarOn || !radarFrames.length) return
     const path = radarFrames[radarIdx]
     const layer = L.tileLayer(`https://tilecache.rainviewer.com${path}/512/{z}/{x}/{y}/2/1_1.png`, {
-      opacity: 0.6, zIndex: 5, attribution: 'RainViewer'
+      opacity: 0.6, zIndex: 5, attribution: 'RainViewer', maxNativeZoom: 12, maxZoom: 22
     })
     layer.addTo(map)
     radarLayerRef.current = layer
