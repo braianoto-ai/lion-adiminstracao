@@ -884,15 +884,15 @@ export default function TerraPage() {
           {terraEditMode && drawMode === 'none' && fazenda && !showQuickTalhao && !editingMapTalhaoId && (
             <div className="terra-map-overlay-left">
               <div className="terra-draw-bar-left">
-                <button className="terra-btn-icon" title={fazenda && fazenda.perimetro.length >= 3 ? 'Redesenhar Perímetro' : 'Desenhar Perímetro'} onClick={() => { setDrawMode('perimetro'); setDrawPoints([]) }}>
+                <button className="terra-btn-icon" data-tip={fazenda && fazenda.perimetro.length >= 3 ? 'Redesenhar Perímetro' : 'Desenhar Perímetro'} onClick={() => { setDrawMode('perimetro'); setDrawPoints([]) }}>
                   <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="2,14 8,2 14,14" strokeLinejoin="round"/></svg>
                 </button>
                 {fazenda && fazenda.perimetro.length >= 3 && (
-                  <button className="terra-btn-icon terra-btn-icon-active" title="Editar Perímetro" onClick={() => startEditMapTalhao(PERIM_EDIT_ID)}>
+                  <button className="terra-btn-icon terra-btn-icon-active" data-tip="Editar Perímetro" onClick={() => startEditMapTalhao(PERIM_EDIT_ID)}>
                     <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 8a6 6 0 1112 0A6 6 0 012 8z"/><circle cx="5" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="5" r="1" fill="currentColor"/><circle cx="11" cy="8" r="1" fill="currentColor"/><circle cx="8" cy="11" r="1" fill="currentColor"/></svg>
                   </button>
                 )}
-                <button className="terra-btn-icon" title="Desenhar Talhão" onClick={() => { setShowQuickTalhao(true); setQuickTalhaoName(''); setQuickTalhaoUso('lavoura') }}>
+                <button className="terra-btn-icon" data-tip="Desenhar Talhão" onClick={() => { setShowQuickTalhao(true); setQuickTalhaoName(''); setQuickTalhaoUso('lavoura') }}>
                   <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="12" height="12" rx="2" strokeLinejoin="round"/><path d="M8 5v6M5 8h6" strokeLinecap="round"/></svg>
                 </button>
                 {fazTalhoes.length > 0 && (
@@ -904,7 +904,7 @@ export default function TerraPage() {
                 {fazenda && fazenda.perimetro.length >= 3 && (
                   <>
                     <div className="terra-draw-divider" />
-                    <button className="terra-btn-icon terra-btn-icon-danger" title="Limpar Perímetro" onClick={() => { if (window.confirm('Limpar o perímetro atual? Os talhões não serão afetados.')) setFazendas(prev => prev.map(f => f.id === fazenda.id ? { ...f, perimetro: [] } : f)) }}>
+                    <button className="terra-btn-icon terra-btn-icon-danger" data-tip="Limpar Perímetro" onClick={() => { if (window.confirm('Limpar o perímetro atual? Os talhões não serão afetados.')) setFazendas(prev => prev.map(f => f.id === fazenda.id ? { ...f, perimetro: [] } : f)) }}>
                       <svg viewBox="0 0 16 16" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3l10 10M13 3L3 13" strokeLinecap="round"/></svg>
                     </button>
                   </>
