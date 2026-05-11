@@ -579,8 +579,10 @@ function PaymentHubPage() {
                 const status = effectiveStatus(bill)
                 const isPaid = status === 'pago'
                 const isVencido = status === 'vencido'
+                const daysUntilDue = Math.ceil((new Date(bill.dueDate + 'T23:59:59').getTime() - Date.now()) / 86400000)
+                const isUrgent = !isPaid && !isVencido && daysUntilDue >= 0 && daysUntilDue <= 3
                 return (
-                  <div key={bill.id} className={`ph-bill-card${isPaid ? ' ph-bill-paid' : ''}${isVencido ? ' ph-bill-overdue' : ''}`}>
+                  <div key={bill.id} className={`ph-bill-card${isPaid ? ' ph-bill-paid' : ''}${isVencido ? ' ph-bill-overdue' : ''}${isUrgent ? ' ph-bill-urgent' : ''}`}>
                     <div className="ph-bill-left">
                       {coll && <div className="ph-bill-avatar" style={{ background: coll.color + '22', color: coll.color }}>{coll.name.slice(0,2).toUpperCase()}</div>}
                     </div>
@@ -588,10 +590,11 @@ function PaymentHubPage() {
                       <div className="ph-bill-top">
                         <span className="ph-bill-collector">{coll?.name ?? '—'}</span>
                         <span className={`ph-bill-status ph-bill-status-${status}`}>{BILL_STATUS_LABEL[status]}</span>
+                        {isUrgent && <span className="ph-bill-urgent-badge">{daysUntilDue === 0 ? 'Vence hoje' : `Vence em ${daysUntilDue}d`}</span>}
                       </div>
                       {bill.description && <div className="ph-bill-desc">{bill.description}</div>}
                       <div className="ph-bill-meta">
-                        <span className="ph-bill-due" style={{ color: isVencido ? 'var(--red)' : undefined }}>
+                        <span className="ph-bill-due" style={{ color: isVencido ? 'var(--red)' : isUrgent ? 'var(--amber)' : undefined }}>
                           <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3"><rect x="1" y="2" width="10" height="9" rx="1.5"/><path d="M1 5h10M4 1v2M8 1v2" strokeLinecap="round"/></svg>
                           {fmtDate(bill.dueDate)}
                           {isVencido && ' · Vencida'}

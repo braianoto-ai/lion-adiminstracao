@@ -5380,6 +5380,8 @@ html[data-theme="light"] .ap-accent-btn:hover { background: var(--bg4) }
 .ph-bill-card:hover { border-color: var(--border2) }
 .ph-bill-paid { opacity: .65 }
 .ph-bill-overdue { border-left: 3px solid var(--red) }
+.ph-bill-urgent { border-left: 3px solid var(--amber); background: color-mix(in srgb, var(--amber) 5%, var(--bg2)) }
+.ph-bill-urgent-badge { font-size: .68rem; font-weight: 600; color: var(--amber); background: color-mix(in srgb, var(--amber) 15%, transparent); border: 1px solid color-mix(in srgb, var(--amber) 30%, transparent); border-radius: 4px; padding: 1px 6px; white-space: nowrap }
 
 .ph-bill-left { flex-shrink: 0 }
 
@@ -6034,6 +6036,16 @@ html[data-theme="light"] .patr-upload-form { background: var(--bg2) }
 .terra-valor-row { display: flex; gap: 12px }
 .terra-valor-row .terra-card-stat { flex: 1 }
 
+.terra-uso-breakdown { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 20px; margin-top: 4px }
+.terra-uso-breakdown h4 { font-size: calc(.88rem * var(--fs)); font-weight: 700; color: var(--text3); margin: 0 0 16px }
+.terra-uso-list { display: flex; flex-direction: column; gap: 10px }
+.terra-uso-row { display: grid; grid-template-columns: 10px 140px 1fr 72px 44px; align-items: center; gap: 10px }
+.terra-uso-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0 }
+.terra-uso-label { font-size: calc(.8rem * var(--fs)); color: var(--text3); font-weight: 500 }
+.terra-uso-bar-wrap { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden }
+.terra-uso-bar-fill { height: 100%; border-radius: 3px; transition: width .4s ease }
+.terra-uso-ha { font-size: calc(.78rem * var(--fs)); color: var(--text3); font-weight: 600; text-align: right }
+.terra-uso-pct { font-size: calc(.72rem * var(--fs)); color: var(--text); text-align: right }
 .terra-visao-fazendas { margin-top: 4px }
 .terra-visao-fazendas-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px }
 .terra-visao-fazendas-header h4 { font-size: calc(.88rem * var(--fs)); font-weight: 700; color: var(--text3); margin: 0 }
