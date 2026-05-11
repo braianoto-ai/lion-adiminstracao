@@ -804,10 +804,9 @@ export default function TerraPage() {
             <button className={`terra-map-toggle terra-radar-btn${radarOn ? ' active' : ''}`} onClick={() => {
               const map = leafletMap.current
               if (!radarOn && map) {
-                if (map.getZoom() > 5) map.setZoom(5)
-                map.setMaxZoom(6)
-              } else if (radarOn && map) {
-                map.setMaxZoom(18)
+                const faz = fazendas.find(f => f.id === activeFazendaId) ?? fazendas[0]
+                if (faz) map.setView([faz.latitude, faz.longitude], 7)
+                else if (map.getZoom() > 7) map.setZoom(7)
               }
               setRadarOn(v => !v)
             }} title="Radar de chuva animado">
@@ -876,8 +875,8 @@ export default function TerraPage() {
             </div>
           )}
           {terraEditMode && drawMode === 'none' && fazenda && !showQuickTalhao && !editingMapTalhaoId && (
-            <div className="terra-map-overlay-bottom">
-              <div className="terra-draw-bar">
+            <div className="terra-map-overlay-left">
+              <div className="terra-draw-bar-left">
                 <button className="terra-btn-draw" onClick={() => { setDrawMode('perimetro'); setDrawPoints([]) }}>
                   <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><polygon points="2,14 8,2 14,14" strokeLinejoin="round"/></svg>
                   {fazenda && fazenda.perimetro.length >= 3 ? 'Redesenhar Perímetro' : 'Desenhar Perímetro'}
@@ -888,21 +887,24 @@ export default function TerraPage() {
                     Editar Perímetro
                   </button>
                 )}
-                {fazenda && fazenda.perimetro.length >= 3 && (
-                  <button className="terra-btn-draw terra-btn-danger" onClick={() => { if (window.confirm('Limpar o perímetro atual? Os talhões não serão afetados.')) setFazendas(prev => prev.map(f => f.id === fazenda.id ? { ...f, perimetro: [] } : f)) }} title="Limpar perímetro desenhado">
-                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3l10 10M13 3L3 13" strokeLinecap="round"/></svg>
-                    Limpar Perímetro
-                  </button>
-                )}
                 <button className="terra-btn-draw" onClick={() => { setShowQuickTalhao(true); setQuickTalhaoName(''); setQuickTalhaoUso('lavoura') }}>
                   <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="12" height="12" rx="2" strokeLinejoin="round"/><path d="M8 5v6M5 8h6" strokeLinecap="round"/></svg>
                   Desenhar Talhão
                 </button>
                 {fazTalhoes.length > 0 && (
-                  <select className="terra-draw-select" value="" onChange={e => { if (e.target.value) { setDrawTalhaoId(e.target.value); setDrawMode('talhao'); setDrawPoints([]) } }}>
+                  <select className="terra-draw-select-left" value="" onChange={e => { if (e.target.value) { setDrawTalhaoId(e.target.value); setDrawMode('talhao'); setDrawPoints([]) } }}>
                     <option value="">Redesenhar Talhão...</option>
                     {fazTalhoes.map(t => <option key={t.id} value={t.id}>{t.nome}{t.poligono.length >= 3 ? ' ✓' : ''}</option>)}
                   </select>
+                )}
+                {fazenda && fazenda.perimetro.length >= 3 && (
+                  <>
+                    <div className="terra-draw-divider" />
+                    <button className="terra-btn-draw terra-btn-danger" onClick={() => { if (window.confirm('Limpar o perímetro atual? Os talhões não serão afetados.')) setFazendas(prev => prev.map(f => f.id === fazenda.id ? { ...f, perimetro: [] } : f)) }} title="Limpar perímetro desenhado">
+                      <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 3l10 10M13 3L3 13" strokeLinecap="round"/></svg>
+                      Limpar Perímetro
+                    </button>
+                  </>
                 )}
               </div>
             </div>
