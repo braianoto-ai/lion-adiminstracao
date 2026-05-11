@@ -6316,6 +6316,14 @@ html[data-theme="light"] .patr-upload-form { background: var(--bg2) }
 .terra-weather-stats { display: flex; flex-direction: column; gap: 2px }
 .terra-weather-stats span { font-size: calc(.7rem * var(--fs)); color: var(--text2) }
 .terra-weather-loading, .terra-weather-na { font-size: calc(.72rem * var(--fs)); color: var(--text) }
+.terra-radar-btn { border-color: #3b82f6 !important }
+.terra-radar-btn.active { background: #1d4ed8 !important; border-color: #1d4ed8 !important }
+.terra-radar-bar { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 999; background: rgba(24,24,27,.88); backdrop-filter: blur(8px); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(0,0,0,.3) }
+.terra-radar-tick { width: 6px; height: 6px; border-radius: 50%; cursor: pointer; transition: all .15s; flex-shrink: 0 }
+.terra-radar-tick.past { background: rgba(59,130,246,.4) }
+.terra-radar-tick.nowcast { background: rgba(34,197,94,.4) }
+.terra-radar-tick.active { transform: scale(1.6); background: #fff !important }
+.terra-radar-label { font-size: calc(.65rem * var(--fs)); color: var(--text); margin-left: 6px; white-space: nowrap }
 .terra-sidebar-action-sep { width: 1px; height: 16px; background: var(--border); margin: 0 2px; flex-shrink: 0 }
 .terra-btn-draw { display: flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: calc(.78rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all .15s }
 .terra-btn-draw:hover { background: var(--bg3); color: var(--text3) }

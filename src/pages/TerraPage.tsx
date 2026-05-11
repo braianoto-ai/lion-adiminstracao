@@ -79,6 +79,61 @@ export default function TerraPage() {
       .finally(() => setWeatherLoading(false))
   }, [activeFazendaId, fazendas])
 
+  // ─── Radar overlay (RainViewer)
+  const [radarOn, setRadarOn] = useState(false)
+  const [radarFrames, setRadarFrames] = useState<string[]>([])
+  const [radarIdx, setRadarIdx] = useState(0)
+  const radarLayerRef = useRef<L.TileLayer | null>(null)
+  const radarAnimRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const radarLoadedRef = useRef(false)
+
+  useEffect(() => {
+    if (!radarOn || radarLoadedRef.current) return
+    radarLoadedRef.current = true
+    fetch('https://api.rainviewer.com/public/weather-maps.json')
+      .then(r => r.json())
+      .then(d => {
+        const past = (d.radar?.past ?? []).map((f: { path: string }) => f.path)
+        const nowcast = (d.radar?.nowcast ?? []).map((f: { path: string }) => f.path)
+        setRadarFrames([...past, ...nowcast])
+        setRadarIdx(past.length > 0 ? past.length - 1 : 0)
+      })
+      .catch(() => { radarLoadedRef.current = false })
+  }, [radarOn])
+
+  useEffect(() => {
+    const map = leafletMap.current
+    if (!map) return
+    if (radarLayerRef.current) { map.removeLayer(radarLayerRef.current); radarLayerRef.current = null }
+    if (!radarOn || !radarFrames.length) return
+    const path = radarFrames[radarIdx]
+    const layer = L.tileLayer(`https://tilecache.rainviewer.com${path}/512/{z}/{x}/{y}/2/1_1.png`, {
+      opacity: 0.6, zIndex: 5, attribution: 'RainViewer'
+    })
+    layer.addTo(map)
+    radarLayerRef.current = layer
+  }, [radarOn, radarFrames, radarIdx])
+
+  useEffect(() => {
+    if (radarAnimRef.current) clearInterval(radarAnimRef.current)
+    if (!radarOn || radarFrames.length < 2) return
+    radarAnimRef.current = setInterval(() => {
+      setRadarIdx(i => (i + 1) % radarFrames.length)
+    }, 700)
+    return () => { if (radarAnimRef.current) clearInterval(radarAnimRef.current) }
+  }, [radarOn, radarFrames])
+
+  useEffect(() => {
+    if (!radarOn) {
+      const map = leafletMap.current
+      if (map && radarLayerRef.current) { map.removeLayer(radarLayerRef.current); radarLayerRef.current = null }
+      if (radarAnimRef.current) { clearInterval(radarAnimRef.current); radarAnimRef.current = null }
+      radarLoadedRef.current = false
+      setRadarFrames([])
+      setRadarIdx(0)
+    }
+  }, [radarOn])
+
   const emptyFazenda: Omit<TerraFazenda, 'id' | 'createdAt'> = {
     nome: '', municipio: '', uf: 'PR', matricula: '', carNumero: '', itrNumero: '', ccir: '',
     areaTotal: 0, areaUtil: 0, areaReservaLegal: 0, areaApp: 0, areaPastagem: 0,
@@ -746,7 +801,18 @@ export default function TerraPage() {
                 {{ mapa: 'Mapa', satelite: 'Satélite', relevo: 'Relevo' }[l]}
               </button>
             ))}
+            <button className={`terra-map-toggle terra-radar-btn${radarOn ? ' active' : ''}`} onClick={() => setRadarOn(v => !v)} title="Radar de chuva animado">
+              🌧 Radar
+            </button>
           </div>
+          {radarOn && radarFrames.length > 0 && (
+            <div className="terra-radar-bar">
+              {radarFrames.map((_, i) => (
+                <div key={i} className={`terra-radar-tick${i === radarIdx ? ' active' : ''}${i < radarFrames.length - 3 ? ' past' : ' nowcast'}`} onClick={() => setRadarIdx(i)} />
+              ))}
+              <span className="terra-radar-label">{radarIdx < radarFrames.length - 3 ? '⏪ histórico' : '⏩ previsão'}</span>
+            </div>
+          )}
           {/* Weather widget */}
           <div className="terra-weather-widget">
             {weatherLoading && <span className="terra-weather-loading">⏳ Carregando clima…</span>}
