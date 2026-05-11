@@ -3817,10 +3817,13 @@ button, a, [role="button"] { touch-action: manipulation }
     pointer-events: none;
     border-radius: 0 var(--radius) var(--radius) 0;
   }
-  /* Finanças mobile */
+  /* Finanças full-page mobile */
   .fin-wrap { height: calc(100vh - 90px) }
+  .fin-overview-grid { grid-template-columns: 1fr }
+  .fin-summary { grid-template-columns: 1fr 1fr }
   .fin-stat { padding: 12px 12px 10px }
   .fin-stat-value { font-size: calc(14px * var(--fs, 1)) }
+  .fin-row { grid-template-columns: 1fr }
   .fin-table th, .fin-tr td { padding: 8px }
   .fin-td-cat { display: none }
   .fin-confirm-banner { font-size: calc(11px * var(--fs, 1)) }
@@ -3861,6 +3864,11 @@ button, a, [role="button"] { touch-action: manipulation }
   .patr-summary-total { grid-column: span 1 }
   .patr-page { padding: 12px }
   .page-content--settings { padding-inline: 12px }
+  /* Finanças 480px: tudo em coluna única */
+  .fin-summary { grid-template-columns: 1fr }
+  .fin-stat-value { font-size: calc(13px * var(--fs, 1)) }
+  .fin-tabs { gap: 2px }
+  .fin-tab { padding: 4px 7px; font-size: calc(10px * var(--fs, 1)) }
 }
 
 /* ── 360px — small phones ── */
