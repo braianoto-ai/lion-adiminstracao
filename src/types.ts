@@ -218,6 +218,8 @@ export interface Vehicle {
   notes: string
   ipvaExpiry: string
   insuranceExpiry: string
+  valorCompra?: number
+  valorAtual?: number
 }
 
 export interface Revision {
