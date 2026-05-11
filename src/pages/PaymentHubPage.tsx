@@ -221,7 +221,7 @@ function PaymentHubPage() {
       category: billCategoryToTx(coll?.category || ''),
       description: `${coll?.name || 'Conta'}${bill.description ? ' — ' + bill.description : ''}`,
       amount: bill.amount,
-      date: bill.dueDate.slice(0, 7),
+      date: new Date().toISOString().slice(0, 7),
     }
     setTxs(prev => prev.some(t => t.id === txId) ? prev : [tx, ...prev])
   }
