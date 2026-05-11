@@ -6306,8 +6306,10 @@ html[data-theme="light"] .patr-upload-form { background: var(--bg2) }
 .terra-map-overlay-bottom { position: absolute; bottom: 90px; left: 50%; transform: translateX(-50%); z-index: 999; background: rgba(24,24,27,.9); backdrop-filter: blur(8px); border-radius: var(--radius); padding: 8px 12px; border: 1px solid var(--border); box-shadow: 0 2px 12px rgba(0,0,0,.3); max-width: calc(100% - 40px) }
 .terra-map-overlay-left { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); z-index: 999; background: rgba(24,24,27,.9); backdrop-filter: blur(8px); border-radius: var(--radius); padding: 6px; border: 1px solid var(--border); box-shadow: 0 2px 12px rgba(0,0,0,.3) }
 .terra-draw-bar-left { display: flex; flex-direction: column; gap: 4px; align-items: center }
-.terra-btn-icon { display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all .15s; padding: 0; flex-shrink: 0 }
+.terra-btn-icon { position: relative; display: flex; align-items: center; justify-content: center; width: 34px; height: 34px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all .15s; padding: 0; flex-shrink: 0 }
 .terra-btn-icon:hover { background: var(--bg3); color: var(--text3); border-color: var(--purple) }
+.terra-btn-icon::after { content: attr(data-tip); position: absolute; left: calc(100% + 8px); top: 50%; transform: translateY(-50%); white-space: nowrap; background: rgba(0,0,0,.85); color: #fff; font-size: 11px; padding: 4px 8px; border-radius: 5px; pointer-events: none; opacity: 0; transition: opacity .15s; z-index: 9999 }
+.terra-btn-icon:hover::after { opacity: 1 }
 .terra-btn-icon-active { background: var(--purple); color: #fff; border-color: var(--purple) }
 .terra-btn-icon-active:hover { background: #3b82f6; border-color: #3b82f6 }
 .terra-btn-icon-danger { border-color: rgba(239,68,68,.4); color: #ef4444 }
