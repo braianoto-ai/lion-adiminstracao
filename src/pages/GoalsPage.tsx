@@ -10,6 +10,7 @@ function GoalsPage() {
   const [editId, setEditId]     = useState<string | null>(null)
   const [form, setForm]         = useState(GOAL_FORM_INIT)
   const [filterCat, setFilterCat] = useState('Todas')
+  const [sortBy, setSortBy] = useState<'deadline' | 'pct-asc' | 'pct-desc' | 'missing'>('deadline')
   const f = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }))
 
 
@@ -44,10 +45,12 @@ function GoalsPage() {
 
   const daysLeft = (deadline: string) => {
     if (!deadline) return null
-    const diff = Math.ceil((new Date(deadline + 'T12:00:00').getTime() - Date.now()) / 86400000)
-    if (diff < 0)  return { label: 'Vencida', color: 'var(--red)' }
-    if (diff === 0) return { label: 'Hoje', color: 'var(--amber)' }
-    if (diff <= 30) return { label: `${diff}d`, color: 'var(--amber)' }
+    const d = new Date(deadline + 'T12:00:00')
+    if (isNaN(d.getTime())) return null
+    const diff = Math.ceil((d.getTime() - Date.now()) / 86400000)
+    if (diff < 0)   return { label: 'Vencida', color: 'var(--red)' }
+    if (diff === 0)  return { label: 'Hoje', color: 'var(--amber)' }
+    if (diff <= 30)  return { label: `${diff}d`, color: 'var(--amber)' }
     const months = Math.round(diff / 30)
     return { label: `${months}m`, color: 'var(--text)' }
   }
@@ -61,10 +64,36 @@ function GoalsPage() {
   }
 
   const cats = ['Todas', ...GOAL_CATS.filter(c => goals.some(g => g.category === c))]
-  const shown = filterCat === 'Todas' ? goals : goals.filter(g => g.category === filterCat)
+  const filtered = filterCat === 'Todas' ? goals : goals.filter(g => g.category === filterCat)
+  const shown = [...filtered].sort((a, b) => {
+    if (sortBy === 'deadline') return (a.deadline || '9999') < (b.deadline || '9999') ? -1 : 1
+    if (sortBy === 'pct-asc')  return pct(a) - pct(b)
+    if (sortBy === 'pct-desc') return pct(b) - pct(a)
+    return (b.target - b.current) - (a.target - a.current)
+  })
   const totalSaved  = goals.reduce((s, g) => s + g.current, 0)
   const totalTarget = goals.reduce((s, g) => s + g.target, 0)
   const done        = goals.filter(g => g.current >= g.target).length
+  const urgent      = goals.filter(g => {
+    if (g.current >= g.target || !g.deadline) return false
+    const d = new Date(g.deadline + 'T12:00:00')
+    if (isNaN(d.getTime())) return false
+    const diff = Math.ceil((d.getTime() - Date.now()) / 86400000)
+    return diff >= 0 && diff <= 30
+  }).length
+  const globalPct = totalTarget > 0 ? Math.min(Math.round((totalSaved / totalTarget) * 100), 100) : 0
+
+  function projection(g: Goal): string | null {
+    const missing = g.target - g.current
+    if (missing <= 0) return null
+    if (!g.deadline) return `falta ${fmt(missing)}`
+    const dl = new Date(g.deadline + 'T12:00:00')
+    if (isNaN(dl.getTime())) return `falta ${fmt(missing)}`
+    const months = Math.max(1, Math.ceil((dl.getTime() - Date.now()) / (1000 * 60 * 60 * 24 * 30)))
+    const monthly = missing / months
+    const label = dl.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })
+    return `~${fmt(monthly)}/mês até ${label}`
+  }
 
   return (
     <div className="goals-page">
@@ -79,25 +108,33 @@ function GoalsPage() {
       </div>
 
       {goals.length > 0 && (
-        <div className="goals-page-summary">
-          <div className="goals-summary-item">
-            <span className="goals-summary-label">Total guardado</span>
-            <span className="goals-summary-val" style={{ color: 'var(--green)' }}>{fmt(totalSaved)}</span>
+        <div className="goals-hero">
+          <div className="goals-hero-stats">
+            <span className="goals-hero-saved">{fmt(totalSaved)}</span>
+            <span className="goals-hero-sep">de</span>
+            <span className="goals-hero-target">{fmt(totalTarget)}</span>
+            <span className="goals-hero-dot">·</span>
+            <span className="goals-hero-meta">{goals.length} meta{goals.length !== 1 ? 's' : ''}</span>
+            <span className="goals-hero-dot">·</span>
+            <span className="goals-hero-pct">{globalPct}%</span>
           </div>
-          <div className="goals-summary-item">
-            <span className="goals-summary-label">Total a atingir</span>
-            <span className="goals-summary-val">{fmt(totalTarget)}</span>
+          <div className="goals-hero-bar-track">
+            <div className="goals-hero-bar-fill" style={{ width: `${globalPct}%` }} />
           </div>
-          <div className="goals-summary-item">
-            <span className="goals-summary-label">Progresso geral</span>
-            <span className="goals-summary-val" style={{ color: totalTarget > 0 && totalSaved >= totalTarget ? 'var(--green)' : 'var(--text3)' }}>
-              {totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0}%
-            </span>
-          </div>
-          <div className="goals-summary-item">
-            <span className="goals-summary-label">Concluídas</span>
-            <span className="goals-summary-val" style={{ color: 'var(--purple-l)' }}>{done}/{goals.length}</span>
-          </div>
+          {(urgent > 0 || done > 0) && (
+            <div className="goals-hero-chips">
+              {urgent > 0 && (
+                <span className="goals-hero-chip goals-hero-chip-amber">
+                  ⚠ {urgent} com prazo próximo
+                </span>
+              )}
+              {done > 0 && (
+                <span className="goals-hero-chip goals-hero-chip-green">
+                  ✓ {done} concluída{done !== 1 ? 's' : ''}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       )}
 
@@ -148,9 +185,17 @@ function GoalsPage() {
 
       {goals.length > 1 && (
         <div className="goals-page-filters">
-          {cats.map(c => (
-            <button key={c} className={`goals-filter-btn${filterCat === c ? ' active' : ''}`} onClick={() => setFilterCat(c)}>{c}</button>
-          ))}
+          <div className="goals-filter-cats">
+            {cats.map(c => (
+              <button key={c} className={`goals-filter-btn${filterCat === c ? ' active' : ''}`} onClick={() => setFilterCat(c)}>{c}</button>
+            ))}
+          </div>
+          <select className="goals-sort-select" value={sortBy} onChange={e => setSortBy(e.target.value as typeof sortBy)}>
+            <option value="deadline">Prazo ↑</option>
+            <option value="pct-desc">Progresso ↓</option>
+            <option value="pct-asc">Progresso ↑</option>
+            <option value="missing">Valor faltante</option>
+          </select>
         </div>
       )}
 
@@ -161,8 +206,15 @@ function GoalsPage() {
             const dl = daysLeft(g.deadline)
             const color = GOAL_COLORS[g.category] || 'var(--text)'
             const isDone = p >= 100
+            const isUrgent = !isDone && !!g.deadline && (() => {
+              const d = new Date(g.deadline + 'T12:00:00')
+              if (isNaN(d.getTime())) return false
+              const diff = Math.ceil((d.getTime() - Date.now()) / 86400000)
+              return diff >= 0 && diff <= 30
+            })()
+            const proj = !isDone ? projection(g) : null
             return (
-              <div key={g.id} className={`goals-page-card${isDone ? ' gpc-done' : ''}`} style={{ '--gpc-color': color } as React.CSSProperties}>
+              <div key={g.id} className={`goals-page-card${isDone ? ' gpc-done' : ''}${isUrgent ? ' gpc-urgent' : ''}`} style={{ '--gpc-color': color } as React.CSSProperties}>
                 <div className="gpc-top">
                   <div className="gpc-cat-dot" style={{ background: color }} />
                   <span className="gpc-cat">{g.category}</span>
@@ -195,6 +247,7 @@ function GoalsPage() {
                     <GoalDepositBtn goalId={g.id} onDeposit={addDeposit} />
                   )}
                 </div>
+                {proj && <div className="gpc-projection">{proj}</div>}
               </div>
             )
           })}
