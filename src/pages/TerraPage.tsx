@@ -801,7 +801,11 @@ export default function TerraPage() {
                 {{ mapa: 'Mapa', satelite: 'Satélite', relevo: 'Relevo' }[l]}
               </button>
             ))}
-            <button className={`terra-map-toggle terra-radar-btn${radarOn ? ' active' : ''}`} onClick={() => setRadarOn(v => !v)} title="Radar de chuva animado">
+            <button className={`terra-map-toggle terra-radar-btn${radarOn ? ' active' : ''}`} onClick={() => {
+              const map = leafletMap.current
+              if (!radarOn && map && map.getZoom() > 8) map.setZoom(8)
+              setRadarOn(v => !v)
+            }} title="Radar de chuva animado">
               🌧 Radar
             </button>
           </div>
