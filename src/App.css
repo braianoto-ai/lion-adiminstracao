@@ -3284,9 +3284,9 @@
 .fin-tab-active { background: var(--bg4) !important; color: var(--text3) !important }
 .fin-tab-add { color: var(--green-l) }
 
-.fin-page-wrap { display: flex; justify-content: center; padding: 0 16px; width: 100% }
+.fin-page-wrap { display: flex; width: 100%; padding: 0 }
 .fin-page-wrap .float-panel-inner,
-.fin-page-wrap > div { width: 100%; max-width: 860px }
+.fin-page-wrap > div { width: 100%; max-width: none }
 
 .fin-body {
   flex: 1;
