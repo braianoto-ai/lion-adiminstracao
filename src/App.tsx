@@ -488,8 +488,6 @@ function Dashboard({ onNavigate }: { onNavigate: (page: SidebarPage) => void }) 
   const countAberto = bills.filter(b => effectiveStatus(b) === 'em_aberto').length
   const countVencido = bills.filter(b => effectiveStatus(b) === 'vencido').length
   const totalAberto = pendingBills.reduce((s, b) => s + b.amount, 0)
-  const upcomingBills = pendingBills.sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 5)
-
   const today = now.toISOString().slice(0, 10)
   const in7 = new Date(now.getTime() + 7 * 86400000).toISOString().slice(0, 10)
   const eventsToday = allEvents.filter(e => e.date === today).length
