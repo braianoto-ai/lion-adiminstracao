@@ -80,6 +80,7 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
   const [editId, setEditId] = useState<string | null>(null)
   const [recurring, setRecurring] = useState(false)
   const [recurringMonths, setRecurringMonths] = useState(12)
+  const [confirmDel, setConfirmDel] = useState<{ tx: Transaction; others: number } | null>(null)
   const [form, setForm] = useState({
     type: 'receita' as TxType,
     category: TX_CATEGORIES.receita[0],
@@ -137,8 +138,8 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
   function delTx(tx: Transaction) {
     if (tx.recurringId) {
       const others = txs.filter(t => t.recurringId === tx.recurringId).length
-      if (others > 1 && window.confirm(`Excluir só este mês ou todas as ${others} ocorrências?`)) {
-        setTxs(prev => prev.filter(t => t.recurringId !== tx.recurringId))
+      if (others > 1) {
+        setConfirmDel({ tx, others })
         return
       }
     }
@@ -170,10 +171,10 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
   const fmtCurr = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
   const filtered = filter === 'all' ? txs : txs.filter(t => t.type === filter)
 
-  const chartH = 100
-  const barW = 14
-  const gap = 3
-  const groupW = barW * 2 + gap + 14
+  const chartH = 120
+  const barW = 22
+  const gap = 6
+  const groupW = barW * 2 + gap + 18
 
   // ── Pie chart data ──
   const PIE_COLORS = ['#ef4444','#f59e0b','#3b82f6','#10b981','#8b5cf6','#ec4899','#06b6d4','#84cc16']
@@ -244,56 +245,63 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
             </div>
           </div>
 
-          <div className="fin-chart-section">
-            <div className="fin-chart-title">Últimos 6 meses</div>
-            <svg width="100%" viewBox={`0 0 300 ${chartH + 28}`} className="fin-chart">
-              {monthData.map((m, i) => {
-                const x = 10 + i * groupW
-                const rH = Math.max((m.receitas / maxVal) * chartH, m.receitas > 0 ? 3 : 2)
-                const dH = Math.max((m.despesas / maxVal) * chartH, m.despesas > 0 ? 3 : 2)
-                return (
-                  <g key={m.month}>
-                    <rect x={x} y={chartH - rH} width={barW} height={rH} rx="3" fill="var(--green)" opacity={m.receitas === 0 ? 0.15 : 0.85} />
-                    <rect x={x + barW + gap} y={chartH - dH} width={barW} height={dH} rx="3" fill="var(--red)" opacity={m.despesas === 0 ? 0.15 : 0.85} />
-                    <text x={x + barW + gap / 2} y={chartH + 20} textAnchor="middle" fontSize="9" fill="var(--text)">{m.label}</text>
-                  </g>
-                )
-              })}
-            </svg>
-            <div className="fin-legend">
-              <span className="fin-leg-dot" style={{ background: 'var(--green)' }} />
-              <span className="fin-leg-label">Receitas</span>
-              <span className="fin-leg-dot" style={{ background: 'var(--red)' }} />
-              <span className="fin-leg-label">Despesas</span>
-            </div>
-          </div>
-
-          {catTotals.length > 0 && (
-            <div className="fin-pie-section">
-              <div className="fin-chart-title">Despesas por categoria</div>
-              <div className="fin-pie-wrap">
-                <svg viewBox="0 0 144 144" className="fin-pie-svg">
-                  {slices.map((s, i) => (
-                    <path key={i} d={s.path} fill={s.color} opacity=".9">
-                      <title>{s.cat}: {fmtCurr(s.val)} ({s.pct}%)</title>
-                    </path>
-                  ))}
-                  <circle cx="72" cy="72" r="26" fill="var(--bg2)" />
-                  <text x="72" y="68" textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--text3)">{fmtCurr(totalDespesas).replace('R$\u00a0','').split(',')[0]}</text>
-                  <text x="72" y="82" textAnchor="middle" fontSize="8" fill="var(--text)">total</text>
-                </svg>
-                <div className="fin-pie-legend">
-                  {slices.slice(0, 6).map((s, i) => (
-                    <div key={i} className="fin-pie-row">
-                      <span className="fin-pie-dot" style={{ background: s.color }} />
-                      <span className="fin-pie-cat">{s.cat}</span>
-                      <span className="fin-pie-pct">{s.pct}%</span>
-                    </div>
-                  ))}
-                </div>
+          <div className="fin-overview-grid">
+            <div className="fin-chart-section">
+              <div className="fin-chart-title">Últimos 6 meses</div>
+              <svg width="100%" height="160" viewBox={`0 0 460 ${chartH + 32}`} className="fin-chart">
+                {monthData.map((m, i) => {
+                  const x = 20 + i * groupW
+                  const rH = Math.max((m.receitas / maxVal) * chartH, m.receitas > 0 ? 3 : 2)
+                  const dH = Math.max((m.despesas / maxVal) * chartH, m.despesas > 0 ? 3 : 2)
+                  return (
+                    <g key={m.month}>
+                      <rect x={x} y={chartH - rH} width={barW} height={rH} rx="4" fill="var(--green)" opacity={m.receitas === 0 ? 0.15 : 0.85} />
+                      <rect x={x + barW + gap} y={chartH - dH} width={barW} height={dH} rx="4" fill="var(--red)" opacity={m.despesas === 0 ? 0.15 : 0.85} />
+                      <text x={x + barW + gap / 2} y={chartH + 24} textAnchor="middle" fontSize="11" fill="var(--text)">{m.label}</text>
+                    </g>
+                  )
+                })}
+              </svg>
+              <div className="fin-legend">
+                <span className="fin-leg-dot" style={{ background: 'var(--green)' }} />
+                <span className="fin-leg-label">Receitas</span>
+                <span className="fin-leg-dot" style={{ background: 'var(--red)' }} />
+                <span className="fin-leg-label">Despesas</span>
               </div>
             </div>
-          )}
+
+            {catTotals.length > 0 ? (
+              <div className="fin-pie-section">
+                <div className="fin-chart-title">Despesas por categoria</div>
+                <div className="fin-pie-wrap">
+                  <svg viewBox="0 0 144 144" className="fin-pie-svg">
+                    {slices.map((s, i) => (
+                      <path key={i} d={s.path} fill={s.color} opacity=".9">
+                        <title>{s.cat}: {fmtCurr(s.val)} ({s.pct}%)</title>
+                      </path>
+                    ))}
+                    <circle cx="72" cy="72" r="26" fill="var(--bg2)" />
+                    <text x="72" y="68" textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--text3)">{fmtCurr(totalDespesas).replace('R$\u00a0','').split(',')[0]}</text>
+                    <text x="72" y="82" textAnchor="middle" fontSize="8" fill="var(--text)">total</text>
+                  </svg>
+                  <div className="fin-pie-legend">
+                    {slices.slice(0, 6).map((s, i) => (
+                      <div key={i} className="fin-pie-row">
+                        <span className="fin-pie-dot" style={{ background: s.color }} />
+                        <span className="fin-pie-cat">{s.cat}</span>
+                        <span className="fin-pie-pct">{s.pct}%</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="fin-pie-section fin-pie-empty">
+                <div className="fin-chart-title">Despesas por categoria</div>
+                <div className="fin-pie-placeholder">Sem despesas categorizadas ainda</div>
+              </div>
+            )}
+          </div>
         </div>
       )}
 
@@ -304,33 +312,55 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
             <button className={`fin-chip fin-chip-green${filter === 'receita' ? ' fin-chip-active' : ''}`} onClick={() => setFilter('receita')}>Receitas</button>
             <button className={`fin-chip fin-chip-red${filter === 'despesa' ? ' fin-chip-active' : ''}`} onClick={() => setFilter('despesa')}>Despesas</button>
           </div>
+          {confirmDel && (
+            <div className="fin-confirm-banner">
+              <span>Excluir só este mês ou todas as {confirmDel.others} ocorrências?</span>
+              <div className="fin-confirm-actions">
+                <button className="fin-confirm-btn" onClick={() => { setTxs(p => p.filter(t => t.id !== confirmDel.tx.id)); setConfirmDel(null) }}>Só este</button>
+                <button className="fin-confirm-btn fin-confirm-all" onClick={() => { setTxs(p => p.filter(t => t.recurringId !== confirmDel.tx.recurringId)); setConfirmDel(null) }}>Todos ({confirmDel.others})</button>
+                <button className="fin-confirm-btn fin-confirm-cancel" onClick={() => setConfirmDel(null)}>Cancelar</button>
+              </div>
+            </div>
+          )}
           {filtered.length === 0
             ? <div className="fin-empty">Nenhum lançamento ainda.</div>
-            : <div className="fin-list">
-                {filtered.map(tx => (
-                  <div key={tx.id} className="fin-item">
-                    <div className={`fin-dot ${tx.type === 'receita' ? 'fin-dot-green' : 'fin-dot-red'}`} />
-                    <div className="fin-item-body">
-                      <span className="fin-item-desc">
+            : <table className="fin-table">
+                <thead>
+                  <tr>
+                    <th>Mês</th>
+                    <th>Descrição</th>
+                    <th>Categoria</th>
+                    <th style={{ textAlign: 'right' }}>Valor</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(tx => (
+                    <tr key={tx.id} className="fin-tr">
+                      <td className="fin-td-date">{new Date(tx.date + '-02').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}</td>
+                      <td className="fin-td-desc">
+                        <span className={`fin-dot ${tx.type === 'receita' ? 'fin-dot-green' : 'fin-dot-red'}`} style={{ marginRight: 8 }} />
                         {tx.description}
                         {tx.recurring && <span className="fin-recurring-badge" title="Recorrente">
                           <svg viewBox="0 0 12 12" fill="none"><path d="M2 6a4 4 0 0 1 7-2.6M10 6a4 4 0 0 1-7 2.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><path d="M8.5 2l.5 1.4-1.4.5M3.5 10l-.5-1.4 1.4-.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/></svg>
                         </span>}
-                      </span>
-                      <span className="fin-item-meta">{tx.category} · {new Date(tx.date + '-02').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}</span>
-                    </div>
-                    <span className={`fin-item-amt ${tx.type === 'receita' ? 'fin-amt-green' : 'fin-amt-red'}`}>
-                      {tx.type === 'receita' ? '+' : '-'}{fmtCurr(tx.amount)}
-                    </span>
-                    <button className="fin-edit-btn" onClick={() => openEdit(tx)} title="Editar">
-                      <svg viewBox="0 0 14 14" fill="none"><path d="M2 10l7-7 2 2-7 7H2v-2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
-                    </button>
-                    <button className="fin-del" onClick={() => delTx(tx)}>
-                      <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
-                    </button>
-                  </div>
-                ))}
-              </div>
+                      </td>
+                      <td className="fin-td-cat">{tx.category}</td>
+                      <td className={`fin-td-amt ${tx.type === 'receita' ? 'fin-amt-green' : 'fin-amt-red'}`}>
+                        {tx.type === 'receita' ? '+' : '-'}{fmtCurr(tx.amount)}
+                      </td>
+                      <td className="fin-td-actions">
+                        <button className="fin-edit-btn" onClick={() => openEdit(tx)} title="Editar">
+                          <svg viewBox="0 0 14 14" fill="none"><path d="M2 10l7-7 2 2-7 7H2v-2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
+                        </button>
+                        <button className="fin-del" style={{ opacity: 1 }} onClick={() => delTx(tx)}>
+                          <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
           }
         </div>
       )}
