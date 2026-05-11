@@ -108,7 +108,7 @@ export default function TerraPage() {
     if (!radarOn || !radarFrames.length) return
     const path = radarFrames[radarIdx]
     const layer = L.tileLayer(`https://tilecache.rainviewer.com${path}/512/{z}/{x}/{y}/2/1_1.png`, {
-      opacity: 0.6, zIndex: 5, attribution: 'RainViewer', maxNativeZoom: 12, maxZoom: 22
+      opacity: 0.6, zIndex: 5, attribution: 'RainViewer', maxNativeZoom: 6, maxZoom: 22
     })
     layer.addTo(map)
     radarLayerRef.current = layer
@@ -803,7 +803,12 @@ export default function TerraPage() {
             ))}
             <button className={`terra-map-toggle terra-radar-btn${radarOn ? ' active' : ''}`} onClick={() => {
               const map = leafletMap.current
-              if (!radarOn && map && map.getZoom() > 8) map.setZoom(8)
+              if (!radarOn && map) {
+                if (map.getZoom() > 5) map.setZoom(5)
+                map.setMaxZoom(6)
+              } else if (radarOn && map) {
+                map.setMaxZoom(18)
+              }
               setRadarOn(v => !v)
             }} title="Radar de chuva animado">
               🌧 Radar
