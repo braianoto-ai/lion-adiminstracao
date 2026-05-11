@@ -223,9 +223,11 @@ export default function TerraPage() {
         // second setView once cloud data arrives mid tile-load → scrambled grid.
         initialViewSet.current = true
         map.setView(center, zoom)
-        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' })
-        osm.addTo(map)
-        tileRef.current = osm
+        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { attribution: '&copy; Esri' })
+        const labels = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { attribution: '', pane: 'shadowPane' })
+        satellite.addTo(map)
+        labels.addTo(map)
+        tileRef.current = satellite
         layerGroup.current = L.layerGroup().addTo(map)
         drawMarkersRef.current = L.layerGroup().addTo(map)
         notasLayerRef.current = L.layerGroup().addTo(map)
@@ -245,7 +247,7 @@ export default function TerraPage() {
         })
         ro.observe(node)
         mapRoRef.current = ro
-        osm.once('load', () => {
+        satellite.once('load', () => {
           tilesLoaded = true
           if (pendingInvalidate) { pendingInvalidate = false; doInvalidate() }
         })
