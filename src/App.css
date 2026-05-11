@@ -6308,6 +6308,14 @@ html[data-theme="light"] .patr-upload-form { background: var(--bg2) }
 .terra-map-toggle { padding: 7px 16px; font-size: calc(.78rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all .2s; font-weight: 500 }
 .terra-map-toggle:hover { border-color: var(--purple); color: var(--text3) }
 .terra-map-toggle.active { background: var(--purple); color: #fff; border-color: var(--purple); box-shadow: 0 2px 8px rgba(139,92,246,.25) }
+.terra-weather-widget { position: absolute; bottom: 28px; left: 10px; z-index: 999; background: rgba(24,24,27,.88); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 10px 14px; min-width: 140px; box-shadow: 0 4px 16px rgba(0,0,0,.3); pointer-events: none }
+.terra-weather-main { display: flex; align-items: center; gap: 8px; margin-bottom: 2px }
+.terra-weather-icon { font-size: 1.6rem; line-height: 1 }
+.terra-weather-temp { font-size: calc(1.3rem * var(--fs)); font-weight: 700; color: var(--text3) }
+.terra-weather-label { font-size: calc(.72rem * var(--fs)); color: var(--text); margin-bottom: 6px }
+.terra-weather-stats { display: flex; flex-direction: column; gap: 2px }
+.terra-weather-stats span { font-size: calc(.7rem * var(--fs)); color: var(--text2) }
+.terra-weather-loading, .terra-weather-na { font-size: calc(.72rem * var(--fs)); color: var(--text) }
 .terra-sidebar-action-sep { width: 1px; height: 16px; background: var(--border); margin: 0 2px; flex-shrink: 0 }
 .terra-btn-draw { display: flex; align-items: center; gap: 6px; padding: 6px 14px; font-size: calc(.78rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all .15s }
 .terra-btn-draw:hover { background: var(--bg3); color: var(--text3) }
