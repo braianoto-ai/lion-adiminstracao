@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { useCloudTable } from '../hooks'
 import { BILL_INIT, BILL_RECURRENCE_LABEL, BILL_STATUS_LABEL, COLL_INIT, BILL_CATEGORIES, BILL_COLORS } from '../constants'
 import { fmtCurrency, fmtDate, effectiveStatus } from '../utils'
-import { CLOUD_BUS } from '../context'
 import type { Collector, Bill, BillStatus, BillRecurrence, Transaction } from '../types'
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
@@ -150,6 +149,7 @@ export default
 function PaymentHubPage() {
   const [collectors, setCollectors] = useCloudTable<Collector>('collectors', 'lion-collectors')
   const [bills, setBills] = useCloudTable<Bill>('bills', 'lion-bills')
+  const [, setTxs] = useCloudTable<Transaction>('transactions', 'lion-txs')
   const [selCollector, setSelCollector] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<BillStatus | 'all'>('all')
   const [phTab, setPhTab] = useState<'bills' | 'monthly'>('bills')
@@ -223,26 +223,12 @@ function PaymentHubPage() {
       amount: bill.amount,
       date: bill.dueDate.slice(0, 7),
     }
-    try {
-      const txs: Transaction[] = JSON.parse(localStorage.getItem('lion-txs') || '[]')
-      if (!txs.some(t => t.id === txId)) {
-        txs.unshift(tx)
-        localStorage.setItem('lion-txs', JSON.stringify(txs))
-        CLOUD_BUS.dispatchEvent(new Event('lion-txs'))
-      }
-    } catch { /* ignore */ }
+    setTxs(prev => prev.some(t => t.id === txId) ? prev : [tx, ...prev])
   }
 
   const removeTxFromBill = (billId: string) => {
     const txId = `bill-${billId}`
-    try {
-      const txs: Transaction[] = JSON.parse(localStorage.getItem('lion-txs') || '[]')
-      const filtered = txs.filter(t => t.id !== txId)
-      if (filtered.length !== txs.length) {
-        localStorage.setItem('lion-txs', JSON.stringify(filtered))
-        CLOUD_BUS.dispatchEvent(new Event('lion-txs'))
-      }
-    } catch { /* ignore */ }
+    setTxs(prev => prev.filter(t => t.id !== txId))
   }
 
   const markPaid = (id: string) => {
