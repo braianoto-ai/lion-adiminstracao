@@ -640,6 +640,32 @@ export default function TerraPage() {
           </div>
         )}
 
+        {talhoes.length > 0 && (() => {
+          const totalHa = talhoes.reduce((s, t) => s + (t.areaHa || 0), 0)
+          const byUso = TALHAO_USOS.map(u => {
+            const ha = talhoes.filter(t => t.uso === u.value).reduce((s, t) => s + (t.areaHa || 0), 0)
+            return { ...u, ha }
+          }).filter(u => u.ha > 0)
+          return (
+            <div className="terra-uso-breakdown">
+              <h4>Distribuição de Uso — Todos os Talhões</h4>
+              <div className="terra-uso-list">
+                {byUso.map(u => (
+                  <div key={u.value} className="terra-uso-row">
+                    <span className="terra-uso-dot" style={{ background: u.cor }} />
+                    <span className="terra-uso-label">{u.label}</span>
+                    <div className="terra-uso-bar-wrap">
+                      <div className="terra-uso-bar-fill" style={{ width: `${totalHa > 0 ? (u.ha / totalHa) * 100 : 0}%`, background: u.cor }} />
+                    </div>
+                    <span className="terra-uso-ha">{fmtHa(u.ha)}</span>
+                    <span className="terra-uso-pct">{totalHa > 0 ? ((u.ha / totalHa) * 100).toFixed(1) : '0'}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })()}
+
         {fazendas.length > 0 && (
           <div className="terra-visao-fazendas">
             <div className="terra-visao-fazendas-header">
