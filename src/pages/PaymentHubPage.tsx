@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useCloudTable } from '../hooks'
 import { BILL_INIT, BILL_RECURRENCE_LABEL, BILL_STATUS_LABEL, COLL_INIT, BILL_CATEGORIES, BILL_COLORS } from '../constants'
 import { fmtCurrency, fmtDate, effectiveStatus } from '../utils'
@@ -149,7 +149,43 @@ export default
 function PaymentHubPage() {
   const [collectors, setCollectors] = useCloudTable<Collector>('collectors', 'lion-collectors')
   const [bills, setBills] = useCloudTable<Bill>('bills', 'lion-bills')
-  const [, setTxs] = useCloudTable<Transaction>('transactions', 'lion-txs')
+  const [txs, setTxs] = useCloudTable<Transaction>('transactions', 'lion-txs')
+  const reconciledRef = useRef(false)
+
+  // Reconcile: bills marked as paid but missing a transaction → create it
+  useEffect(() => {
+    if (reconciledRef.current) return
+    if (!bills.length) return
+    const paidBills = bills.filter(b => b.status === 'pago')
+    if (!paidBills.length) return
+    reconciledRef.current = true
+    const existingIds = new Set(txs.map(t => t.id))
+    const missing = paidBills.filter(b => !existingIds.has(`bill-${b.id}`))
+    if (!missing.length) return
+    const collMap = new Map(collectors.map(c => [c.id, c]))
+    const catMap: Record<string, string> = {
+      'Energia': 'Moradia', 'Água': 'Moradia', 'Condomínio': 'Moradia', 'Aluguel': 'Moradia',
+      'Internet': 'Moradia', 'Telefonia': 'Moradia', 'Cartão': 'Outros', 'Streaming': 'Lazer',
+      'Educação': 'Educação', 'Saúde': 'Saúde', 'Imposto': 'Impostos',
+    }
+    setTxs(prev => {
+      const toAdd: Transaction[] = missing
+        .filter(b => !prev.some(t => t.id === `bill-${b.id}`))
+        .map(b => {
+          const coll = collMap.get(b.collectorId)
+          return {
+            id: `bill-${b.id}`,
+            type: 'despesa' as const,
+            category: catMap[coll?.category || ''] || 'Outros',
+            description: `${coll?.name || 'Conta'}${b.description ? ' — ' + b.description : ''}`,
+            amount: b.amount,
+            date: b.paidAt ? b.paidAt.slice(0, 7) : b.dueDate.slice(0, 7),
+          }
+        })
+      return toAdd.length ? [...toAdd, ...prev] : prev
+    })
+  }, [bills, txs, collectors, setTxs])
+
   const [selCollector, setSelCollector] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<BillStatus | 'all'>('all')
   const [phTab, setPhTab] = useState<'bills' | 'monthly'>('bills')
