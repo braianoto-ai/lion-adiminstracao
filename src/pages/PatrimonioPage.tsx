@@ -20,6 +20,12 @@ function PatrimonioPage() {
   const [editProdId, setEditProdId] = useState<string | null>(null)
   const [prodForm, setProdForm] = useState({ ...PRODUTO_INIT })
 
+  const VEH_INIT = { name: '', plate: '', year: '', valorCompra: '', valorAtual: '', currentKm: '', ipvaExpiry: '', insuranceExpiry: '', notes: '' }
+  const [showVehForm, setShowVehForm] = useState(false)
+  const [editVehId, setEditVehId] = useState<string | null>(null)
+  const [vehForm, setVehForm] = useState(VEH_INIT)
+  const fv = (k: string, v: string) => setVehForm(f => ({ ...f, [k]: v }))
+
   const fmtR = (v: string | number) => parseFloat(String(v) || '0').toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
   const fmtKm = (k: number) => k > 0 ? `${k.toLocaleString('pt-BR')} km` : ''
 
@@ -33,6 +39,7 @@ function PatrimonioPage() {
   )
   const totalVeiculos = useMemo(
     () => vehicles.reduce((s, v) => {
+      if (v.valorAtual != null) return s + v.valorAtual
       const m = v.notes?.match(/Atual:\s*R\$\s*([\d.,]+)/)
       return m ? s + (parseFloat(m[1].replace(/\./g, '').replace(',', '.')) || 0) : s
     }, 0),
@@ -84,6 +91,37 @@ function PatrimonioPage() {
     setImovelForm({ descricao: i.descricao, tipo: i.tipo, valor: i.valor, valorAtual: i.valorAtual, endereco: i.endereco, area: i.area })
     setShowImovelForm(true)
     setTab('imoveis')
+  }
+
+  const saveVehicle = () => {
+    if (!vehForm.name.trim()) return
+    const v: Vehicle = {
+      id: editVehId || Date.now().toString(),
+      name: vehForm.name, plate: vehForm.plate.toUpperCase(), year: vehForm.year,
+      currentKm: parseFloat(vehForm.currentKm) || 0,
+      nextRevisionKm: 0, nextRevisionDate: '', notes: vehForm.notes,
+      ipvaExpiry: vehForm.ipvaExpiry, insuranceExpiry: vehForm.insuranceExpiry,
+      valorCompra: parseFloat(vehForm.valorCompra) || undefined,
+      valorAtual: parseFloat(vehForm.valorAtual) || undefined,
+    }
+    setVehicles(prev => editVehId ? prev.map(x => x.id === editVehId ? v : x) : [v, ...prev])
+    setVehForm(VEH_INIT); setShowVehForm(false); setEditVehId(null)
+  }
+
+  const startEditVehicle = (v: Vehicle) => {
+    const legacyCompra = v.notes?.match(/Compra:\s*R\$\s*([\d.,]+)/)?.[1]?.replace(/\./g, '').replace(',', '.')
+    const legacyAtual  = v.notes?.match(/Atual:\s*R\$\s*([\d.,]+)/)?.[1]?.replace(/\./g, '').replace(',', '.')
+    setEditVehId(v.id)
+    setVehForm({
+      name: v.name, plate: v.plate, year: v.year,
+      valorCompra: String(v.valorCompra ?? legacyCompra ?? ''),
+      valorAtual:  String(v.valorAtual  ?? legacyAtual  ?? ''),
+      currentKm: String(v.currentKm || ''),
+      ipvaExpiry: v.ipvaExpiry || '', insuranceExpiry: v.insuranceExpiry || '',
+      notes: v.notes || '',
+    })
+    setShowVehForm(true)
+    setTab('veiculos')
   }
 
   const startEditProd = (p: Produto) => {
@@ -244,18 +282,70 @@ function PatrimonioPage() {
       {/* Veículos */}
       {tab === 'veiculos' && (
         <div className="patr-section">
-          {vehicles.length === 0 ? (
+          {showVehForm ? (
+            <div className="patr-form">
+              <div className="patr-form-title">{editVehId ? 'Editar Veículo' : 'Novo Veículo'}</div>
+              <div className="patr-fields">
+                <div className="patr-field patr-span2">
+                  <label>Nome / Modelo *</label>
+                  <input placeholder="Ex: VW Jetta 2017" value={vehForm.name} onChange={e => fv('name', e.target.value)} />
+                </div>
+                <div className="patr-field">
+                  <label>Placa</label>
+                  <input placeholder="ABC-1234" value={vehForm.plate} onChange={e => fv('plate', e.target.value.toUpperCase())} />
+                </div>
+                <div className="patr-field">
+                  <label>Ano</label>
+                  <input type="number" placeholder="2020" value={vehForm.year} onChange={e => fv('year', e.target.value)} />
+                </div>
+                <div className="patr-field">
+                  <label>Valor de Compra (R$)</label>
+                  <input type="number" placeholder="0,00" value={vehForm.valorCompra} onChange={e => fv('valorCompra', e.target.value)} />
+                </div>
+                <div className="patr-field">
+                  <label>Valor Atual (R$)</label>
+                  <input type="number" placeholder="0,00" value={vehForm.valorAtual} onChange={e => fv('valorAtual', e.target.value)} />
+                </div>
+                <div className="patr-field">
+                  <label>KM Atual</label>
+                  <input type="number" placeholder="0" value={vehForm.currentKm} onChange={e => fv('currentKm', e.target.value)} />
+                </div>
+                <div className="patr-field">
+                  <label>Vencimento IPVA</label>
+                  <input type="date" value={vehForm.ipvaExpiry} onChange={e => fv('ipvaExpiry', e.target.value)} />
+                </div>
+                <div className="patr-field">
+                  <label>Vencimento Seguro</label>
+                  <input type="date" value={vehForm.insuranceExpiry} onChange={e => fv('insuranceExpiry', e.target.value)} />
+                </div>
+                <div className="patr-field patr-span2">
+                  <label>Observações</label>
+                  <input placeholder="Notas adicionais" value={vehForm.notes} onChange={e => fv('notes', e.target.value)} />
+                </div>
+              </div>
+              <div className="patr-form-actions">
+                <button className="btn-ghost" onClick={() => { setShowVehForm(false); setEditVehId(null); setVehForm(VEH_INIT) }}>Cancelar</button>
+                <button className="btn-accent" onClick={saveVehicle}>{editVehId ? 'Salvar' : 'Adicionar'}</button>
+              </div>
+            </div>
+          ) : (
+            <button className="patr-add-btn" onClick={() => setShowVehForm(true)}>
+              <svg viewBox="0 0 16 16" fill="none"><path d="M8 3v10M3 8h10" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
+              Adicionar Veículo
+            </button>
+          )}
+          {vehicles.length === 0 && !showVehForm ? (
             <div className="patr-empty">
               <svg viewBox="0 0 48 48" fill="none"><rect x="3" y="18" width="42" height="21" rx="4" stroke="currentColor" strokeWidth="2"/><path d="M12 18V15a9 9 0 0 1 9-9h6a9 9 0 0 1 9 9v3" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/><circle cx="13" cy="39" r="4" fill="currentColor" opacity=".3" stroke="none"/><circle cx="35" cy="39" r="4" fill="currentColor" opacity=".3" stroke="none"/></svg>
-              <span>Nenhum veículo. Adicione via Ações Rápidas no dashboard.</span>
+              <span>Nenhum veículo cadastrado</span>
             </div>
           ) : (
             <div className="patr-list">
               {vehicles.map(v => {
-                const notesVal = v.notes?.match(/Atual:\s*R\$\s*([\d.,]+)/)
-                const valorAtual = notesVal ? parseFloat(notesVal[1].replace(/\./g, '').replace(',', '.')) : 0
-                const notesCompra = v.notes?.match(/Compra:\s*R\$\s*([\d.,]+)/)
-                const valorCompra = notesCompra ? parseFloat(notesCompra[1].replace(/\./g, '').replace(',', '.')) : 0
+                const legacyCompra = v.notes?.match(/Compra:\s*R\$\s*([\d.,]+)/)?.[1]?.replace(/\./g, '').replace(',', '.')
+                const legacyAtual  = v.notes?.match(/Atual:\s*R\$\s*([\d.,]+)/)?.[1]?.replace(/\./g, '').replace(',', '.')
+                const valorCompra = v.valorCompra ?? (legacyCompra ? parseFloat(legacyCompra) : 0)
+                const valorAtual  = v.valorAtual  ?? (legacyAtual  ? parseFloat(legacyAtual)  : 0)
                 const gain = valorAtual > 0 && valorCompra > 0 ? valorAtual - valorCompra : 0
                 return (
                   <div key={v.id} className="patr-card">
@@ -267,14 +357,19 @@ function PatrimonioPage() {
                       <div className="patr-card-meta">
                         {v.year && <span>{v.year}</span>}
                         {fmtKm(v.currentKm) && <span>{fmtKm(v.currentKm)}</span>}
+                        {v.ipvaExpiry && <span>IPVA: {v.ipvaExpiry.split('-').reverse().join('/')}</span>}
+                        {v.insuranceExpiry && <span>Seguro: {v.insuranceExpiry.split('-').reverse().join('/')}</span>}
                       </div>
                       <div className="patr-card-values">
                         {valorCompra > 0 && <span>Compra: {fmtR(valorCompra)}</span>}
-                        {valorAtual > 0 && <span>Atual: {fmtR(valorAtual)}</span>}
+                        {valorAtual  > 0 && <span>Atual: {fmtR(valorAtual)}</span>}
                         {gain !== 0 && <span className={gain > 0 ? 'patr-gain-pos' : 'patr-gain-neg'}>{gain > 0 ? '+' : ''}{fmtR(gain)}</span>}
                       </div>
                     </div>
                     <div className="patr-card-actions">
+                      <button className="patr-icon-btn" onClick={() => startEditVehicle(v)} title="Editar">
+                        <svg viewBox="0 0 14 14" fill="none"><path d="M2 10l7-7 2 2-7 7H2v-2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
+                      </button>
                       <button className="patr-icon-btn patr-icon-btn-del" onClick={() => setVehicles(prev => prev.filter(x => x.id !== v.id))} title="Excluir">
                         <svg viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
                       </button>
