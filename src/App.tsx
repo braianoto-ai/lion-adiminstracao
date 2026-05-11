@@ -488,15 +488,27 @@ function Dashboard({ onNavigate }: { onNavigate: (page: SidebarPage) => void }) 
   const countAberto = bills.filter(b => effectiveStatus(b) === 'em_aberto').length
   const countVencido = bills.filter(b => effectiveStatus(b) === 'vencido').length
   const totalAberto = pendingBills.reduce((s, b) => s + b.amount, 0)
-  const upcomingBills = pendingBills.sort((a, b) => a.dueDate.localeCompare(b.dueDate)).slice(0, 5)
-
   const today = now.toISOString().slice(0, 10)
   const in7 = new Date(now.getTime() + 7 * 86400000).toISOString().slice(0, 10)
   const eventsToday = allEvents.filter(e => e.date === today).length
   const eventsWeek = allEvents.filter(e => e.date >= today && e.date <= in7).length
-  const upcomingEvents = allEvents.filter(e => e.date >= today).sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time)).slice(0, 6)
 
-  const recentTxs = txs.filter(t => t.date <= curMonth).sort((a, b) => b.date.localeCompare(a.date)).slice(0, 5)
+  type AgendaItem =
+    | { kind: 'event'; date: string; item: CalEvent }
+    | { kind: 'bill';  date: string; item: Bill }
+    | { kind: 'tx';    date: string; item: Transaction }
+
+  const agendaItems: AgendaItem[] = ([
+    ...allEvents.filter(e => e.date >= today).map(e => ({ kind: 'event' as const, date: e.date, item: e })),
+    ...pendingBills.map(b => ({ kind: 'bill' as const, date: b.dueDate, item: b })),
+    ...txs.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4).map(t => ({ kind: 'tx' as const, date: t.date, item: t })),
+  ] as AgendaItem[]).sort((a, b) => {
+    const af = a.date >= today, bf = b.date >= today
+    if (af && !bf) return -1
+    if (!af && bf) return 1
+    if (af && bf) return a.date.localeCompare(b.date)
+    return b.date.localeCompare(a.date)
+  }).slice(0, 10)
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => { try { return JSON.parse(localStorage.getItem('lion-dash-collapsed') || '{}') } catch { return {} } })
   const toggleSection = (key: string) => setCollapsed(prev => { const next = { ...prev, [key]: !prev[key] }; localStorage.setItem('lion-dash-collapsed', JSON.stringify(next)); return next })
@@ -583,110 +595,76 @@ function Dashboard({ onNavigate }: { onNavigate: (page: SidebarPage) => void }) 
 
       {/* ── Detail Grid: 2 columns ── */}
       <div className="dash-detail-grid">
-        {/* Left column */}
+        {/* Left column — Agenda unificada */}
         <div className="dash-detail-col">
-          {/* Próximos eventos */}
           <div className="bc dash-list-card">
-            <div className="dash-list-header" style={{ cursor: 'pointer' }}>
+            <div className="dash-list-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span className={`dash-collapse-chevron${collapsed['eventos'] ? '' : ' dash-collapse-open'}`} onClick={e => { e.stopPropagation(); toggleSection('eventos') }}>
+                <span className={`dash-collapse-chevron${collapsed['agenda'] ? '' : ' dash-collapse-open'}`} onClick={e => { e.stopPropagation(); toggleSection('agenda') }}>
                   <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M7 5l5 5-5 5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                 </span>
-                <span className="dash-list-title">Próximos eventos</span>
+                <span className="dash-list-title">Agenda</span>
               </div>
-              <span className="dash-list-link" onClick={() => onNavigate('calendar')}>Ver todos &rsaquo;</span>
             </div>
-            {!collapsed['eventos'] && (upcomingEvents.length === 0 ? (
-              <div className="dash-list-empty">Nenhum evento próximo</div>
+            {!collapsed['agenda'] && (agendaItems.length === 0 ? (
+              <div className="dash-list-empty">Nenhum item na agenda</div>
             ) : (
               <div className="dash-list-items">
-                {upcomingEvents.map((ev, i) => (
-                  <div key={ev.id + i} className="dash-list-item" onClick={() => onNavigate('calendar')} style={{ cursor: 'pointer' }}>
-                    <div className="dash-ev-dot" style={{ background: calColors[ev.category] || '#94a3b8' }} />
-                    <div className="dash-list-item-body">
-                      <div className="dash-list-item-title">{ev.title}</div>
-                      <div className="dash-list-item-meta">{fmtDay(ev.date)}{ev.time ? ` · ${ev.time}` : ''}</div>
-                    </div>
-                    {ev.date === today && <span className="dash-badge dash-badge-today">Hoje</span>}
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-
-          {/* Últimas transações */}
-          <div className="bc dash-list-card">
-            <div className="dash-list-header" style={{ cursor: 'pointer' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span className={`dash-collapse-chevron${collapsed['txs'] ? '' : ' dash-collapse-open'}`} onClick={e => { e.stopPropagation(); toggleSection('txs') }}>
-                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M7 5l5 5-5 5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </span>
-                <span className="dash-list-title">Últimas transações</span>
-              </div>
-              <span className="dash-list-link" onClick={() => onNavigate('financas')}>Ver todas &rsaquo;</span>
-            </div>
-            {!collapsed['txs'] && (recentTxs.length === 0 ? (
-              <div className="dash-list-empty">Nenhuma transação registrada</div>
-            ) : (
-              <div className="dash-list-items">
-                {recentTxs.map(tx => (
-                  <div key={tx.id} className="dash-list-item" onClick={() => onNavigate('financas')} style={{ cursor: 'pointer' }}>
-                    <div className="dash-tx-icon" style={{ background: tx.type === 'receita' ? 'rgba(16,185,129,.15)' : 'rgba(239,68,68,.15)', color: tx.type === 'receita' ? 'var(--green)' : 'var(--red)' }}>
-                      {tx.type === 'receita' ? '+' : '-'}
-                    </div>
-                    <div className="dash-list-item-body">
-                      <div className="dash-list-item-title">{tx.description}</div>
-                      <div className="dash-list-item-meta">{tx.category} · {tx.date}</div>
-                    </div>
-                    <div className="dash-list-item-amount" style={{ color: tx.type === 'receita' ? 'var(--green)' : 'var(--red)' }}>
-                      {tx.type === 'receita' ? '+' : '-'}{fmtCurrency(tx.amount)}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Right column */}
-        <div className="dash-detail-col">
-          {/* Contas a pagar */}
-          <div className="bc dash-list-card">
-            <div className="dash-list-header" style={{ cursor: 'pointer' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <span className={`dash-collapse-chevron${collapsed['contas'] ? '' : ' dash-collapse-open'}`} onClick={e => { e.stopPropagation(); toggleSection('contas') }}>
-                  <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><path d="M7 5l5 5-5 5" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                </span>
-                <span className="dash-list-title">Contas pendentes</span>
-              </div>
-              <span className="dash-list-link" onClick={() => onNavigate('payment-hub')}>Ver todas &rsaquo;</span>
-            </div>
-            {!collapsed['contas'] && (upcomingBills.length === 0 ? (
-              <div className="dash-list-empty">Nenhuma conta pendente</div>
-            ) : (
-              <div className="dash-list-items">
-                {upcomingBills.map(bill => {
-                  const st = effectiveStatus(bill)
-                  const coll = collectors.find(c => c.id === bill.collectorId)
-                  return (
-                    <div key={bill.id} className="dash-list-item" onClick={() => onNavigate('payment-hub')} style={{ cursor: 'pointer' }}>
-                      <div className="dash-bill-dot" style={{ background: coll?.color || 'var(--amber)' }} />
-                      <div className="dash-list-item-body">
-                        <div className="dash-list-item-title">{bill.description || coll?.name || 'Conta'}</div>
-                        <div className="dash-list-item-meta">
-                          Vence {fmtDay(bill.dueDate)}
-                          {st === 'vencido' && <span style={{ color: 'var(--red)', fontWeight: 600 }}> · Vencida</span>}
+                {agendaItems.map((entry, i) => {
+                  if (entry.kind === 'event') {
+                    const ev = entry.item
+                    return (
+                      <div key={'ev-' + ev.id + i} className="dash-list-item" onClick={() => onNavigate('calendar')} style={{ cursor: 'pointer' }}>
+                        <div className="dash-ev-dot" style={{ background: calColors[ev.category] || '#94a3b8' }} />
+                        <div className="dash-list-item-body">
+                          <div className="dash-list-item-title">{ev.title}</div>
+                          <div className="dash-list-item-meta">{fmtDay(ev.date)}{ev.time ? ` · ${ev.time}` : ''} · Evento</div>
                         </div>
+                        {ev.date === today && <span className="dash-badge dash-badge-today">Hoje</span>}
                       </div>
-                      <div className="dash-list-item-amount">{fmtCurrency(bill.amount)}</div>
+                    )
+                  }
+                  if (entry.kind === 'bill') {
+                    const bill = entry.item
+                    const st = effectiveStatus(bill)
+                    const coll = collectors.find(c => c.id === bill.collectorId)
+                    return (
+                      <div key={'bill-' + bill.id} className="dash-list-item" onClick={() => onNavigate('payment-hub')} style={{ cursor: 'pointer' }}>
+                        <div className="dash-bill-dot" style={{ background: coll?.color || 'var(--amber)' }} />
+                        <div className="dash-list-item-body">
+                          <div className="dash-list-item-title">{bill.description || coll?.name || 'Conta'}</div>
+                          <div className="dash-list-item-meta">
+                            Vence {fmtDay(bill.dueDate)} · Conta
+                            {st === 'vencido' && <span style={{ color: 'var(--red)', fontWeight: 600 }}> · Vencida</span>}
+                          </div>
+                        </div>
+                        <div className="dash-list-item-amount">{fmtCurrency(bill.amount)}</div>
+                      </div>
+                    )
+                  }
+                  const tx = entry.item
+                  return (
+                    <div key={'tx-' + tx.id} className="dash-list-item" onClick={() => onNavigate('financas')} style={{ cursor: 'pointer' }}>
+                      <div className="dash-tx-icon" style={{ background: tx.type === 'receita' ? 'rgba(16,185,129,.15)' : 'rgba(239,68,68,.15)', color: tx.type === 'receita' ? 'var(--green)' : 'var(--red)' }}>
+                        {tx.type === 'receita' ? '+' : '−'}
+                      </div>
+                      <div className="dash-list-item-body">
+                        <div className="dash-list-item-title">{tx.description}</div>
+                        <div className="dash-list-item-meta">{tx.category} · {fmtDay(tx.date)}</div>
+                      </div>
+                      <div className="dash-list-item-amount" style={{ color: tx.type === 'receita' ? 'var(--green)' : 'var(--red)' }}>
+                        {tx.type === 'receita' ? '+' : '−'}{fmtCurrency(tx.amount)}
+                      </div>
                     </div>
                   )
                 })}
               </div>
             ))}
           </div>
+        </div>
 
-          {/* Fazendas */}
+        {/* Right column — Fazendas */}
+        <div className="dash-detail-col">
           <div className="bc dash-list-card">
             <div className="dash-list-header" onClick={() => onNavigate('terra')} style={{ cursor: 'pointer' }}>
               <span className="dash-list-title">Fazendas</span>
