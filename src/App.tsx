@@ -499,7 +499,7 @@ function Dashboard({ onNavigate }: { onNavigate: (page: SidebarPage) => void }) 
     | { kind: 'tx';    date: string; item: Transaction }
 
   const agendaItems: AgendaItem[] = ([
-    ...allEvents.filter(e => e.date >= today).map(e => ({ kind: 'event' as const, date: e.date, item: e })),
+    ...allEvents.filter(e => e.date >= today && !e.id.startsWith('bill-')).map(e => ({ kind: 'event' as const, date: e.date, item: e })),
     ...pendingBills.map(b => ({ kind: 'bill' as const, date: b.dueDate, item: b })),
     ...txs.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4).map(t => ({ kind: 'tx' as const, date: t.date, item: t })),
   ] as AgendaItem[]).sort((a, b) => {
