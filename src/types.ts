@@ -130,6 +130,7 @@ export interface Bill {
   barcode?: string
   paidAt?: string
   notes?: string
+  vehicleId?: string
   createdAt: string
   updatedAt: string
 }

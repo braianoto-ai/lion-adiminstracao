@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react'
 import { useCloudTable } from '../hooks'
 import { IMOVEL_INIT, IMOVEL_TIPOS, PRODUTO_CATS, PRODUTO_INIT } from '../constants'
-import type { Imovel, Produto, Vehicle, DocMeta } from '../types'
+import type { Imovel, Produto, Vehicle, DocMeta, Bill } from '../types'
 import ImovelExpansion from './ImovelExpansion'
+import VehicleExpansion from './VehicleExpansion'
 
 export default 
 function PatrimonioPage() {
@@ -10,9 +11,11 @@ function PatrimonioPage() {
   const [produtos, setProdutos] = useCloudTable<Produto>('produtos', 'lion-produtos')
   const [vehicles, setVehicles] = useCloudTable<Vehicle>('vehicles', 'lion-vehicles')
   const [docs, setDocs] = useCloudTable<DocMeta>('documents', 'lion-docs-meta')
+  const [bills, setBills] = useCloudTable<Bill>('bills', 'lion-bills')
 
   const [tab, setTab] = useState<'imoveis' | 'veiculos' | 'produtos'>('imoveis')
   const [expandedImovelId, setExpandedImovelId] = useState<string | null>(null)
+  const [expandedVehicleId, setExpandedVehicleId] = useState<string | null>(null)
   const [showImovelForm, setShowImovelForm] = useState(false)
   const [editImovelId, setEditImovelId] = useState<string | null>(null)
   const [imovelForm, setImovelForm] = useState({ ...IMOVEL_INIT })
@@ -347,33 +350,48 @@ function PatrimonioPage() {
                 const valorCompra = v.valorCompra ?? (legacyCompra ? parseFloat(legacyCompra) : 0)
                 const valorAtual  = v.valorAtual  ?? (legacyAtual  ? parseFloat(legacyAtual)  : 0)
                 const gain = valorAtual > 0 && valorCompra > 0 ? valorAtual - valorCompra : 0
+                const isExpanded = expandedVehicleId === v.id
+                const vehDocCount = docs.filter(d => d.assetId === v.id).length
+                const vehBillCount = bills.filter(b => b.vehicleId === v.id && b.status !== 'pago').length
                 return (
-                  <div key={v.id} className="patr-card">
-                    <div className="patr-card-icon" style={{ background: 'rgba(245,158,11,.15)', color: 'var(--amber)' }}>
-                      <svg viewBox="0 0 20 20" fill="none"><rect x="1" y="8" width="18" height="8" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M4 8V7a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1" stroke="currentColor" strokeWidth="1.4"/><circle cx="5" cy="16" r="2" fill="currentColor"/><circle cx="15" cy="16" r="2" fill="currentColor"/></svg>
-                    </div>
-                    <div className="patr-card-body">
-                      <div className="patr-card-title">{v.name}{v.plate && <span className="patr-badge" style={{ marginLeft: 8 }}>{v.plate}</span>}</div>
-                      <div className="patr-card-meta">
-                        {v.year && <span>{v.year}</span>}
-                        {fmtKm(v.currentKm) && <span>{fmtKm(v.currentKm)}</span>}
-                        {v.ipvaExpiry && <span>IPVA: {v.ipvaExpiry.split('-').reverse().join('/')}</span>}
-                        {v.insuranceExpiry && <span>Seguro: {v.insuranceExpiry.split('-').reverse().join('/')}</span>}
+                  <div key={v.id} className={`patr-card patr-card-expandable${isExpanded ? ' patr-card-expanded' : ''}`}>
+                    <div className="patr-card-main" onClick={() => setExpandedVehicleId(isExpanded ? null : v.id)}>
+                      <div className="patr-card-icon" style={{ background: 'rgba(245,158,11,.15)', color: 'var(--amber)' }}>
+                        <svg viewBox="0 0 20 20" fill="none"><rect x="1" y="8" width="18" height="8" rx="2" stroke="currentColor" strokeWidth="1.4"/><path d="M4 8V7a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v1" stroke="currentColor" strokeWidth="1.4"/><circle cx="5" cy="16" r="2" fill="currentColor"/><circle cx="15" cy="16" r="2" fill="currentColor"/></svg>
                       </div>
-                      <div className="patr-card-values">
-                        {valorCompra > 0 && <span>Compra: {fmtR(valorCompra)}</span>}
-                        {valorAtual  > 0 && <span>Atual: {fmtR(valorAtual)}</span>}
-                        {gain !== 0 && <span className={gain > 0 ? 'patr-gain-pos' : 'patr-gain-neg'}>{gain > 0 ? '+' : ''}{fmtR(gain)}</span>}
+                      <div className="patr-card-body">
+                        <div className="patr-card-title">
+                          {v.name}{v.plate && <span className="patr-badge" style={{ marginLeft: 8 }}>{v.plate}</span>}
+                          {vehDocCount > 0 && <span className="patr-badge" style={{ marginLeft: 4, fontSize: 'calc(.65rem * var(--fs))' }}>{vehDocCount} doc{vehDocCount > 1 ? 's' : ''}</span>}
+                          {vehBillCount > 0 && <span className="patr-badge" style={{ marginLeft: 4, fontSize: 'calc(.65rem * var(--fs))', background: 'rgba(245,158,11,.15)', color: 'var(--amber)' }}>{vehBillCount} pendente{vehBillCount > 1 ? 's' : ''}</span>}
+                        </div>
+                        <div className="patr-card-meta">
+                          {v.year && <span>{v.year}</span>}
+                          {fmtKm(v.currentKm) && <span>{fmtKm(v.currentKm)}</span>}
+                          {v.ipvaExpiry && <span>IPVA: {v.ipvaExpiry.split('-').reverse().join('/')}</span>}
+                          {v.insuranceExpiry && <span>Seguro: {v.insuranceExpiry.split('-').reverse().join('/')}</span>}
+                        </div>
+                        <div className="patr-card-values">
+                          {valorCompra > 0 && <span>Compra: {fmtR(valorCompra)}</span>}
+                          {valorAtual  > 0 && <span>Atual: {fmtR(valorAtual)}</span>}
+                          {gain !== 0 && <span className={gain > 0 ? 'patr-gain-pos' : 'patr-gain-neg'}>{gain > 0 ? '+' : ''}{fmtR(gain)}</span>}
+                        </div>
                       </div>
+                      <div className="patr-card-actions">
+                        <button className="patr-icon-btn" onClick={e => { e.stopPropagation(); startEditVehicle(v) }} title="Editar">
+                          <svg viewBox="0 0 14 14" fill="none"><path d="M2 10l7-7 2 2-7 7H2v-2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
+                        </button>
+                        <button className="patr-icon-btn patr-icon-btn-del" onClick={e => { e.stopPropagation(); setVehicles(prev => prev.filter(x => x.id !== v.id)) }} title="Excluir">
+                          <svg viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+                        </button>
+                      </div>
+                      <svg className={`patr-chevron${isExpanded ? ' expanded' : ''}`} viewBox="0 0 16 16" fill="none">
+                        <path d="M4 6l4 4 4-4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/>
+                      </svg>
                     </div>
-                    <div className="patr-card-actions">
-                      <button className="patr-icon-btn" onClick={() => startEditVehicle(v)} title="Editar">
-                        <svg viewBox="0 0 14 14" fill="none"><path d="M2 10l7-7 2 2-7 7H2v-2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
-                      </button>
-                      <button className="patr-icon-btn patr-icon-btn-del" onClick={() => setVehicles(prev => prev.filter(x => x.id !== v.id))} title="Excluir">
-                        <svg viewBox="0 0 14 14" fill="none"><path d="M3 3l8 8M11 3l-8 8" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
-                      </button>
-                    </div>
+                    {isExpanded && (
+                      <VehicleExpansion vehicle={v} docs={docs} setDocs={setDocs} bills={bills} setBills={setBills} />
+                    )}
                   </div>
                 )
               })}
