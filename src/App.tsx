@@ -499,7 +499,7 @@ function Dashboard({ onNavigate }: { onNavigate: (page: SidebarPage) => void }) 
     | { kind: 'tx';    date: string; item: Transaction }
 
   const agendaItems: AgendaItem[] = ([
-    ...allEvents.filter(e => e.date >= today).map(e => ({ kind: 'event' as const, date: e.date, item: e })),
+    ...allEvents.filter(e => e.date >= today && !e.id.startsWith('bill-')).map(e => ({ kind: 'event' as const, date: e.date, item: e })),
     ...pendingBills.map(b => ({ kind: 'bill' as const, date: b.dueDate, item: b })),
     ...txs.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 4).map(t => ({ kind: 'tx' as const, date: t.date, item: t })),
   ] as AgendaItem[]).sort((a, b) => {
@@ -945,6 +945,8 @@ export default function App() {
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="4" width="16" height="14" rx="2"/><path d="M6 2v4M14 2v4M2 9h16" strokeLinecap="round"/></svg>, label: 'Calendário', active: sidebarPage === 'calendar', action: () => { setSidebarPage('calendar'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M3 9l7-6 7 6v9H3V9z" strokeLinejoin="round"/><path d="M7 18V12h6v6" strokeLinecap="round"/><rect x="10" y="4" width="6" height="5" rx="1" fill="currentColor" opacity=".2" stroke="none"/></svg>, label: 'Patrimônio', active: sidebarPage === 'patrimonio', action: () => { setSidebarPage('patrimonio'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 16l4-3 3 2 4-5 5 3" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 18h16" strokeLinecap="round"/><circle cx="16" cy="5" r="2" fill="currentColor" opacity=".3" stroke="none"/></svg>, label: 'Terra', active: sidebarPage === 'terra', action: () => { setSidebarPage('terra'); setShowSidebar(false) } },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M2 10h3l2-6 3 12 2-8 2 4 2-2h2" strokeLinecap="round" strokeLinejoin="round"/></svg>, label: 'Viagens', active: sidebarPage === 'trips', action: () => { setSidebarPage('trips'); setShowSidebar(false) } },
+            { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="7"/><circle cx="10" cy="10" r="3"/><path d="M10 3v2M10 15v2M3 10h2M15 10h2" strokeLinecap="round"/></svg>, label: 'Metas', active: sidebarPage === 'goals', action: () => { setSidebarPage('goals'); setShowSidebar(false) } },
             { divider: true, label: 'Sistema' },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="10" cy="10" r="7"/><path d="M10 7v3l2 2" strokeLinecap="round"/><circle cx="10" cy="3" r="1" fill="currentColor" stroke="none"/><circle cx="10" cy="17" r="1" fill="currentColor" stroke="none"/><circle cx="3" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="17" cy="10" r="1" fill="currentColor" stroke="none"/></svg>, label: 'Aparência', active: sidebarPage === 'appearance', action: () => { setSidebarPage('appearance'); setShowSidebar(false) } },
             { icon: <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 2h4M10 2v3M7 5h6a1 1 0 0 1 1 1v1H6V6a1 1 0 0 1 1-1zM5 7h10l-1 10H6L5 7z" strokeLinejoin="round"/></svg>, label: 'Configurações', active: sidebarPage === 'settings', action: () => { setSidebarPage('settings'); setShowSidebar(false) } },
