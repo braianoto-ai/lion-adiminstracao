@@ -10,6 +10,7 @@ import type { ModalType, SidebarPage, TerraFazenda, TerraTalhao, Folder, Goal, T
 import { TALHAO_USOS } from './constants'
 import { effectiveStatus, buildAutoEvents, fmtCurrency } from './utils'
 import TerraPage from './pages/TerraPage'
+import LandingPage from './pages/LandingPage'
 import PublicMapPage from './pages/PublicMapPage'
 import PaymentHubPage from './pages/PaymentHubPage'
 import PatrimonioPage from './pages/PatrimonioPage'
@@ -898,7 +899,10 @@ export default function App() {
   // Public map route — no auth required
   if (window.location.hash.startsWith('#/mapa')) return <PublicMapPage />
 
-  if (supabase && !user) return <LoginPage />
+  if (supabase && !user) {
+    if (window.location.hash === '#/login') return <LoginPage />
+    return <LandingPage />
+  }
 
   return (
     <UserCtx.Provider value={user?.id}>
