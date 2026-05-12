@@ -6320,14 +6320,33 @@ html[data-theme="light"] .patr-upload-form { background: var(--bg2) }
 .terra-map-toggle { padding: 7px 16px; font-size: calc(.78rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all .2s; font-weight: 500 }
 .terra-map-toggle:hover { border-color: var(--purple); color: var(--text3) }
 .terra-map-toggle.active { background: var(--purple); color: #fff; border-color: var(--purple); box-shadow: 0 2px 8px rgba(139,92,246,.25) }
-.terra-weather-widget { position: absolute; bottom: 28px; left: 10px; z-index: 999; background: rgba(24,24,27,.88); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 10px 14px; min-width: 140px; box-shadow: 0 4px 16px rgba(0,0,0,.3); pointer-events: none }
+.terra-weather-widget { position: absolute; bottom: 28px; left: 10px; z-index: 999; background: rgba(24,24,27,.88); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 10px 14px; min-width: 140px; box-shadow: 0 4px 16px rgba(0,0,0,.3); pointer-events: auto; cursor: pointer; transition: border-color .2s, box-shadow .2s; user-select: none }
+.terra-weather-widget:hover { border-color: rgba(139,92,246,.5); box-shadow: 0 4px 20px rgba(0,0,0,.4) }
 .terra-weather-main { display: flex; align-items: center; gap: 8px; margin-bottom: 2px }
 .terra-weather-icon { font-size: 1.6rem; line-height: 1 }
 .terra-weather-temp { font-size: calc(1.3rem * var(--fs)); font-weight: 700; color: var(--text3) }
+.terra-wx-chevron { margin-left: auto; font-size: 10px; color: var(--text2); line-height: 1 }
 .terra-weather-label { font-size: calc(.72rem * var(--fs)); color: var(--text); margin-bottom: 6px }
 .terra-weather-stats { display: flex; flex-direction: column; gap: 2px }
 .terra-weather-stats span { font-size: calc(.7rem * var(--fs)); color: var(--text2) }
 .terra-weather-loading, .terra-weather-na { font-size: calc(.72rem * var(--fs)); color: var(--text) }
+.terra-weather-panel { position: absolute; bottom: 132px; left: 10px; width: 248px; z-index: 998; background: rgba(24,24,27,.95); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 10px 12px; box-shadow: 0 4px 16px rgba(0,0,0,.35) }
+.terra-wx-tabs { display: flex; gap: 4px; margin-bottom: 10px }
+.terra-wx-tab { flex: 1; padding: 4px 2px; font-size: calc(.7rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all .15s }
+.terra-wx-tab.active { background: var(--purple); color: #fff; border-color: var(--purple) }
+.terra-wx-row { display: flex; align-items: center; gap: 6px; padding: 5px 0; border-bottom: 1px solid rgba(255,255,255,.05); font-size: calc(.7rem * var(--fs)) }
+.terra-wx-row:last-child { border-bottom: none }
+.terra-wx-day { width: 68px; color: var(--text2); flex-shrink: 0 }
+.terra-wx-icon { font-size: .95rem; flex-shrink: 0 }
+.terra-wx-temps { flex: 1; color: var(--text3); font-weight: 600 }
+.terra-wx-rain { color: #60a5fa; font-size: calc(.68rem * var(--fs)); min-width: 36px; text-align: right }
+.terra-wx-hours { display: flex; gap: 3px; align-items: flex-end; height: 80px }
+.terra-wx-hour { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px }
+.terra-wx-bar-wrap { flex: 1; display: flex; align-items: flex-end; width: 100% }
+.terra-wx-bar { width: 100%; background: linear-gradient(to top, #2563eb, #60a5fa); border-radius: 2px 2px 0 0; transition: height .3s }
+.terra-wx-hlabel { font-size: 9px; color: var(--text2) }
+.terra-wx-htemp { font-size: calc(.68rem * var(--fs)); color: var(--text3); font-weight: 600 }
+.terra-wx-hprob { font-size: 8px; color: #60a5fa }
 .terra-radar-btn { border-color: #3b82f6 !important }
 .terra-radar-btn.active { background: #1d4ed8 !important; border-color: #1d4ed8 !important }
 .terra-radar-bar { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 999; background: rgba(24,24,27,.88); backdrop-filter: blur(8px); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(0,0,0,.3) }
