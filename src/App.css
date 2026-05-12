@@ -6330,7 +6330,7 @@ html[data-theme="light"] .patr-upload-form { background: var(--bg2) }
 .terra-weather-stats { display: flex; flex-direction: column; gap: 2px }
 .terra-weather-stats span { font-size: calc(.7rem * var(--fs)); color: var(--text2) }
 .terra-weather-loading, .terra-weather-na { font-size: calc(.72rem * var(--fs)); color: var(--text) }
-.terra-weather-panel { position: absolute; bottom: 132px; left: 10px; width: 248px; z-index: 998; background: rgba(24,24,27,.95); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 10px 12px; box-shadow: 0 4px 16px rgba(0,0,0,.35) }
+.terra-weather-panel { position: absolute; bottom: 132px; left: 10px; width: 248px; z-index: 1001; background: rgba(24,24,27,.95); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 10px 12px; box-shadow: 0 4px 16px rgba(0,0,0,.35) }
 .terra-wx-tabs { display: flex; gap: 4px; margin-bottom: 10px }
 .terra-wx-tab { flex: 1; padding: 4px 2px; font-size: calc(.7rem * var(--fs)); border-radius: var(--radius); border: 1px solid var(--border); background: var(--bg2); color: var(--text2); cursor: pointer; transition: all .15s }
 .terra-wx-tab.active { background: var(--purple); color: #fff; border-color: var(--purple) }
