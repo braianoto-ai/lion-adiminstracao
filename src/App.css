@@ -666,6 +666,82 @@
   position: relative;
   transition: opacity .15s;
 }
+/* ── Register Page ────────────────────────────────── */
+.login-switch {
+  margin-top: 18px;
+  text-align: center;
+  font-size: calc(13px * var(--fs, 1));
+  color: var(--text2);
+}
+.login-switch-link {
+  background: none;
+  border: none;
+  color: var(--purple);
+  cursor: pointer;
+  font-size: inherit;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.login-switch-link:hover { color: var(--text) }
+
+.register-strength {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+.register-strength-bars {
+  display: flex;
+  gap: 3px;
+  flex: 1;
+}
+.register-strength-bar {
+  flex: 1;
+  height: 3px;
+  border-radius: 2px;
+  transition: background .2s;
+}
+.register-strength-label {
+  font-size: 11px;
+  font-weight: 600;
+  min-width: 72px;
+  text-align: right;
+}
+.register-mismatch {
+  font-size: 11px;
+  color: var(--red);
+  margin-top: 4px;
+}
+.register-match {
+  font-size: 11px;
+  color: var(--green);
+  margin-top: 4px;
+}
+
+/* ── Register Success ─────────────────────────────── */
+.register-success {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0 4px;
+  text-align: center;
+}
+.register-success-icon { margin-bottom: 4px }
+.register-success-title {
+  font-size: calc(1.25rem * var(--fs, 1));
+  font-weight: 700;
+  color: var(--text);
+  margin: 0;
+}
+.register-success-desc {
+  font-size: calc(13px * var(--fs, 1));
+  color: var(--text2);
+  line-height: 1.55;
+  margin: 0;
+}
+
 .drag-section[draggable="true"] { cursor: default }
 .drag-section.drag-over { opacity: .5 }
 
