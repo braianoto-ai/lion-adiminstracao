@@ -86,6 +86,13 @@ export default function LoginPage() {
             {loading ? 'Entrando…' : 'Entrar'}
           </button>
         </form>
+
+        <p className="login-switch">
+          Não tem uma conta?{' '}
+          <button className="login-switch-link" onClick={() => window.location.hash = '#/register'}>
+            Criar conta
+          </button>
+        </p>
       </div>
     </div>
   )

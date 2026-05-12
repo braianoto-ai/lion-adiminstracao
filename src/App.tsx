@@ -3,6 +3,7 @@ import L from 'leaflet'
 import './App.css'
 import { supabase } from './lib/supabase'
 import LoginPage from './LoginPage'
+import RegisterPage from './RegisterPage'
 import type { User } from '@supabase/supabase-js'
 import { UserCtx, DATA_KEYS } from './context'
 import { useCloudTable, useSyncError } from './hooks'
@@ -901,6 +902,7 @@ export default function App() {
 
   if (supabase && !user) {
     if (window.location.hash === '#/login') return <LoginPage />
+    if (window.location.hash === '#/register') return <RegisterPage />
     return <LandingPage />
   }
 
