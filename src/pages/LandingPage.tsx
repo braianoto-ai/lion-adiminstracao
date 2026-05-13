@@ -275,6 +275,104 @@ export default function LandingPage() {
         </div>
       </section>
 
+
+      {/* ── Família & Metas ─────────────────────────── */}
+      <section className="landing-famgoals">
+        <div className="landing-famgoals-inner">
+
+          {/* Text */}
+          <div className="landing-famgoals-text">
+            <div className="landing-badge" style={{ marginBottom: 20 }}>
+              <span className="landing-badge-dot" style={{ background: '#f59e0b' }} />
+              Família & Metas
+            </div>
+            <h2 className="landing-famgoals-title">
+              Gestão por pessoa,<br />
+              <span className="landing-famgoals-accent">objetivos no foco</span>
+            </h2>
+            <p className="landing-famgoals-sub">
+              Perfis individuais por membro da família com gastos, papéis
+              e histórico. Metas financeiras com projeção mensal automática.
+            </p>
+            <div className="landing-famgoals-feats">
+              {[
+                { icon: '👤', title: 'Perfil por membro', desc: 'Gastos, papel na família e histórico individual.' },
+                { icon: '🎯', title: 'Metas com prazo', desc: 'Defina objetivos, acompanhe progresso e receba projeção de aporte.' },
+                { icon: '⚠️', title: 'Alertas de urgência', desc: 'Metas com prazo próximo destacadas automaticamente.' },
+                { icon: '💰', title: 'Depósito rápido', desc: 'Adicione valores às metas em um clique, sem formulário.' },
+              ].map(({ icon, title, desc }) => (
+                <div key={title} className="landing-famgoals-feat">
+                  <span className="landing-famgoals-feat-icon">{icon}</span>
+                  <div>
+                    <div className="landing-famgoals-feat-title">{title}</div>
+                    <div className="landing-famgoals-feat-desc">{desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Mockup cards */}
+          <div className="landing-famgoals-mockup">
+
+            {/* Família card */}
+            <div className="lfg-card">
+              <div className="lfg-card-header">
+                <span className="lfg-card-title">Membros da família</span>
+                <span className="lfg-card-count">4 membros</span>
+              </div>
+              <div className="lfg-members">
+                {[
+                  { name: 'Braian', role: 'Titular', spent: 'R$ 3.200', color: '#3b82f6', initials: 'B' },
+                  { name: 'Ana',    role: 'Cônjuge', spent: 'R$ 1.840', color: '#ec4899', initials: 'A' },
+                  { name: 'Lucas',  role: 'Filho',   spent: 'R$ 420',   color: '#f59e0b', initials: 'L' },
+                  { name: 'Sofia',  role: 'Filha',   spent: 'R$ 380',   color: '#8b5cf6', initials: 'S' },
+                ].map(({ name, role, spent, color, initials }) => (
+                  <div key={name} className="lfg-member">
+                    <div className="lfg-avatar" style={{ background: `${color}22`, border: `1.5px solid ${color}55`, color }}>{initials}</div>
+                    <div className="lfg-member-info">
+                      <span className="lfg-member-name">{name}</span>
+                      <span className="lfg-member-role">{role}</span>
+                    </div>
+                    <span className="lfg-member-spent">{spent}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Metas card */}
+            <div className="lfg-card" style={{ marginTop: 12 }}>
+              <div className="lfg-card-header">
+                <span className="lfg-card-title">Metas financeiras</span>
+                <span className="lfg-badge-done">✓ 1 concluída</span>
+              </div>
+              <div className="lfg-goals">
+                {[
+                  { name: 'Casa própria',   pct: 68, color: '#3b82f6', current: 'R$ 136k', target: 'R$ 200k', deadline: '8m' },
+                  { name: 'Viagem Europa',  pct: 42, color: '#8b5cf6', current: 'R$ 8.4k',  target: 'R$ 20k',  deadline: '⚠ 22d' },
+                  { name: 'Reserva 12 meses', pct: 91, color: '#10b981', current: 'R$ 54.6k', target: 'R$ 60k',  deadline: null },
+                ].map(({ name, pct, color, current, target, deadline }) => (
+                  <div key={name} className="lfg-goal">
+                    <div className="lfg-goal-top">
+                      <span className="lfg-goal-name">{name}</span>
+                      <span className="lfg-goal-deadline" style={{ color: deadline?.startsWith('⚠') ? '#f59e0b' : '#6b7280' }}>{deadline ?? '—'}</span>
+                    </div>
+                    <div className="lfg-goal-amounts">
+                      <span>{current}</span><span className="lfg-goal-sep">/</span><span style={{ color: '#6b7280' }}>{target}</span>
+                    </div>
+                    <div className="lfg-goal-track">
+                      <div className="lfg-goal-fill" style={{ width: `${pct}%`, background: color }} />
+                    </div>
+                    <span className="lfg-goal-pct" style={{ color }}>{pct}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
       {/* ── CTA Bottom ───────────────────────────────── */}
       <section className="landing-bottom-cta">
         <div className="landing-bottom-cta-glow" />

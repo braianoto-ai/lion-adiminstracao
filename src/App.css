@@ -7006,3 +7006,62 @@ html[data-theme="light"] .terra-field textarea { background: var(--bg2) }
   .landing-footer { flex-direction: column; gap: 8px; text-align: center; padding: 20px }
 }
 
+/* ── Landing Família & Metas ─────────────────────── */
+.landing-famgoals { padding: 80px 40px; background: linear-gradient(180deg, transparent 0%, rgba(245,158,11,.02) 50%, transparent 100%) }
+.landing-famgoals-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: flex-start; gap: 64px }
+
+.landing-famgoals-text { flex: 1; min-width: 0 }
+.landing-famgoals-title { font-size: clamp(1.8rem, 3.5vw, 2.8rem); font-weight: 800; color: #fff; line-height: 1.15; letter-spacing: -.03em; margin: 0 0 16px }
+.landing-famgoals-accent { background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text }
+.landing-famgoals-sub { font-size: 1rem; color: #9ca3af; line-height: 1.7; margin: 0 0 32px; max-width: 420px }
+
+.landing-famgoals-feats { display: flex; flex-direction: column; gap: 12px }
+.landing-famgoals-feat { display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,.06); background: rgba(255,255,255,.025); backdrop-filter: blur(8px); transition: all .2s }
+.landing-famgoals-feat:hover { border-color: rgba(245,158,11,.35); background: rgba(245,158,11,.06) }
+.landing-famgoals-feat-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px }
+.landing-famgoals-feat-title { font-size: .9rem; font-weight: 600; color: #f1f1f1; margin-bottom: 2px }
+.landing-famgoals-feat-desc { font-size: .78rem; color: #6b7280; line-height: 1.5 }
+
+/* Mockup */
+.landing-famgoals-mockup { flex-shrink: 0; width: 380px }
+
+.lfg-card { background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 16px; padding: 18px; backdrop-filter: blur(12px) }
+.lfg-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px }
+.lfg-card-title { font-size: .82rem; font-weight: 600; color: #e5e5e5 }
+.lfg-card-count { font-size: .7rem; color: #6b7280; background: rgba(255,255,255,.05); padding: 2px 8px; border-radius: 20px }
+.lfg-badge-done { font-size: .7rem; color: #10b981; background: rgba(16,185,129,.1); border: 1px solid rgba(16,185,129,.2); padding: 2px 8px; border-radius: 20px }
+
+/* Members */
+.lfg-members { display: flex; flex-direction: column; gap: 10px }
+.lfg-member { display: flex; align-items: center; gap: 10px }
+.lfg-avatar { width: 32px; height: 32px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .78rem; font-weight: 700; flex-shrink: 0 }
+.lfg-member-info { flex: 1; display: flex; flex-direction: column; gap: 1px }
+.lfg-member-name { font-size: .82rem; font-weight: 600; color: #e5e5e5 }
+.lfg-member-role { font-size: .68rem; color: #6b7280 }
+.lfg-member-spent { font-size: .78rem; font-weight: 600; color: #a3a3a3 }
+
+/* Goals */
+.lfg-goals { display: flex; flex-direction: column; gap: 12px }
+.lfg-goal { display: flex; flex-direction: column; gap: 3px }
+.lfg-goal-top { display: flex; justify-content: space-between; align-items: center }
+.lfg-goal-name { font-size: .8rem; font-weight: 600; color: #e5e5e5 }
+.lfg-goal-deadline { font-size: .7rem; font-weight: 600 }
+.lfg-goal-amounts { display: flex; align-items: center; gap: 4px; font-size: .72rem; color: #a3a3a3 }
+.lfg-goal-sep { color: #4b5563 }
+.lfg-goal-track { height: 5px; background: rgba(255,255,255,.07); border-radius: 3px; overflow: hidden; margin: 2px 0 }
+.lfg-goal-fill { height: 100%; border-radius: 3px; transition: width .6s }
+.lfg-goal-pct { font-size: .7rem; font-weight: 700; align-self: flex-end }
+
+@media (max-width: 1024px) {
+  .landing-famgoals-inner { gap: 40px }
+  .landing-famgoals-mockup { width: 340px }
+}
+@media (max-width: 860px) {
+  .landing-famgoals-inner { flex-direction: column }
+  .landing-famgoals-mockup { width: 100%; max-width: 460px; align-self: center }
+  .landing-famgoals-sub { max-width: 100% }
+}
+@media (max-width: 560px) {
+  .landing-famgoals { padding: 60px 20px }
+}
+
