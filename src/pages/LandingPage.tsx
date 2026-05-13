@@ -373,6 +373,126 @@ export default function LandingPage() {
         </div>
       </section>
 
+
+      {/* ── Depoimentos ─────────────────────────────── */}
+      <section className="landing-testimonials">
+        <div className="landing-testimonials-inner">
+          <h2 className="landing-section-title">O que dizem os usuários</h2>
+          <p className="landing-section-sub" style={{ marginBottom: 40 }}>Produtores rurais e famílias que organizam sua vida financeira com o Lion</p>
+          <div className="landing-testimonials-grid">
+            {[
+              {
+                quote: 'Finalmente consigo ver todos os talhões da fazenda no mapa e anotar cada plantio. Nunca foi tão fácil controlar o que acontece em cada área.',
+                name: 'Roberto Alves',
+                role: 'Produtor rural · Mato Grosso',
+                initials: 'RA',
+                color: '#84cc16',
+              },
+              {
+                quote: 'O painel de metas me ajudou a planejar a compra da casa própria. Ver o progresso todo mês me motiva a depositar mais.',
+                name: 'Camila Souza',
+                role: 'Gestora financeira · São Paulo',
+                initials: 'CS',
+                color: '#8b5cf6',
+              },
+              {
+                quote: 'Controlo as finanças de toda a família, com gastos separados por pessoa. Meu marido e filhos têm cada um seu perfil.',
+                name: 'Fernanda Lima',
+                role: 'Empresária · Paraná',
+                initials: 'FL',
+                color: '#f59e0b',
+              },
+            ].map(({ quote, name, role, initials, color }) => (
+              <div key={name} className="landing-testimonial-card">
+                <div className="ltc-stars">{'★★★★★'}</div>
+                <p className="ltc-quote">"{quote}"</p>
+                <div className="ltc-author">
+                  <div className="ltc-avatar" style={{ background: `${color}22`, border: `1.5px solid ${color}55`, color }}>{initials}</div>
+                  <div>
+                    <div className="ltc-name">{name}</div>
+                    <div className="ltc-role">{role}</div>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── Disponível em todo dispositivo ───────────── */}
+      <section className="landing-devices">
+        <div className="landing-devices-inner">
+          <div className="landing-devices-text">
+            <div className="landing-badge" style={{ marginBottom: 20 }}>
+              <span className="landing-badge-dot" style={{ background: '#06b6d4' }} />
+              Multi-plataforma
+            </div>
+            <h2 className="landing-devices-title">
+              Acesse de qualquer<br />
+              <span className="landing-devices-accent">dispositivo</span>
+            </h2>
+            <p className="landing-devices-sub">
+              Progressive Web App — instale no celular, use no tablet ou desktop.
+              Funciona offline e sincroniza quando volta a internet.
+            </p>
+            <div className="landing-devices-items">
+              {[
+                { icon: '📱', label: 'Mobile', desc: 'iOS e Android via PWA' },
+                { icon: '💻', label: 'Desktop', desc: 'Chrome, Safari, Firefox' },
+                { icon: '📡', label: 'Offline-first', desc: 'Dados salvos localmente' },
+                { icon: '🔄', label: 'Sync automático', desc: 'Supabase em tempo real' },
+              ].map(({ icon, label, desc }) => (
+                <div key={label} className="landing-device-item">
+                  <span className="landing-device-icon">{icon}</span>
+                  <div>
+                    <div className="landing-device-label">{label}</div>
+                    <div className="landing-device-desc">{desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Device mockups */}
+          <div className="landing-devices-mockups">
+            {/* Desktop frame */}
+            <div className="ldm-desktop">
+              <div className="ldm-desktop-bar">
+                <span /><span /><span />
+              </div>
+              <div className="ldm-desktop-screen">
+                <div className="ldm-screen-sidebar">
+                  {['◈','◉','◎','⊞','◷'].map((ic, i) => (
+                    <div key={i} className={`ldm-sidebar-item${i === 0 ? ' active' : ''}`}>{ic}</div>
+                  ))}
+                </div>
+                <div className="ldm-screen-content">
+                  <div className="ldm-content-bar ldm-bar-blue" />
+                  <div className="ldm-content-bar ldm-bar-green" style={{ width: '70%' }} />
+                  <div className="ldm-content-bar ldm-bar-purple" style={{ width: '85%' }} />
+                  <div className="ldm-content-row">
+                    <div className="ldm-mini-card" />
+                    <div className="ldm-mini-card" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Mobile frame */}
+            <div className="ldm-mobile">
+              <div className="ldm-mobile-notch" />
+              <div className="ldm-mobile-screen">
+                <div className="ldm-mob-bar ldm-bar-blue" />
+                <div className="ldm-mob-bar ldm-bar-green" style={{ width: '60%' }} />
+                <div className="ldm-mob-bar" style={{ width: '80%', background: 'rgba(255,255,255,.06)' }} />
+                <div className="ldm-mob-bar" style={{ width: '50%', background: 'rgba(255,255,255,.04)' }} />
+              </div>
+              <div className="ldm-mobile-home" />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── CTA Bottom ───────────────────────────────── */}
       <section className="landing-bottom-cta">
         <div className="landing-bottom-cta-glow" />
