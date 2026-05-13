@@ -1,0 +1,87 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#080810"/>
+      <stop offset="100%" stop-color="#0d0d1a"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+    <radialGradient id="glow1" cx="30%" cy="40%" r="50%">
+      <stop offset="0%" stop-color="#3b82f6" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#3b82f6" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="glow2" cx="75%" cy="60%" r="45%">
+      <stop offset="0%" stop-color="#8b5cf6" stop-opacity="0.12"/>
+      <stop offset="100%" stop-color="#8b5cf6" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <rect width="1200" height="630" fill="url(#glow1)"/>
+  <rect width="1200" height="630" fill="url(#glow2)"/>
+
+  <!-- Border -->
+  <rect x="1" y="1" width="1198" height="628" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+
+  <!-- Logo icon -->
+  <circle cx="96" cy="96" r="28" fill="rgba(59,130,246,0.15)" stroke="#3b82f6" stroke-width="1.5"/>
+  <path d="M84 108l8-20 4 10 4-6 8 16" stroke="#3b82f6" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+
+  <!-- Brand name -->
+  <text x="136" y="105" font-family="system-ui,-apple-system,sans-serif" font-weight="700" font-size="28" fill="white" letter-spacing="-0.5">Lion Admin</text>
+
+  <!-- Main headline -->
+  <text x="96" y="240" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="72" fill="white" letter-spacing="-2">Controle total das</text>
+  <text x="96" y="330" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="72" fill="white" letter-spacing="-2">suas finanças e</text>
+
+  <!-- Accent word -->
+  <defs>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+  </defs>
+  <text x="96" y="420" font-family="system-ui,-apple-system,sans-serif" font-weight="800" font-size="72" fill="url(#textGrad)" letter-spacing="-2">patrimônio</text>
+
+  <!-- Subtitle -->
+  <text x="96" y="490" font-family="system-ui,-apple-system,sans-serif" font-weight="400" font-size="26" fill="#9ca3af">Finanças · Fazendas · Família · Metas · Câmbio ao vivo</text>
+
+  <!-- Modules pills -->
+  <rect x="96" y="530" width="110" height="36" rx="18" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.35)" stroke-width="1"/>
+  <text x="151" y="553" font-family="system-ui,-apple-system,sans-serif" font-size="14" fill="#10b981" text-anchor="middle">Finanças</text>
+
+  <rect x="218" y="530" width="90" height="36" rx="18" fill="rgba(59,130,246,0.12)" stroke="rgba(59,130,246,0.35)" stroke-width="1"/>
+  <text x="263" y="553" font-family="system-ui,-apple-system,sans-serif" font-size="14" fill="#60a5fa" text-anchor="middle">Terra</text>
+
+  <rect x="320" y="530" width="110" height="36" rx="18" fill="rgba(245,158,11,0.12)" stroke="rgba(245,158,11,0.35)" stroke-width="1"/>
+  <text x="375" y="553" font-family="system-ui,-apple-system,sans-serif" font-size="14" fill="#f59e0b" text-anchor="middle">Família</text>
+
+  <rect x="442" y="530" width="90" height="36" rx="18" fill="rgba(139,92,246,0.12)" stroke="rgba(139,92,246,0.35)" stroke-width="1"/>
+  <text x="487" y="553" font-family="system-ui,-apple-system,sans-serif" font-size="14" fill="#a78bfa" text-anchor="middle">Metas</text>
+
+  <rect x="544" y="530" width="130" height="36" rx="18" fill="rgba(239,68,68,0.12)" stroke="rgba(239,68,68,0.35)" stroke-width="1"/>
+  <text x="609" y="553" font-family="system-ui,-apple-system,sans-serif" font-size="14" fill="#f87171" text-anchor="middle">Pagamentos</text>
+
+  <!-- Right side cards mockup -->
+  <rect x="820" y="160" width="300" height="120" rx="16" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="848" y="196" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#6b7280" letter-spacing="1">PATRIMÔNIO TOTAL</text>
+  <text x="848" y="238" font-family="system-ui,-apple-system,sans-serif" font-weight="700" font-size="36" fill="white">R$ 2.4M</text>
+  <text x="848" y="265" font-family="system-ui,-apple-system,sans-serif" font-size="15" fill="#10b981">↑ 8.2%</text>
+
+  <rect x="820" y="300" width="140" height="110" rx="16" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="848" y="332" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#6b7280" letter-spacing="0.5">SALDO MÊS</text>
+  <text x="848" y="368" font-family="system-ui,-apple-system,sans-serif" font-weight="700" font-size="24" fill="white">R$ 12.840</text>
+  <text x="848" y="395" font-family="system-ui,-apple-system,sans-serif" font-size="14" fill="#10b981">↑ 3.1%</text>
+
+  <rect x="980" y="300" width="140" height="110" rx="16" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="1008" y="332" font-family="system-ui,-apple-system,sans-serif" font-size="13" fill="#6b7280" letter-spacing="0.5">METAS</text>
+  <rect x="1008" y="348" width="84" height="6" rx="3" fill="rgba(59,130,246,0.3)"/>
+  <rect x="1008" y="348" width="57" height="6" rx="3" fill="#3b82f6"/>
+  <rect x="1008" y="364" width="84" height="6" rx="3" fill="rgba(16,185,129,0.3)"/>
+  <rect x="1008" y="364" width="35" height="6" rx="3" fill="#10b981"/>
+  <rect x="1008" y="380" width="84" height="6" rx="3" fill="rgba(139,92,246,0.3)"/>
+  <rect x="1008" y="380" width="76" height="6" rx="3" fill="#8b5cf6"/>
+</svg>
