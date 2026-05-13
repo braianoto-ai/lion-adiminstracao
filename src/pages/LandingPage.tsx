@@ -530,6 +530,110 @@ export default function LandingPage() {
         </div>
       </section>
 
+
+      <div className="landing-section-divider" />
+
+      {/* ── Preços ───────────────────────────────────── */}
+      <section className="landing-pricing lp-fade">
+        <div className="landing-pricing-inner">
+          <h2 className="landing-section-title">Simples e transparente</h2>
+          <p className="landing-section-sub" style={{ marginBottom: 48 }}>Um plano completo. Sem surpresas, sem limites.</p>
+
+          <div className="landing-pricing-cards">
+
+            {/* Plano mensal */}
+            <div className="lpr-card lpr-card-featured">
+              <div className="lpr-badge">Mais popular</div>
+              <div className="lpr-plan">Plano Completo</div>
+              <div className="lpr-price-row">
+                <span className="lpr-currency">R$</span>
+                <span className="lpr-amount">49</span>
+                <span className="lpr-period">/mês</span>
+              </div>
+              <p className="lpr-desc">Acesso total a todos os 9 módulos para você e sua família.</p>
+
+              <ul className="lpr-features">
+                {[
+                  'Finanças com câmbio ao vivo',
+                  'Patrimônio: imóveis, veículos e produtos',
+                  'Mapa Terra com talhões e radar',
+                  'Gestão familiar com perfis individuais',
+                  'Metas financeiras com projeção',
+                  'Pagamentos e alertas automáticos',
+                  'Calendário unificado',
+                  'Dashboard com visão geral',
+                  'Sincronização em tempo real',
+                  'Funciona offline (PWA)',
+                  'Suporte prioritário',
+                ].map(f => (
+                  <li key={f} className="lpr-feature-item">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
+                      <circle cx="8" cy="8" r="7" fill="rgba(59,130,246,.15)" stroke="rgba(59,130,246,.4)" strokeWidth="1"/>
+                      <path d="M5 8l2 2 4-4" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+
+              <button className="lpr-cta" onClick={() => window.location.hash = '#/register'}>
+                Começar agora
+                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 8h10M9 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              <p className="lpr-cancel">Cancele quando quiser · Sem fidelidade</p>
+            </div>
+
+            {/* Plano anual */}
+            <div className="lpr-card lpr-card-annual">
+              <div className="lpr-badge lpr-badge-green">Economize 20%</div>
+              <div className="lpr-plan">Plano Anual</div>
+              <div className="lpr-price-row">
+                <span className="lpr-currency">R$</span>
+                <span className="lpr-amount">39</span>
+                <span className="lpr-period">/mês</span>
+              </div>
+              <p className="lpr-annual-total">Cobrado R$ 468/ano</p>
+              <p className="lpr-desc">Tudo do plano mensal com desconto de 20% no pagamento anual.</p>
+
+              <ul className="lpr-features">
+                {[
+                  'Tudo do plano mensal',
+                  '2 meses grátis por ano',
+                  'Suporte prioritário VIP',
+                  'Acesso antecipado a novidades',
+                ].map(f => (
+                  <li key={f} className="lpr-feature-item">
+                    <svg viewBox="0 0 16 16" width="14" height="14" fill="none">
+                      <circle cx="8" cy="8" r="7" fill="rgba(16,185,129,.15)" stroke="rgba(16,185,129,.4)" strokeWidth="1"/>
+                      <path d="M5 8l2 2 4-4" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    {f}
+                  </li>
+                ))}
+              </ul>
+
+              <button className="lpr-cta lpr-cta-green" onClick={() => window.location.hash = '#/register'}>
+                Assinar anual
+                <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 8h10M9 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </button>
+              <p className="lpr-cancel">Renovação automática · Cancele antes do vencimento</p>
+            </div>
+
+          </div>
+
+          <p className="lpr-guarantee">
+            <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="#10b981" strokeWidth="1.5">
+              <path d="M10 2l2.4 4.8 5.3.8-3.8 3.7.9 5.3L10 14l-4.8 2.6.9-5.3L2.3 7.6l5.3-.8L10 2z" strokeLinejoin="round"/>
+            </svg>
+            Garantia de 7 dias · Se não gostar, devolvemos 100% do valor
+          </p>
+        </div>
+      </section>
+
       {/* ── CTA Bottom ───────────────────────────────── */}
       <section className="landing-bottom-cta lp-fade">
         <div className="landing-bottom-cta-glow" />
