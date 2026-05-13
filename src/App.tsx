@@ -813,6 +813,13 @@ export default function App() {
 
   const [user, setUser] = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(false)
+  const [hash, setHash] = useState(window.location.hash)
+
+  useEffect(() => {
+    const onHash = () => setHash(window.location.hash)
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
 
   useEffect(() => {
     if (!supabase) { setAuthReady(true); return }
@@ -902,11 +909,11 @@ export default function App() {
   if (!authReady) return null
 
   // Public map route — no auth required
-  if (window.location.hash.startsWith('#/mapa')) return <PublicMapPage />
+  if (hash.startsWith('#/mapa')) return <PublicMapPage />
 
   if (supabase && !user) {
-    if (window.location.hash === '#/login') return <LoginPage />
-    if (window.location.hash === '#/register') return <RegisterPage />
+    if (hash === '#/login') return <LoginPage />
+    if (hash === '#/register') return <RegisterPage />
     return <LandingPage />
   }
 
