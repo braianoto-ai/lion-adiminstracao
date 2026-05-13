@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useCloudTable } from '../hooks'
 import { TX_CATEGORIES } from '../constants'
 import type { Transaction, TxType } from '../types'
+import { exportTransactionsCSV, exportTransactionsPDF } from '../exportUtils'
 
 
 function parseNubankCSV(text: string): Omit<Transaction, 'id'>[] {
@@ -222,6 +223,7 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
             <svg viewBox="0 0 14 14" fill="none" style={{width:12,height:12,marginRight:4,verticalAlign:'middle'}}><path d="M7 2v7M4 6l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 10v1a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
             Importar
           </button>
+          <ExportMenu onCSV={() => exportTransactionsCSV(txs)} onPDF={() => exportTransactionsPDF(txs)} disabled={txs.length === 0} />
         </div>
         <button className="panel-close" onClick={onClose}>
           <svg viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
@@ -425,6 +427,33 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
       )}
 
       {view === 'import' && <ImportView txs={txs} setTxs={setTxs} onDone={() => setView('list')} />}
+    </div>
+  )
+}
+
+function ExportMenu({ onCSV, onPDF, disabled }: { onCSV: () => void; onPDF: () => void; disabled: boolean }) {
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="fin-export-wrap">
+      <button className="fin-tab fin-export-btn" onClick={() => setOpen(v => !v)} disabled={disabled} title="Exportar transações">
+        <svg viewBox="0 0 14 14" fill="none" style={{width:12,height:12,marginRight:4,verticalAlign:'middle'}}>
+          <path d="M7 9V2M4 6l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+          <path d="M2 10v1a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+        </svg>
+        Exportar
+      </button>
+      {open && (
+        <div className="fin-export-dropdown">
+          <button className="fin-export-option" onClick={() => { onCSV(); setOpen(false) }}>
+            <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.3"/><path d="M5 8h6M5 5h6M5 11h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+            Baixar CSV
+          </button>
+          <button className="fin-export-option" onClick={() => { onPDF(); setOpen(false) }}>
+            <svg viewBox="0 0 16 16" fill="none" width="14" height="14"><path d="M4 2h6l4 4v8a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1z" stroke="currentColor" strokeWidth="1.3"/><path d="M9 2v4h4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>
+            Baixar PDF
+          </button>
+        </div>
+      )}
     </div>
   )
 }
