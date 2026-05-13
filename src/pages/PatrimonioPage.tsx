@@ -4,6 +4,7 @@ import { IMOVEL_INIT, IMOVEL_TIPOS, PRODUTO_CATS, PRODUTO_INIT } from '../consta
 import type { Imovel, Produto, Vehicle, DocMeta, Bill } from '../types'
 import ImovelExpansion from './ImovelExpansion'
 import VehicleExpansion from './VehicleExpansion'
+import { exportPatrimonioPDF } from '../exportUtils'
 
 export default 
 function PatrimonioPage() {
@@ -136,6 +137,16 @@ function PatrimonioPage() {
 
   return (
     <div className="patr-page">
+      {/* Export button */}
+      <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 4 }}>
+        <button className="btn-ghost export-btn-sm"
+          onClick={() => exportPatrimonioPDF(imoveis, vehicles, produtos)}
+          disabled={imoveis.length + vehicles.length + produtos.length === 0}
+          title="Exportar relatório PDF">
+          <svg viewBox="0 0 14 14" fill="none" width="12" height="12"><path d="M7 9V2M4 6l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 10v1a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+          Exportar PDF
+        </button>
+      </div>
       {/* Summary */}
       <div className="patr-summary">
         <div className="patr-summary-card">

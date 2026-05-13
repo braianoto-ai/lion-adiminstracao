@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useCloudTable } from '../hooks'
 import { GOAL_CATS, GOAL_COLORS, GOAL_FORM_INIT } from '../constants'
 import type { Goal } from '../types'
+import { exportGoalsPDF } from '../exportUtils'
 
 export default 
 function GoalsPage() {
@@ -102,9 +103,17 @@ function GoalsPage() {
           <h1 className="family-page-title">Metas Financeiras</h1>
           <p className="family-page-sub">{goals.length} meta{goals.length !== 1 ? 's' : ''} · {done} concluída{done !== 1 ? 's' : ''}</p>
         </div>
-        <button className="goals-add-btn" onClick={() => { setShowForm(v => !v); setEditId(null); setForm(GOAL_FORM_INIT) }}>
-          {showForm && !editId ? '✕ Cancelar' : '+ Nova Meta'}
-        </button>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {goals.length > 0 && (
+            <button className="btn-ghost export-btn-sm" onClick={() => exportGoalsPDF(goals)} title="Exportar PDF">
+              <svg viewBox="0 0 14 14" fill="none" width="12" height="12"><path d="M7 9V2M4 6l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 10v1a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+              PDF
+            </button>
+          )}
+          <button className="goals-add-btn" onClick={() => { setShowForm(v => !v); setEditId(null); setForm(GOAL_FORM_INIT) }}>
+            {showForm && !editId ? '✕ Cancelar' : '+ Nova Meta'}
+          </button>
+        </div>
       </div>
 
       {goals.length > 0 && (
