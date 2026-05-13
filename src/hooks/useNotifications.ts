@@ -36,13 +36,16 @@ async function requestPermission(): Promise<boolean> {
   return result === 'granted'
 }
 
+// Resolve o caminho do ícone dinamicamente (funciona em admlion.com e no GitHub Pages)
+const ICON_URL = `${import.meta.env.BASE_URL}pwa-192.png`
+
 function sendNotification(title: string, body: string, tag: string) {
   try {
     new Notification(title, {
       body,
       tag,
-      icon: '/lion-adiminstracao/pwa-192.png',
-      badge: '/lion-adiminstracao/pwa-192.png',
+      icon: ICON_URL,
+      badge: ICON_URL,
     })
   } catch {
     // silencia erros em ambientes sem suporte
