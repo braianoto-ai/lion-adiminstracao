@@ -255,53 +255,15 @@ export default function LandingPage() {
             </div>
           </div>
 
-          {/* Map mockup */}
+          {/* Mapa público real — Lion Farm */}
           <div className="landing-terra-map">
-            <div className="landing-terra-map-bg">
-              {/* Grid de satélite simulado */}
-              <div className="ltm-grid" />
-
-              {/* Talhão 1 — polígono SVG */}
-              <svg className="ltm-polygons" viewBox="0 0 400 300" fill="none">
-                <polygon points="60,80 180,60 220,140 140,180 60,160" fill="rgba(132,204,22,.25)" stroke="#84cc16" strokeWidth="1.5"/>
-                <polygon points="230,70 330,55 360,130 280,160 220,140" fill="rgba(59,130,246,.2)" stroke="#3b82f6" strokeWidth="1.5"/>
-                <polygon points="80,190 200,175 220,250 100,260" fill="rgba(139,92,246,.2)" stroke="#8b5cf6" strokeWidth="1.5"/>
-              </svg>
-
-              {/* Pin da fazenda */}
-              <div className="ltm-pin ltm-pin-a">
-                <div className="ltm-pin-dot" />
-                <div className="ltm-pin-label">Fazenda Santa Cruz</div>
-              </div>
-              <div className="ltm-pin ltm-pin-b">
-                <div className="ltm-pin-dot" style={{ background: '#3b82f6' }} />
-                <div className="ltm-pin-label">Talhão B</div>
-              </div>
-
-              {/* Weather widget mini */}
-              <div className="ltm-weather">
-                <span className="ltm-weather-icon">🌤️</span>
-                <div>
-                  <div className="ltm-weather-temp">24°C</div>
-                  <div className="ltm-weather-sub">Umidade 68%</div>
-                </div>
-              </div>
-
-              {/* Radar pulse */}
-              <div className="ltm-radar-pulse" />
-
-              {/* Annotation */}
-              <div className="ltm-note">
-                <span>📝</span> Plantio soja — 12/05
-              </div>
-            </div>
-
-            {/* Toolbar lateral mockup */}
-            <div className="ltm-toolbar">
-              {['✏️','⬡','🗑️','📍','🌧️'].map((ic, i) => (
-                <div key={i} className={`ltm-tool${i === 0 ? ' ltm-tool-active' : ''}`}>{ic}</div>
-              ))}
-            </div>
+            <iframe
+              src="https://braianoto-ai.github.io/lion-adiminstracao/#/mapa/30056726-5681-4e59-bb26-c0a83212c8e7"
+              title="Lion Farm — mapa público"
+              className="landing-terra-iframe"
+              loading="lazy"
+              allow="geolocation"
+            />
           </div>
         </div>
       </section>
