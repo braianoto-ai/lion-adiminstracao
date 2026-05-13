@@ -4,7 +4,37 @@ import { supabase } from '../lib/supabase'
 import { TALHAO_USOS, NOTA_CATEGORIAS } from '../constants'
 import type { TerraFazenda, TerraTalhao, TerraNote } from '../types'
 
-export default 
+type WeatherData = { temp: number; humidity: number; precipitation: number; windSpeed: number; weatherCode: number }
+type ForecastData = {
+  daily: { time: string[]; temperature_2m_max: number[]; temperature_2m_min: number[]; precipitation_sum: number[]; weather_code: number[] }
+  hourly: { time: string[]; temperature_2m: number[]; precipitation_probability: number[] }
+  todayISO: string
+}
+
+function wmoLabel(code: number): { label: string; icon: string } {
+  if (code === 0) return { label: 'Céu limpo', icon: '☀️' }
+  if (code <= 2)  return { label: 'Pouco nublado', icon: '🌤️' }
+  if (code === 3) return { label: 'Nublado', icon: '☁️' }
+  if (code <= 48) return { label: 'Nevoeiro', icon: '🌫️' }
+  if (code <= 57) return { label: 'Garoa', icon: '🌦️' }
+  if (code <= 67) return { label: 'Chuva', icon: '🌧️' }
+  if (code <= 77) return { label: 'Neve', icon: '🌨️' }
+  if (code <= 82) return { label: 'Aguaceiro', icon: '🌧️' }
+  if (code <= 86) return { label: 'Neve forte', icon: '❄️' }
+  if (code <= 99) return { label: 'Trovoada', icon: '⛈️' }
+  return { label: 'Desconhecido', icon: '🌡️' }
+}
+
+function dayLabel(iso: string, todayISO: string) {
+  const diff = Math.round((new Date(iso + 'T12:00').getTime() - new Date(todayISO + 'T12:00').getTime()) / 86400000)
+  if (diff === 0)  return 'Hoje'
+  if (diff === 1)  return 'Amanhã'
+  if (diff === -1) return 'Ontem'
+  if (diff === -2) return 'Anteontem'
+  return new Date(iso + 'T12:00').toLocaleDateString('pt-BR', { weekday: 'short' })
+}
+
+export default
 function PublicMapPage() {
   const [fazendas, setFazendas] = useState<TerraFazenda[]>([])
   const [talhoes, setTalhoes] = useState<TerraTalhao[]>([])
@@ -12,6 +42,14 @@ function PublicMapPage() {
   const [loading, setLoading] = useState(true)
   const [pubTab, setPubTab] = useState<'mapa' | 'talhoes'>('mapa')
   const [mapLayer, setMapLayer] = useState<'mapa' | 'satelite' | 'relevo'>('mapa')
+
+  // ── Weather widget
+  const [weather, setWeather]               = useState<WeatherData | null>(null)
+  const [forecast, setForecast]             = useState<ForecastData | null>(null)
+  const [weatherLoading, setWeatherLoading] = useState(false)
+  const [weatherExpanded, setWeatherExpanded] = useState(false)
+  const [weatherTab, setWeatherTab]         = useState<'hoje' | 'semana' | 'historico'>('hoje')
+  const weatherFetchedRef = useRef(false)
   const hiddenUsos = useMemo(() => new Set<string>(), [])
   const [showSidebar, setShowSidebar] = useState(true)
   const [hiddenTalhoes, setHiddenTalhoes] = useState<Set<string>>(new Set())
@@ -57,6 +95,25 @@ function PublicMapPage() {
   }, [])
 
   const fazenda = fazendas[0] || null
+
+  // Fetch weather once we have a fazenda with coordinates
+  useEffect(() => {
+    if (!fazenda || !fazenda.latitude || !fazenda.longitude) return
+    if (weatherFetchedRef.current) return
+    weatherFetchedRef.current = true
+    setWeatherLoading(true)
+    fetch(`https://api.open-meteo.com/v1/forecast?latitude=${fazenda.latitude}&longitude=${fazenda.longitude}&current=temperature_2m,relative_humidity_2m,precipitation,wind_speed_10m,weather_code&daily=temperature_2m_max,temperature_2m_min,precipitation_sum,weather_code&hourly=temperature_2m,precipitation_probability&past_days=2&forecast_days=7&timezone=America%2FSao_Paulo`)
+      .then(r => r.json())
+      .then(d => {
+        const c = d.current
+        setWeather({ temp: c.temperature_2m, humidity: c.relative_humidity_2m, precipitation: c.precipitation, windSpeed: c.wind_speed_10m, weatherCode: c.weather_code })
+        const now = new Date()
+        const todayISO = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`
+        setForecast({ daily: d.daily, hourly: d.hourly, todayISO })
+      })
+      .catch(() => {})
+      .finally(() => setWeatherLoading(false))
+  }, [fazenda])
   const fazTalhoes = (fazenda ? talhoes.filter(t => t.fazendaId === fazenda.id) : talhoes).filter(t => t.publico !== false)
   const somaTalhoes = fazTalhoes.reduce((s, t) => s + t.areaHa, 0)
 
@@ -167,6 +224,113 @@ function PublicMapPage() {
                     : <path d="M6 3L1 8l5 5M15 3v10M12 8H1" strokeLinecap="round" strokeLinejoin="round"/>}
                 </svg>
               </button>
+
+              {/* Weather forecast panel */}
+              {weatherExpanded && forecast && (
+                <div className="terra-weather-panel">
+                  <div className="terra-wx-tabs">
+                    {(['hoje', 'semana', 'historico'] as const).map(t => (
+                      <button key={t} className={`terra-wx-tab${weatherTab === t ? ' active' : ''}`}
+                        onClick={e => { e.stopPropagation(); setWeatherTab(t) }}>
+                        {t === 'hoje' ? 'Hoje' : t === 'semana' ? 'Semana' : 'Histórico'}
+                      </button>
+                    ))}
+                  </div>
+
+                  {weatherTab === 'hoje' && (() => {
+                    const targets = ['06', '09', '12', '15', '18', '21']
+                    const hours = targets.map(h => {
+                      const idx = forecast.hourly.time.findIndex(t => t.startsWith(forecast.todayISO) && t.endsWith(`T${h}:00`))
+                      if (idx === -1) return null
+                      return { h, temp: forecast.hourly.temperature_2m[idx], prob: forecast.hourly.precipitation_probability[idx] ?? 0 }
+                    }).filter(Boolean) as { h: string; temp: number; prob: number }[]
+                    const maxProb = Math.max(...hours.map(h => h.prob), 10)
+                    const allZero = hours.every(h => h.prob === 0)
+                    return (
+                      <>
+                        {weather && (
+                          <div className="terra-wx-hoje-stats">
+                            <span className="terra-wx-hoje-stat">💧 {weather.humidity}%</span>
+                            <span className="terra-wx-hoje-stat">💨 {weather.windSpeed.toFixed(1)} km/h</span>
+                            <span className="terra-wx-hoje-stat">☔ {weather.precipitation.toFixed(1)} mm</span>
+                          </div>
+                        )}
+                        <div className="terra-wx-hours">
+                          {hours.map(({ h, temp, prob }) => (
+                            <div key={h} className="terra-wx-hour">
+                              <span className="terra-wx-htemp">{Math.round(temp)}°</span>
+                              <div className="terra-wx-bar-wrap">
+                                <div className="terra-wx-bar" style={{
+                                  height: `${allZero ? 4 : Math.max(4, (prob / maxProb) * 40)}px`,
+                                  background: allZero ? 'var(--border)' : '#3b82f6',
+                                  opacity: allZero ? 0.4 : 1,
+                                }} />
+                              </div>
+                              <span className="terra-wx-hlabel">{h}h</span>
+                              <span className="terra-wx-hprob" style={{ color: prob === 0 ? 'var(--text)' : '#60a5fa', opacity: prob === 0 ? 0.4 : 1 }}>
+                                {prob}%
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                        {allZero && <div className="terra-wx-no-rain">☀️ Sem chuva prevista</div>}
+                      </>
+                    )
+                  })()}
+
+                  {weatherTab === 'semana' && forecast.daily.time.slice(2, 9).map((iso, i) => {
+                    const ri = i + 2
+                    const { icon } = wmoLabel(forecast.daily.weather_code[ri])
+                    const rain = forecast.daily.precipitation_sum[ri]
+                    return (
+                      <div key={iso} className="terra-wx-row">
+                        <span className="terra-wx-day">{dayLabel(iso, forecast.todayISO)}</span>
+                        <span className="terra-wx-icon">{icon}</span>
+                        <span className="terra-wx-temps">{Math.round(forecast.daily.temperature_2m_max[ri])}° / {Math.round(forecast.daily.temperature_2m_min[ri])}°</span>
+                        {rain > 0 && <span className="terra-wx-rain">💧{rain.toFixed(0)}mm</span>}
+                      </div>
+                    )
+                  })}
+
+                  {weatherTab === 'historico' && [1, 0].map(i => {
+                    const iso = forecast.daily.time[i]
+                    const { icon } = wmoLabel(forecast.daily.weather_code[i])
+                    const rain = forecast.daily.precipitation_sum[i]
+                    return (
+                      <div key={iso} className="terra-wx-row">
+                        <span className="terra-wx-day">{dayLabel(iso, forecast.todayISO)}</span>
+                        <span className="terra-wx-icon">{icon}</span>
+                        <span className="terra-wx-temps">{Math.round(forecast.daily.temperature_2m_max[i])}° / {Math.round(forecast.daily.temperature_2m_min[i])}°</span>
+                        {rain > 0 && <span className="terra-wx-rain">💧{rain.toFixed(0)}mm</span>}
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
+
+              {/* Weather widget */}
+              <div className="terra-weather-widget" onClick={() => weather && setWeatherExpanded(v => !v)}>
+                {weatherLoading && <span className="terra-weather-loading">⏳ Carregando clima…</span>}
+                {!weatherLoading && weather && (() => {
+                  const { label, icon } = wmoLabel(weather.weatherCode)
+                  return (
+                    <>
+                      <div className="terra-weather-main">
+                        <span className="terra-weather-icon">{icon}</span>
+                        <span className="terra-weather-temp">{weather.temp.toFixed(1)}°C</span>
+                        <span className="terra-wx-chevron">{weatherExpanded ? '▴' : '▾'}</span>
+                      </div>
+                      <div className="terra-weather-label">{label}</div>
+                      <div className="terra-weather-stats">
+                        <span>💧 {weather.humidity}%</span>
+                        <span>💨 {weather.windSpeed.toFixed(1)} km/h</span>
+                        <span>🌧 {weather.precipitation.toFixed(1)} mm</span>
+                      </div>
+                    </>
+                  )
+                })()}
+                {!weatherLoading && !weather && fazenda && <span className="terra-weather-na">Sem dados</span>}
+              </div>
             </div>
             {showSidebar && (
               <div className="pub-terra-map-sidebar">
