@@ -868,20 +868,39 @@ export default function TerraPage() {
                   if (idx === -1) return null
                   return { h, temp: forecast.hourly.temperature_2m[idx], prob: forecast.hourly.precipitation_probability[idx] ?? 0 }
                 }).filter(Boolean) as { h: string; temp: number; prob: number }[]
-                const maxProb = Math.max(...hours.map(h => h.prob), 1)
+                const maxProb = Math.max(...hours.map(h => h.prob), 10)
+                const allZero = hours.every(h => h.prob === 0)
                 return (
-                  <div className="terra-wx-hours">
-                    {hours.map(({ h, temp, prob }) => (
-                      <div key={h} className="terra-wx-hour">
-                        <span className="terra-wx-htemp">{Math.round(temp)}°</span>
-                        <div className="terra-wx-bar-wrap">
-                          <div className="terra-wx-bar" style={{ height: `${Math.max(3, (prob / maxProb) * 44)}px` }} />
-                        </div>
-                        <span className="terra-wx-hlabel">{h}h</span>
-                        {prob > 0 && <span className="terra-wx-hprob">{prob}%</span>}
+                  <>
+                    {/* linha vento + umidade do dia */}
+                    {weather && (
+                      <div className="terra-wx-hoje-stats">
+                        <span className="terra-wx-hoje-stat">💧 {weather.humidity}%</span>
+                        <span className="terra-wx-hoje-stat">💨 {weather.windSpeed.toFixed(1)} km/h</span>
+                        <span className="terra-wx-hoje-stat">☔ {weather.precipitation.toFixed(1)} mm</span>
                       </div>
-                    ))}
-                  </div>
+                    )}
+                    <div className="terra-wx-hours">
+                      {hours.map(({ h, temp, prob }) => (
+                        <div key={h} className="terra-wx-hour">
+                          <span className="terra-wx-htemp">{Math.round(temp)}°</span>
+                          <div className="terra-wx-bar-wrap">
+                            <div className="terra-wx-bar"
+                              style={{
+                                height: `${allZero ? 4 : Math.max(4, (prob / maxProb) * 40)}px`,
+                                background: allZero ? 'var(--border)' : '#3b82f6',
+                                opacity: allZero ? 0.4 : 1,
+                              }} />
+                          </div>
+                          <span className="terra-wx-hlabel">{h}h</span>
+                          <span className="terra-wx-hprob" style={{ color: prob === 0 ? 'var(--text)' : '#60a5fa', opacity: prob === 0 ? 0.4 : 1 }}>
+                            {prob}%
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    {allZero && <div className="terra-wx-no-rain">☀️ Sem chuva prevista</div>}
+                  </>
                 )
               })()}
 
