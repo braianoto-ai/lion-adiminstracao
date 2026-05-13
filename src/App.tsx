@@ -7,6 +7,7 @@ import RegisterPage from './RegisterPage'
 import type { User } from '@supabase/supabase-js'
 import { UserCtx, DATA_KEYS } from './context'
 import { useCloudTable, useSyncError } from './hooks'
+import { useNotifications } from './hooks/useNotifications'
 import type { ModalType, SidebarPage, TerraFazenda, TerraTalhao, Folder, Goal, Transaction, Rental, Vehicle, Maintenance, Collector, Bill, AppAlert, SearchResult, FamilyMember, Imovel, Produto, CalEvent } from './types'
 import { TALHAO_USOS } from './constants'
 import { effectiveStatus, buildAutoEvents, fmtCurrency } from './utils'
@@ -824,6 +825,9 @@ export default function App() {
     })
     return () => subscription.unsubscribe()
   }, [])
+
+  // Notificações push de contas próximas do vencimento
+  useNotifications(authReady && !!user)
 
   const handleLogout = async () => {
     DATA_KEYS.forEach(k => localStorage.removeItem(k))
