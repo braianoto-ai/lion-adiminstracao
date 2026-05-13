@@ -469,6 +469,7 @@ function Dashboard({ onNavigate }: { onNavigate: (page: SidebarPage) => void }) 
   const [userEvents] = useCloudTable<CalEvent>('calendar_events', 'lion-calendar')
   const [fazArr]     = useCloudTable<TerraFazenda>('terra_fazendas', 'lion-terra', { shared: true })
   const [talArr]     = useCloudTable<TerraTalhao>('terra_talhoes', 'lion-talhoes', { shared: true })
+  const [goals]      = useCloudTable<Goal>('goals', 'lion-goals')
   const autoEvents = buildAutoEvents()
   const allEvents = [...userEvents, ...autoEvents]
 
@@ -512,6 +513,33 @@ function Dashboard({ onNavigate }: { onNavigate: (page: SidebarPage) => void }) 
     if (af && bf) return a.date.localeCompare(b.date)
     return b.date.localeCompare(a.date)
   }).slice(0, 10)
+
+  // ── Monthly chart data (last 6 months) ─────────────────────────────────────
+  const monthlyData = (() => {
+    const months: { label: string; key: string; receitas: number; despesas: number }[] = []
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+      const label = d.toLocaleDateString('pt-BR', { month: 'short' }).replace('.', '')
+      const receitas = txs.filter(t => t.date.startsWith(key) && t.type === 'receita').reduce((s, t) => s + t.amount, 0)
+      const despesas = txs.filter(t => t.date.startsWith(key) && t.type === 'despesa').reduce((s, t) => s + t.amount, 0)
+      months.push({ label, key, receitas, despesas })
+    }
+    return months
+  })()
+  const chartMax = Math.max(...monthlyData.map(m => Math.max(m.receitas, m.despesas)), 1)
+
+  // ── Goals summary ───────────────────────────────────────────────────────────
+  const totalGoalTarget = goals.reduce((s, g) => s + g.target, 0)
+  const totalGoalSaved  = goals.reduce((s, g) => s + g.current, 0)
+  const goalsDone       = goals.filter(g => g.current >= g.target).length
+  const goalsGlobalPct  = totalGoalTarget > 0 ? Math.min(Math.round((totalGoalSaved / totalGoalTarget) * 100), 100) : 0
+  const urgentGoals     = goals.filter(g => {
+    if (g.current >= g.target || !g.deadline) return false
+    const d = new Date(g.deadline + 'T12:00:00')
+    if (isNaN(d.getTime())) return false
+    return Math.ceil((d.getTime() - Date.now()) / 86400000) <= 30
+  })
 
   const [collapsed, setCollapsed] = useState<Record<string, boolean>>(() => { try { return JSON.parse(localStorage.getItem('lion-dash-collapsed') || '{}') } catch { return {} } })
   const toggleSection = (key: string) => setCollapsed(prev => { const next = { ...prev, [key]: !prev[key] }; localStorage.setItem('lion-dash-collapsed', JSON.stringify(next)); return next })
@@ -596,6 +624,51 @@ function Dashboard({ onNavigate }: { onNavigate: (page: SidebarPage) => void }) 
         </div>
       </div>
 
+      {/* ── Monthly Finance Chart ── */}
+      <div className="bc dash-chart-card" onClick={() => onNavigate('financas')} title="Ver Finanças">
+        <div className="dash-chart-header">
+          <span className="dash-chart-title">Receitas vs Despesas — Últimos 6 meses</span>
+          <div className="dash-chart-legend">
+            <span className="dash-chart-leg-dot" style={{ background: 'var(--green)' }} />
+            <span className="dash-chart-leg-label">Receitas</span>
+            <span className="dash-chart-leg-dot" style={{ background: 'var(--red)', marginLeft: 10 }} />
+            <span className="dash-chart-leg-label">Despesas</span>
+          </div>
+        </div>
+        <div className="dash-chart-body">
+          {monthlyData.every(m => m.receitas === 0 && m.despesas === 0) ? (
+            <div className="dash-chart-empty">Nenhuma transação registrada ainda</div>
+          ) : (
+            <svg className="dash-chart-svg" viewBox="0 0 540 110" preserveAspectRatio="none">
+              {/* grid lines */}
+              {[0, 0.25, 0.5, 0.75, 1].map((f, i) => (
+                <line key={i} x1="0" y1={100 - f * 88} x2="540" y2={100 - f * 88}
+                  stroke="var(--border)" strokeWidth="0.5" strokeDasharray="3,3" />
+              ))}
+              {monthlyData.map((m, i) => {
+                const x = i * 90 + 15
+                const barW = 28
+                const recH = Math.max((m.receitas / chartMax) * 88, m.receitas > 0 ? 2 : 0)
+                const desH = Math.max((m.despesas / chartMax) * 88, m.despesas > 0 ? 2 : 0)
+                return (
+                  <g key={m.key}>
+                    {/* receita bar */}
+                    <rect x={x} y={100 - recH} width={barW} height={recH}
+                      fill="rgba(16,185,129,.7)" rx="3" />
+                    {/* despesa bar */}
+                    <rect x={x + barW + 3} y={100 - desH} width={barW} height={desH}
+                      fill="rgba(239,68,68,.7)" rx="3" />
+                    {/* month label */}
+                    <text x={x + barW} y="110" textAnchor="middle"
+                      fill="var(--text)" fontSize="9" fontFamily="inherit" opacity=".7">{m.label}</text>
+                  </g>
+                )
+              })}
+            </svg>
+          )}
+        </div>
+      </div>
+
       {/* ── Detail Grid: 2 columns ── */}
       <div className="dash-detail-grid">
         {/* Left column — Agenda unificada */}
@@ -666,8 +739,34 @@ function Dashboard({ onNavigate }: { onNavigate: (page: SidebarPage) => void }) 
           </div>
         </div>
 
-        {/* Right column — Fazendas */}
+        {/* Right column — Goals + Fazendas */}
         <div className="dash-detail-col">
+          {/* Goals mini-widget */}
+          {goals.length > 0 && (
+            <div className="bc dash-list-card dash-goals-card" onClick={() => onNavigate('goals')} style={{ cursor: 'pointer', marginBottom: 12 }}>
+              <div className="dash-list-header" style={{ cursor: 'pointer' }}>
+                <span className="dash-list-title">Metas Financeiras</span>
+                <span className="dash-list-link">Ver todas &rsaquo;</span>
+              </div>
+              <div className="dash-goals-body">
+                <div className="dash-goals-amounts">
+                  <span className="dash-goals-saved">{fmtCurrency(totalGoalSaved)}</span>
+                  <span className="dash-goals-sep"> de </span>
+                  <span className="dash-goals-target">{fmtCurrency(totalGoalTarget)}</span>
+                  <span className="dash-goals-pct">{goalsGlobalPct}%</span>
+                </div>
+                <div className="dash-goals-bar-track">
+                  <div className="dash-goals-bar-fill" style={{ width: `${goalsGlobalPct}%` }} />
+                </div>
+                <div className="dash-goals-chips">
+                  <span className="dash-goals-chip">{goals.length} meta{goals.length !== 1 ? 's' : ''}</span>
+                  {goalsDone > 0 && <span className="dash-goals-chip dash-goals-chip-green">✓ {goalsDone} concluída{goalsDone !== 1 ? 's' : ''}</span>}
+                  {urgentGoals.length > 0 && <span className="dash-goals-chip dash-goals-chip-amber">⚠ {urgentGoals.length} urgente{urgentGoals.length !== 1 ? 's' : ''}</span>}
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="bc dash-list-card">
             <div className="dash-list-header" onClick={() => onNavigate('terra')} style={{ cursor: 'pointer' }}>
               <span className="dash-list-title">Fazendas</span>
