@@ -6645,6 +6645,28 @@ html[data-theme="light"] .patr-upload-form { background: var(--bg2) }
 .terra-wx-hlabel { font-size: 9px; color: var(--text2) }
 .terra-wx-htemp { font-size: calc(.68rem * var(--fs)); color: var(--text3); font-weight: 600 }
 .terra-wx-hprob { font-size: 8px; color: #60a5fa }
+.terra-wx-hoje-stats {
+  display: flex;
+  gap: 6px;
+  justify-content: space-between;
+  margin-bottom: 6px;
+  padding: 5px 6px;
+  background: rgba(255,255,255,.04);
+  border-radius: 6px;
+  border: 1px solid rgba(255,255,255,.06);
+}
+.terra-wx-hoje-stat {
+  font-size: calc(.66rem * var(--fs));
+  color: var(--text2);
+  white-space: nowrap;
+}
+.terra-wx-no-rain {
+  text-align: center;
+  font-size: calc(.66rem * var(--fs));
+  color: var(--text);
+  opacity: .5;
+  margin-top: 2px;
+}
 .terra-radar-btn { border-color: #3b82f6 !important }
 .terra-radar-btn.active { background: #1d4ed8 !important; border-color: #1d4ed8 !important }
 .terra-radar-bar { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 999; background: rgba(24,24,27,.88); backdrop-filter: blur(8px); border: 1px solid var(--border); border-radius: 20px; padding: 6px 14px; display: flex; align-items: center; gap: 4px; box-shadow: 0 2px 8px rgba(0,0,0,.3) }
