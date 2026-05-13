@@ -2,7 +2,23 @@ import { useState, useEffect, useRef } from 'react'
 import { useCloudTable } from '../hooks'
 import { BILL_INIT, BILL_RECURRENCE_LABEL, BILL_STATUS_LABEL, COLL_INIT, BILL_CATEGORIES, BILL_COLORS } from '../constants'
 import { fmtCurrency, fmtDate, effectiveStatus } from '../utils'
+import { exportBillsCSV } from '../exportUtils'
 import type { Collector, Bill, BillStatus, BillRecurrence, Transaction } from '../types'
+
+function nextDueDate(dueDate: string, recurrence: BillRecurrence): string | null {
+  if (recurrence === 'unica') return null
+  const d = new Date(dueDate + 'T12:00:00')
+  switch (recurrence) {
+    case 'semanal':    d.setDate(d.getDate() + 7);        break
+    case 'quinzenal':  d.setDate(d.getDate() + 15);       break
+    case 'mensal':     d.setMonth(d.getMonth() + 1);      break
+    case 'bimestral':  d.setMonth(d.getMonth() + 2);      break
+    case 'trimestral': d.setMonth(d.getMonth() + 3);      break
+    case 'semestral':  d.setMonth(d.getMonth() + 6);      break
+    case 'anual':      d.setFullYear(d.getFullYear() + 1);break
+  }
+  return d.toISOString().slice(0, 10)
+}
 
 function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
   return (
@@ -188,7 +204,7 @@ function PaymentHubPage() {
 
   const [selCollector, setSelCollector] = useState<string | null>(null)
   const [filterStatus, setFilterStatus] = useState<BillStatus | 'all'>('all')
-  const [phTab, setPhTab] = useState<'bills' | 'monthly'>('bills')
+  const [phTab, setPhTab] = useState<'bills' | 'monthly' | 'history'>('bills')
   const [monthOffset, setMonthOffset] = useState(0)
   const [modal, setModal] = useState<'new-collector' | 'edit-collector' | 'new-bill' | 'edit-bill' | 'barcode' | null>(null)
   const [editingCollector, setEditingCollector] = useState<Collector | null>(null)
@@ -272,27 +288,27 @@ function PaymentHubPage() {
     const bill = bills.find(b => b.id === id)
     setBills(prev => {
       let next = prev.map(b => b.id === id ? { ...b, status: 'pago' as BillStatus, paidAt: now, updatedAt: now } : b)
-      if (bill && bill.recurrence === 'mensal') {
-        const d = new Date(bill.dueDate + 'T12:00:00')
-        d.setMonth(d.getMonth() + 1)
-        const nextDue = d.toISOString().slice(0, 10)
-        const alreadyExists = next.some(b => b.collectorId === bill.collectorId && b.dueDate === nextDue && b.status !== 'cancelado')
-        if (!alreadyExists) {
-          const newBill: Bill = {
-            id: Date.now().toString(),
-            collectorId: bill.collectorId,
-            description: bill.description,
-            amount: bill.amount,
-            dueDate: nextDue,
-            status: 'em_aberto',
-            recurrence: 'mensal',
-            paymentLink: bill.paymentLink,
-            barcode: bill.barcode,
-            notes: bill.notes,
-            createdAt: now,
-            updatedAt: now,
+      if (bill && bill.recurrence !== 'unica') {
+        const nextDue = nextDueDate(bill.dueDate, bill.recurrence)
+        if (nextDue) {
+          const alreadyExists = next.some(b => b.collectorId === bill.collectorId && b.dueDate === nextDue && b.status !== 'cancelado')
+          if (!alreadyExists) {
+            const newBill: Bill = {
+              id: Date.now().toString(),
+              collectorId: bill.collectorId,
+              description: bill.description,
+              amount: bill.amount,
+              dueDate: nextDue,
+              status: 'em_aberto',
+              recurrence: bill.recurrence,
+              paymentLink: bill.paymentLink,
+              barcode: bill.barcode,
+              notes: bill.notes,
+              createdAt: now,
+              updatedAt: now,
+            }
+            next = [...next, newBill]
           }
-          next = [...next, newBill]
         }
       }
       return next
@@ -381,9 +397,18 @@ function PaymentHubPage() {
       </div>
 
       {/* Tabs */}
-      <div className="ph-tabs">
-        <button className={`ph-tab${phTab === 'bills' ? ' ph-tab-active' : ''}`} onClick={() => setPhTab('bills')}>Contas</button>
-        <button className={`ph-tab${phTab === 'monthly' ? ' ph-tab-active' : ''}`} onClick={() => setPhTab('monthly')}>Resumo Mensal</button>
+      <div className="ph-tabs-row">
+        <div className="ph-tabs">
+          <button className={`ph-tab${phTab === 'bills' ? ' ph-tab-active' : ''}`} onClick={() => setPhTab('bills')}>Contas</button>
+          <button className={`ph-tab${phTab === 'monthly' ? ' ph-tab-active' : ''}`} onClick={() => setPhTab('monthly')}>Resumo Mensal</button>
+          <button className={`ph-tab${phTab === 'history' ? ' ph-tab-active' : ''}`} onClick={() => setPhTab('history')}>Histórico</button>
+        </div>
+        {bills.length > 0 && (
+          <button className="btn-ghost export-btn-sm" onClick={() => exportBillsCSV(bills, collectors)} title="Exportar CSV">
+            <svg viewBox="0 0 14 14" fill="none" width="12" height="12"><path d="M7 9V2M4 6l3 3 3-3" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/><path d="M2 10v1a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1v-1" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/></svg>
+            CSV
+          </button>
+        )}
       </div>
 
       {/* Monthly Summary */}
@@ -508,6 +533,93 @@ function PaymentHubPage() {
                 })}
               </div>
             )}
+          </div>
+        )
+      })()}
+
+      {/* History Tab */}
+      {phTab === 'history' && (() => {
+        const paidBills = bills.filter(b => b.status === 'pago').sort((a, b) => (b.paidAt || b.dueDate).localeCompare(a.paidAt || a.dueDate))
+
+        // Build 6-month labels
+        const now6 = new Date()
+        const last6 = Array.from({ length: 6 }, (_, i) => {
+          const d = new Date(now6.getFullYear(), now6.getMonth() - (5 - i), 1)
+          return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+        })
+
+        // Per-collector history
+        const collHistory = collectors.map(c => {
+          const cPaid = paidBills.filter(b => b.collectorId === c.id)
+          const totalPaid = cPaid.reduce((s, b) => s + b.amount, 0)
+          const monthSpend = last6.map(m => ({
+            m, label: new Date(m + '-15').toLocaleDateString('pt-BR', { month: 'short' }).replace('.', ''),
+            val: cPaid.filter(b => (b.paidAt || b.dueDate).startsWith(m)).reduce((s, b) => s + b.amount, 0),
+          }))
+          const avgMonthly = cPaid.length > 0 ? totalPaid / Math.max(1, new Set(cPaid.map(b => (b.paidAt || b.dueDate).slice(0, 7))).size) : 0
+          return { c, cPaid, totalPaid, monthSpend, avgMonthly }
+        }).filter(x => x.totalPaid > 0).sort((a, b) => b.totalPaid - a.totalPaid)
+
+        if (collHistory.length === 0) {
+          return (
+            <div className="ph-bills-empty">
+              <svg viewBox="0 0 48 48" fill="none"><rect x="8" y="12" width="32" height="28" rx="4" stroke="currentColor" strokeWidth="1.5" opacity=".3"/><path d="M8 20h32" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" opacity=".3"/></svg>
+              <span>Nenhum pagamento registrado ainda</span>
+            </div>
+          )
+        }
+
+        return (
+          <div className="ph-history">
+            {collHistory.map(({ c, cPaid, totalPaid, monthSpend, avgMonthly }) => {
+              const maxBar = Math.max(...monthSpend.map(m => m.val), 1)
+              return (
+                <div key={c.id} className="ph-hist-card">
+                  <div className="ph-hist-header">
+                    <div className="ph-bill-avatar" style={{ background: c.color + '28', color: c.color }}>{c.name.slice(0, 2).toUpperCase()}</div>
+                    <div className="ph-hist-info">
+                      <span className="ph-hist-name">{c.name}</span>
+                      <span className="ph-hist-cat">{c.category}</span>
+                    </div>
+                    <div className="ph-hist-totals">
+                      <span className="ph-hist-total-label">Total pago</span>
+                      <span className="ph-hist-total-val">{fmtCurrency(totalPaid)}</span>
+                      {avgMonthly > 0 && <span className="ph-hist-avg">~{fmtCurrency(avgMonthly)}/mês</span>}
+                    </div>
+                  </div>
+
+                  {/* 6-month bar chart */}
+                  <div className="ph-hist-bars">
+                    {monthSpend.map(({ m, label, val }) => (
+                      <div key={m} className="ph-hist-bar-col">
+                        <span className="ph-hist-bar-val" style={{ opacity: val > 0 ? 1 : 0 }}>
+                          {val > 0 ? (val >= 1000 ? `${(val / 1000).toFixed(1)}k` : val.toFixed(0)) : ''}
+                        </span>
+                        <div className="ph-hist-bar-track">
+                          <div className="ph-hist-bar-fill" style={{ height: `${(val / maxBar) * 100}%`, background: c.color }} />
+                        </div>
+                        <span className="ph-hist-bar-label">{label}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Last 5 payments */}
+                  <div className="ph-hist-list">
+                    {cPaid.slice(0, 5).map(b => (
+                      <div key={b.id} className="ph-hist-row">
+                        <span className="ph-hist-row-date">{fmtDate((b.paidAt || b.dueDate).slice(0, 10))}</span>
+                        {b.description && <span className="ph-hist-row-desc">{b.description}</span>}
+                        <span className="ph-hist-row-rec">{BILL_RECURRENCE_LABEL[b.recurrence]}</span>
+                        <span className="ph-hist-row-val">{fmtCurrency(b.amount)}</span>
+                      </div>
+                    ))}
+                    {cPaid.length > 5 && (
+                      <div className="ph-hist-more">+{cPaid.length - 5} pagamento{cPaid.length - 5 !== 1 ? 's' : ''} anteriores</div>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )
       })()}

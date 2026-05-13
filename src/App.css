@@ -7565,3 +7565,183 @@ html[data-theme="light"] .terra-field textarea { background: var(--bg2) }
   .landing-famgoals { padding: 60px 20px }
 }
 
+
+/* ── PaymentHub improvements ──────────────────────────────────── */
+
+.ph-tabs-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.ph-tabs-row .ph-tabs { margin-bottom: 0 }
+
+/* History tab */
+.ph-history {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.ph-hist-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ph-hist-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ph-hist-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.ph-hist-name {
+  font-size: calc(.88rem * var(--fs));
+  font-weight: 600;
+  color: var(--text3);
+}
+
+.ph-hist-cat {
+  font-size: calc(.72rem * var(--fs));
+  color: var(--text);
+}
+
+.ph-hist-totals {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 1px;
+}
+
+.ph-hist-total-label {
+  font-size: calc(.68rem * var(--fs));
+  color: var(--text);
+}
+
+.ph-hist-total-val {
+  font-size: calc(.92rem * var(--fs));
+  font-weight: 700;
+  color: var(--text3);
+}
+
+.ph-hist-avg {
+  font-size: calc(.68rem * var(--fs));
+  color: var(--text);
+}
+
+/* 6-month bars */
+.ph-hist-bars {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+  height: 64px;
+}
+
+.ph-hist-bar-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  height: 100%;
+}
+
+.ph-hist-bar-val {
+  font-size: 9px;
+  color: var(--text2);
+  height: 12px;
+  line-height: 12px;
+}
+
+.ph-hist-bar-track {
+  flex: 1;
+  width: 100%;
+  background: var(--bg3);
+  border-radius: 3px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+}
+
+.ph-hist-bar-fill {
+  width: 100%;
+  border-radius: 3px 3px 0 0;
+  min-height: 2px;
+  transition: height .4s ease;
+}
+
+.ph-hist-bar-label {
+  font-size: 9px;
+  color: var(--text2);
+  text-transform: capitalize;
+}
+
+/* Last payments list */
+.ph-hist-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.ph-hist-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 0;
+  border-bottom: 1px solid rgba(255,255,255,.04);
+  font-size: calc(.74rem * var(--fs));
+}
+.ph-hist-row:last-child { border-bottom: none }
+
+.ph-hist-row-date {
+  color: var(--text);
+  min-width: 72px;
+  flex-shrink: 0;
+}
+
+.ph-hist-row-desc {
+  flex: 1;
+  color: var(--text2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ph-hist-row-rec {
+  color: var(--text);
+  font-size: calc(.68rem * var(--fs));
+  background: var(--bg3);
+  padding: 1px 6px;
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+
+.ph-hist-row-val {
+  font-weight: 600;
+  color: var(--text3);
+  min-width: 80px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.ph-hist-more {
+  font-size: calc(.72rem * var(--fs));
+  color: var(--text);
+  padding: 6px 0 2px;
+  text-align: center;
+}
