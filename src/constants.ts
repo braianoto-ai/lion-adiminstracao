@@ -53,7 +53,9 @@ export const BILL_STATUS_LABEL: Record<BillStatus, string> = {
   em_aberto: 'Em aberto', pago: 'Pago', vencido: 'Vencido', cancelado: 'Cancelado'
 }
 export const BILL_RECURRENCE_LABEL: Record<BillRecurrence, string> = {
-  mensal: 'Mensal', unica: 'Única', anual: 'Anual', semanal: 'Semanal'
+  unica: 'Única', semanal: 'Semanal', quinzenal: 'Quinzenal',
+  mensal: 'Mensal', bimestral: 'Bimestral', trimestral: 'Trimestral',
+  semestral: 'Semestral', anual: 'Anual',
 }
 export const COLL_INIT = { name: '', category: BILL_CATEGORIES[0], color: BILL_COLORS[0] }
 export const BILL_INIT = { collectorId: '', description: '', amount: '', dueDate: '', status: 'em_aberto' as BillStatus, recurrence: 'mensal' as BillRecurrence, paymentLink: '', barcode: '', notes: '' }

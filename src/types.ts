@@ -108,7 +108,7 @@ export interface TerraNote {
 }
 
 export type BillStatus = 'em_aberto' | 'pago' | 'vencido' | 'cancelado'
-export type BillRecurrence = 'mensal' | 'unica' | 'anual' | 'semanal'
+export type BillRecurrence = 'mensal' | 'unica' | 'anual' | 'semanal' | 'quinzenal' | 'bimestral' | 'trimestral' | 'semestral'
 
 export interface Collector {
   id: string
