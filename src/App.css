@@ -1013,55 +1013,104 @@
 }
 .dash-fazenda-card:hover { border-color: var(--accent) }
 
-/* ── Dashboard Finance Chart ─────────────────────────────────────────────── */
-.dash-chart-card {
-  padding: 16px 20px;
+/* ── Dashboard Finance Card (compact) ───────────────────────────────────── */
+.dash-fin-card {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 0;
   cursor: pointer;
   transition: border-color .15s;
+  overflow: hidden;
 }
-.dash-chart-card:hover { border-color: var(--accent) }
-.dash-chart-header {
+.dash-fin-card:hover { border-color: var(--accent) }
+.dash-fin-left {
+  flex: 1;
+  padding: 14px 18px;
+  min-width: 0;
+}
+.dash-fin-right {
+  width: 220px;
+  flex-shrink: 0;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+}
+.dash-fin-divider {
+  width: 1px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+.dash-fin-label {
+  font-size: calc(.68rem * var(--fs));
+  font-weight: 600;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin-bottom: 10px;
+  opacity: .6;
+}
+.dash-fin-rows { display: flex; flex-direction: column; gap: 7px; }
+.dash-fin-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.dash-fin-row-name {
+  font-size: calc(.72rem * var(--fs));
+  color: var(--text);
+  width: 60px;
+  flex-shrink: 0;
+}
+.dash-fin-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: var(--bg3);
+  border-radius: 99px;
+  overflow: hidden;
+}
+.dash-fin-bar {
+  height: 100%;
+  border-radius: 99px;
+  transition: width .5s ease;
+  min-width: 2px;
+}
+.dash-fin-bar-green { background: var(--green) }
+.dash-fin-bar-red   { background: var(--red) }
+.dash-fin-row-val {
+  font-size: calc(.72rem * var(--fs));
+  font-weight: 600;
+  width: 110px;
+  text-align: right;
+  flex-shrink: 0;
+}
+.dash-fin-saldo {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 14px;
-  flex-wrap: wrap;
-  gap: 6px;
+  margin-top: 4px;
+  padding-top: 7px;
+  border-top: 1px solid var(--border);
 }
-.dash-chart-title {
-  font-size: calc(.78rem * var(--fs));
-  font-weight: 600;
-  color: var(--text3);
-}
-.dash-chart-legend {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.dash-chart-leg-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-.dash-chart-leg-label {
-  font-size: calc(.68rem * var(--fs));
+.dash-fin-saldo-label {
+  font-size: calc(.72rem * var(--fs));
   color: var(--text);
+  font-weight: 600;
 }
-.dash-chart-body { width: 100%; }
-.dash-chart-svg {
-  width: 100%;
-  height: 120px;
-  overflow: visible;
+.dash-fin-saldo-val {
+  font-size: calc(.9rem * var(--fs));
+  font-weight: 700;
 }
-.dash-chart-empty {
+.dash-fin-spark-wrap { flex: 1; display: flex; align-items: flex-end; }
+.dash-fin-spark-svg  { width: 100%; height: 56px; color: var(--text); overflow: visible; }
+.dash-fin-spark-empty {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
-  height: 80px;
-  font-size: calc(.74rem * var(--fs));
+  font-size: calc(.7rem * var(--fs));
   color: var(--text);
-  opacity: .5;
+  opacity: .4;
 }
 
 /* ── Dashboard Goals mini-widget ─────────────────────────────────────────── */
