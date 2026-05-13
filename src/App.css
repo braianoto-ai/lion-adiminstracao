@@ -666,6 +666,54 @@
   position: relative;
   transition: opacity .15s;
 }
+/* ── Landing Finance Section ─────────────────────── */
+.landing-finance { padding: 80px 40px; }
+.landing-finance-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; gap: 64px }
+
+/* Chart card */
+.landing-finance-chart { flex-shrink: 0; width: 420px; background: rgba(255,255,255,.03); border: 1px solid rgba(255,255,255,.08); border-radius: 20px; padding: 24px; backdrop-filter: blur(12px); box-shadow: 0 20px 60px rgba(0,0,0,.4) }
+.lfc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px }
+.lfc-title { font-size: .85rem; font-weight: 600; color: #e5e5e5 }
+.lfc-period { font-size: .72rem; color: #6b7280; background: rgba(255,255,255,.05); padding: 3px 10px; border-radius: 20px; border: 1px solid rgba(255,255,255,.08) }
+.lfc-chart-wrap { position: relative; margin-bottom: 16px }
+.lfc-svg { width: 100%; height: auto; display: block }
+.lfc-months { display: flex; justify-content: space-between; padding: 0 2px; margin-top: 6px }
+.lfc-months span { font-size: .65rem; color: #6b7280 }
+
+.lfc-kpis { display: flex; align-items: center; gap: 0; padding-top: 14px; border-top: 1px solid rgba(255,255,255,.06) }
+.lfc-kpi { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px }
+.lfc-kpi-label { font-size: .65rem; color: #6b7280; text-transform: uppercase; letter-spacing: .04em }
+.lfc-kpi-value { font-size: .82rem; font-weight: 700; color: #e5e5e5 }
+.lfc-kpi-sep { width: 1px; height: 28px; background: rgba(255,255,255,.07) }
+.lfc-green { color: #10b981 !important }
+.lfc-red   { color: #ef4444 !important }
+
+/* Text side */
+.landing-finance-text { flex: 1; min-width: 0 }
+.landing-finance-title { font-size: clamp(1.8rem, 3.5vw, 2.8rem); font-weight: 800; color: #fff; line-height: 1.15; letter-spacing: -.03em; margin: 0 0 16px }
+.landing-finance-accent { background: linear-gradient(135deg, #10b981 0%, #06b6d4 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text }
+.landing-finance-sub { font-size: 1rem; color: #9ca3af; line-height: 1.7; margin: 0 0 32px; max-width: 420px }
+
+.landing-finance-feats { display: flex; flex-direction: column; gap: 12px }
+.landing-finance-feat { display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,.06); background: rgba(255,255,255,.025); backdrop-filter: blur(8px); transition: all .2s }
+.landing-finance-feat:hover { border-color: rgba(16,185,129,.35); background: rgba(16,185,129,.06) }
+.landing-finance-feat-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px }
+.landing-finance-feat-title { font-size: .9rem; font-weight: 600; color: #f1f1f1; margin-bottom: 2px }
+.landing-finance-feat-desc { font-size: .78rem; color: #6b7280; line-height: 1.5 }
+
+@media (max-width: 1024px) {
+  .landing-finance-inner { gap: 40px }
+  .landing-finance-chart { width: 360px }
+}
+@media (max-width: 860px) {
+  .landing-finance-inner { flex-direction: column }
+  .landing-finance-chart { width: 100%; max-width: 460px; align-self: center }
+  .landing-finance-sub { max-width: 100% }
+}
+@media (max-width: 560px) {
+  .landing-finance { padding: 60px 20px }
+}
+
 /* ── Landing Terra Section ───────────────────────── */
 @keyframes ltm-radar {
   0%   { transform: translate(-50%,-50%) scale(0); opacity: .7 }

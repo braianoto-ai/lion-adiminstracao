@@ -275,6 +275,109 @@ export default function LandingPage() {
         </div>
       </section>
 
+
+      {/* ── Finance Section ─────────────────────────── */}
+      <section className="landing-finance">
+        <div className="landing-finance-inner">
+
+          {/* Chart mockup */}
+          <div className="landing-finance-chart">
+            <div className="lfc-header">
+              <span className="lfc-title">Evolução patrimonial</span>
+              <span className="lfc-period">últimos 6 meses</span>
+            </div>
+
+            {/* Line chart SVG */}
+            <div className="lfc-chart-wrap">
+              <svg viewBox="0 0 360 140" fill="none" className="lfc-svg">
+                <defs>
+                  <linearGradient id="lfc-grad" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#10b981" stopOpacity=".3"/>
+                    <stop offset="100%" stopColor="#10b981" stopOpacity="0"/>
+                  </linearGradient>
+                </defs>
+                {/* Grid lines */}
+                {[0,1,2,3].map(i => (
+                  <line key={i} x1="0" y1={20 + i*30} x2="360" y2={20 + i*30} stroke="rgba(255,255,255,.05)" strokeWidth="1"/>
+                ))}
+                {/* Area fill */}
+                <path d="M0,110 C40,105 70,90 100,80 C130,70 150,60 180,52 C210,44 230,38 260,30 C290,22 320,18 360,14 L360,140 L0,140 Z" fill="url(#lfc-grad)"/>
+                {/* Line */}
+                <path d="M0,110 C40,105 70,90 100,80 C130,70 150,60 180,52 C210,44 230,38 260,30 C290,22 320,18 360,14" stroke="#10b981" strokeWidth="2" strokeLinecap="round"/>
+                {/* Dots */}
+                {[[0,110],[60,92],[120,76],[180,52],[240,33],[360,14]].map(([x,y],i) => (
+                  <circle key={i} cx={x} cy={y} r="3.5" fill="#10b981" stroke="#080810" strokeWidth="2"/>
+                ))}
+                {/* Tooltip */}
+                <rect x="260" y="8" width="76" height="22" rx="5" fill="rgba(16,185,129,.15)" stroke="rgba(16,185,129,.4)" strokeWidth="1"/>
+                <text x="298" y="23" textAnchor="middle" fill="#10b981" fontSize="9" fontWeight="700">R$ 2.4M ↑8.2%</text>
+              </svg>
+              <div className="lfc-months">
+                {['Dez','Jan','Fev','Mar','Abr','Mai'].map(m => (
+                  <span key={m}>{m}</span>
+                ))}
+              </div>
+            </div>
+
+            {/* KPI row */}
+            <div className="lfc-kpis">
+              <div className="lfc-kpi">
+                <span className="lfc-kpi-label">Receitas</span>
+                <span className="lfc-kpi-value lfc-green">R$ 18.400</span>
+              </div>
+              <div className="lfc-kpi-sep" />
+              <div className="lfc-kpi">
+                <span className="lfc-kpi-label">Despesas</span>
+                <span className="lfc-kpi-value lfc-red">R$ 5.560</span>
+              </div>
+              <div className="lfc-kpi-sep" />
+              <div className="lfc-kpi">
+                <span className="lfc-kpi-label">Saldo</span>
+                <span className="lfc-kpi-value lfc-green">R$ 12.840</span>
+              </div>
+              <div className="lfc-kpi-sep" />
+              <div className="lfc-kpi">
+                <span className="lfc-kpi-label">USD/BRL</span>
+                <span className="lfc-kpi-value">R$ 5,18</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Text */}
+          <div className="landing-finance-text">
+            <div className="landing-badge" style={{ marginBottom: 20 }}>
+              <span className="landing-badge-dot" style={{ background: '#10b981' }} />
+              Módulo Finanças
+            </div>
+            <h2 className="landing-finance-title">
+              Receitas, despesas e<br />
+              <span className="landing-finance-accent">câmbio em tempo real</span>
+            </h2>
+            <p className="landing-finance-sub">
+              Visualize toda a movimentação financeira com gráficos mensais,
+              categorias e conversão automática em USD, EUR e BTC.
+            </p>
+            <div className="landing-finance-feats">
+              {[
+                { icon: '📈', title: 'Gráfico de evolução', desc: 'Patrimônio e saldo mês a mês com tendência visual.' },
+                { icon: '💱', title: 'Câmbio ao vivo', desc: 'USD, EUR, BTC e outras moedas atualizadas em tempo real.' },
+                { icon: '🏷️', title: 'Categorias', desc: 'Classifique transações e veja gastos por categoria.' },
+                { icon: '📤', title: 'Exportação', desc: 'Exporte extratos e relatórios para Excel ou PDF.' },
+              ].map(({ icon, title, desc }) => (
+                <div key={title} className="landing-finance-feat">
+                  <span className="landing-finance-feat-icon">{icon}</span>
+                  <div>
+                    <div className="landing-finance-feat-title">{title}</div>
+                    <div className="landing-finance-feat-desc">{desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+        </div>
+      </section>
+
       {/* ── CTA Bottom ───────────────────────────────── */}
       <section className="landing-bottom-cta">
         <div className="landing-bottom-cta-glow" />
