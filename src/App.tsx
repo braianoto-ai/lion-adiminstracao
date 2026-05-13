@@ -624,47 +624,63 @@ function Dashboard({ onNavigate }: { onNavigate: (page: SidebarPage) => void }) 
         </div>
       </div>
 
-      {/* ── Monthly Finance Chart ── */}
-      <div className="bc dash-chart-card" onClick={() => onNavigate('financas')} title="Ver Finanças">
-        <div className="dash-chart-header">
-          <span className="dash-chart-title">Receitas vs Despesas — Últimos 6 meses</span>
-          <div className="dash-chart-legend">
-            <span className="dash-chart-leg-dot" style={{ background: 'var(--green)' }} />
-            <span className="dash-chart-leg-label">Receitas</span>
-            <span className="dash-chart-leg-dot" style={{ background: 'var(--red)', marginLeft: 10 }} />
-            <span className="dash-chart-leg-label">Despesas</span>
+      {/* ── Finance Summary Card (compact) ── */}
+      <div className="bc dash-fin-card" onClick={() => onNavigate('financas')}>
+        {/* Left: mês atual */}
+        <div className="dash-fin-left">
+          <div className="dash-fin-label">Mês atual</div>
+          <div className="dash-fin-rows">
+            <div className="dash-fin-row">
+              <span className="dash-fin-row-name">Receitas</span>
+              <div className="dash-fin-bar-wrap">
+                <div className="dash-fin-bar dash-fin-bar-green" style={{ width: `${chartMax > 0 ? Math.min((totalReceitas / chartMax) * 100, 100) : 0}%` }} />
+              </div>
+              <span className="dash-fin-row-val" style={{ color: 'var(--green)' }}>{fmtCurrency(totalReceitas)}</span>
+            </div>
+            <div className="dash-fin-row">
+              <span className="dash-fin-row-name">Despesas</span>
+              <div className="dash-fin-bar-wrap">
+                <div className="dash-fin-bar dash-fin-bar-red" style={{ width: `${chartMax > 0 ? Math.min((totalDespesas / chartMax) * 100, 100) : 0}%` }} />
+              </div>
+              <span className="dash-fin-row-val" style={{ color: 'var(--red)' }}>{fmtCurrency(totalDespesas)}</span>
+            </div>
+            <div className="dash-fin-saldo">
+              <span className="dash-fin-saldo-label">Saldo</span>
+              <span className="dash-fin-saldo-val" style={{ color: saldo >= 0 ? 'var(--green)' : 'var(--red)' }}>
+                {saldo >= 0 ? '+' : ''}{fmtCurrency(saldo)}
+              </span>
+            </div>
           </div>
         </div>
-        <div className="dash-chart-body">
+        {/* Divider */}
+        <div className="dash-fin-divider" />
+        {/* Right: mini sparkline 6 meses */}
+        <div className="dash-fin-right">
+          <div className="dash-fin-label">Últimos 6 meses</div>
           {monthlyData.every(m => m.receitas === 0 && m.despesas === 0) ? (
-            <div className="dash-chart-empty">Nenhuma transação registrada ainda</div>
+            <div className="dash-fin-spark-empty">sem dados</div>
           ) : (
-            <svg className="dash-chart-svg" viewBox="0 0 540 110" preserveAspectRatio="none">
-              {/* grid lines */}
-              {[0, 0.25, 0.5, 0.75, 1].map((f, i) => (
-                <line key={i} x1="0" y1={100 - f * 88} x2="540" y2={100 - f * 88}
-                  stroke="var(--border)" strokeWidth="0.5" strokeDasharray="3,3" />
-              ))}
-              {monthlyData.map((m, i) => {
-                const x = i * 90 + 15
-                const barW = 28
-                const recH = Math.max((m.receitas / chartMax) * 88, m.receitas > 0 ? 2 : 0)
-                const desH = Math.max((m.despesas / chartMax) * 88, m.despesas > 0 ? 2 : 0)
-                return (
-                  <g key={m.key}>
-                    {/* receita bar */}
-                    <rect x={x} y={100 - recH} width={barW} height={recH}
-                      fill="rgba(16,185,129,.7)" rx="3" />
-                    {/* despesa bar */}
-                    <rect x={x + barW + 3} y={100 - desH} width={barW} height={desH}
-                      fill="rgba(239,68,68,.7)" rx="3" />
-                    {/* month label */}
-                    <text x={x + barW} y="110" textAnchor="middle"
-                      fill="var(--text)" fontSize="9" fontFamily="inherit" opacity=".7">{m.label}</text>
-                  </g>
-                )
-              })}
-            </svg>
+            <div className="dash-fin-spark-wrap">
+              <svg viewBox="0 0 180 48" className="dash-fin-spark-svg">
+                {monthlyData.map((m, i) => {
+                  const x = i * 30 + 2
+                  const bw = 11
+                  const recH = Math.max((m.receitas / chartMax) * 40, m.receitas > 0 ? 2 : 0)
+                  const desH = Math.max((m.despesas / chartMax) * 40, m.despesas > 0 ? 2 : 0)
+                  const isCurrentMonth = i === 5
+                  return (
+                    <g key={m.key}>
+                      <rect x={x} y={42 - recH} width={bw} height={recH}
+                        fill={isCurrentMonth ? 'rgba(16,185,129,.9)' : 'rgba(16,185,129,.4)'} rx="2" />
+                      <rect x={x + bw + 1} y={42 - desH} width={bw} height={desH}
+                        fill={isCurrentMonth ? 'rgba(239,68,68,.9)' : 'rgba(239,68,68,.4)'} rx="2" />
+                      <text x={x + bw} y="48" textAnchor="middle"
+                        fill="currentColor" fontSize="6" opacity=".5">{m.label}</text>
+                    </g>
+                  )
+                })}
+              </svg>
+            </div>
           )}
         </div>
       </div>
