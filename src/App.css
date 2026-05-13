@@ -676,64 +676,40 @@
   50%     { transform: translateY(-4px) }
 }
 
-.landing-terra { padding: 80px 40px; background: linear-gradient(180deg, transparent 0%, rgba(132,204,22,.03) 50%, transparent 100%) }
-.landing-terra-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; gap: 64px }
-.landing-terra-text { flex: 1; min-width: 0 }
-.landing-terra-title { font-size: clamp(1.8rem, 3.5vw, 2.8rem); font-weight: 800; color: #fff; line-height: 1.15; letter-spacing: -.03em; margin: 0 0 16px }
+/* ── Terra Section ── */
+.landing-terra { padding: 80px 40px; background: linear-gradient(180deg, transparent 0%, rgba(132,204,22,.04) 50%, transparent 100%) }
+.landing-terra-inner { max-width: 1280px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px }
+
+/* Header: badge + título + sub */
+.landing-terra-header { max-width: 600px }
+.landing-terra-title { font-size: clamp(2rem, 4vw, 3rem); font-weight: 800; color: #fff; line-height: 1.15; letter-spacing: -.03em; margin: 0 0 16px }
 .landing-terra-accent { background: linear-gradient(135deg, #84cc16 0%, #22c55e 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text }
-.landing-terra-sub { font-size: 1rem; color: #9ca3af; line-height: 1.7; margin: 0 0 32px; max-width: 420px }
+.landing-terra-sub { font-size: 1rem; color: #9ca3af; line-height: 1.7; margin: 0; max-width: 520px }
 
-.landing-terra-features { display: flex; flex-direction: column; gap: 14px }
-.landing-terra-feat { display: flex; align-items: flex-start; gap: 14px; padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,.06); background: rgba(255,255,255,.025); backdrop-filter: blur(8px); transition: all .2s }
+/* Grid de features — 3 colunas */
+.landing-terra-feats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px }
+.landing-terra-feat { display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,.06); background: rgba(255,255,255,.025); backdrop-filter: blur(8px); transition: all .2s }
 .landing-terra-feat:hover { border-color: rgba(132,204,22,.3); background: rgba(132,204,22,.05) }
-.landing-terra-feat-icon { font-size: 1.2rem; flex-shrink: 0; margin-top: 1px }
-.landing-terra-feat-title { font-size: .9rem; font-weight: 600; color: #f1f1f1; margin-bottom: 2px }
-.landing-terra-feat-desc { font-size: .78rem; color: #6b7280; line-height: 1.5 }
+.landing-terra-feat-icon { font-size: 1.3rem; flex-shrink: 0; margin-top: 1px }
+.landing-terra-feat-title { font-size: .88rem; font-weight: 600; color: #f1f1f1; margin-bottom: 3px }
+.landing-terra-feat-desc { font-size: .76rem; color: #6b7280; line-height: 1.5 }
 
-/* Map mockup */
-.landing-terra-map { flex-shrink: 0; width: 420px; display: flex; gap: 10px; position: relative }
-.landing-terra-map-bg { flex: 1; background: #0f1f0f; border: 1px solid rgba(132,204,22,.2); border-radius: 16px; height: 380px; position: relative; overflow: hidden; box-shadow: 0 20px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(132,204,22,.1) }
-.landing-terra-iframe { width: 100%; height: 380px; border: none; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,.5), 0 0 0 1px rgba(132,204,22,.2); display: block }
-
-.ltm-grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(132,204,22,.04) 1px, transparent 1px), linear-gradient(90deg, rgba(132,204,22,.04) 1px, transparent 1px); background-size: 32px 32px }
-
-.ltm-polygons { position: absolute; inset: 0; width: 100%; height: 100% }
-
-.ltm-pin { position: absolute; display: flex; align-items: center; gap: 6px; z-index: 2 }
-.ltm-pin-a { top: 28%; left: 22% }
-.ltm-pin-b { top: 20%; left: 55% }
-.ltm-pin-dot { width: 10px; height: 10px; border-radius: 50%; background: #84cc16; box-shadow: 0 0 0 3px rgba(132,204,22,.3); animation: ltm-pin-bounce 2.5s ease-in-out infinite }
-.ltm-pin-label { font-size: 10px; font-weight: 600; color: #fff; background: rgba(0,0,0,.7); border: 1px solid rgba(255,255,255,.15); padding: 2px 7px; border-radius: 20px; backdrop-filter: blur(4px); white-space: nowrap }
-
-.ltm-weather { position: absolute; top: 10px; right: 10px; display: flex; align-items: center; gap: 8px; background: rgba(0,0,0,.6); border: 1px solid rgba(255,255,255,.12); border-radius: 10px; padding: 8px 12px; backdrop-filter: blur(8px) }
-.ltm-weather-icon { font-size: 1.2rem }
-.ltm-weather-temp { font-size: .85rem; font-weight: 700; color: #fff; line-height: 1.2 }
-.ltm-weather-sub { font-size: .65rem; color: #9ca3af }
-
-.ltm-radar-pulse { position: absolute; bottom: 30%; left: 40%; width: 20px; height: 20px; border-radius: 50%; background: rgba(59,130,246,.6); animation: ltm-radar 2.8s ease-out infinite }
-.ltm-radar-pulse::after { content: ''; position: absolute; inset: 0; border-radius: 50%; background: rgba(59,130,246,.4); animation: ltm-radar 2.8s ease-out infinite .6s }
-
-.ltm-note { position: absolute; bottom: 12px; left: 12px; font-size: 10px; font-weight: 500; color: #d4d4d4; background: rgba(0,0,0,.65); border: 1px solid rgba(255,255,255,.12); border-radius: 8px; padding: 5px 10px; backdrop-filter: blur(6px) }
-
-.ltm-toolbar { display: flex; flex-direction: column; gap: 6px; align-self: center }
-.ltm-tool { width: 36px; height: 36px; border-radius: 8px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); display: flex; align-items: center; justify-content: center; font-size: .9rem; cursor: default; transition: all .2s }
-.ltm-tool:hover { background: rgba(255,255,255,.1); border-color: rgba(255,255,255,.2) }
-.ltm-tool-active { background: rgba(132,204,22,.15) !important; border-color: rgba(132,204,22,.5) !important }
+/* Mapa full-width */
+.landing-terra-map-full { width: 100%; border-radius: 20px; overflow: hidden; border: 1px solid rgba(132,204,22,.2); box-shadow: 0 32px 80px rgba(0,0,0,.6), 0 0 0 1px rgba(132,204,22,.08) }
+.landing-terra-iframe-full { width: 100%; height: 640px; border: none; display: block }
 
 @media (max-width: 1024px) {
-  .landing-terra-inner { gap: 40px }
-  .landing-terra-map { width: 360px }
-  .landing-terra-map-bg { height: 320px }
+  .landing-terra-feats-grid { grid-template-columns: repeat(2, 1fr) }
+  .landing-terra-iframe-full { height: 520px }
 }
 @media (max-width: 860px) {
-  .landing-terra-inner { flex-direction: column-reverse }
-  .landing-terra-map { width: 100%; max-width: 460px; align-self: center }
-  .landing-terra-map-bg { height: 280px }
-  .landing-terra-sub { max-width: 100% }
+  .landing-terra-feats-grid { grid-template-columns: repeat(2, 1fr) }
+  .landing-terra-iframe-full { height: 440px }
 }
 @media (max-width: 560px) {
   .landing-terra { padding: 60px 20px }
-  .landing-terra-map-bg { height: 240px }
+  .landing-terra-feats-grid { grid-template-columns: 1fr 1fr }
+  .landing-terra-iframe-full { height: 360px }
 }
 
 /* ── Register Page ────────────────────────────────── */

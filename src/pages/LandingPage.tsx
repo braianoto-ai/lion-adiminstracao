@@ -222,49 +222,54 @@ export default function LandingPage() {
       {/* ── Terra Section ───────────────────────────── */}
       <section className="landing-terra lp-fade">
         <div className="landing-terra-inner">
-          <div className="landing-terra-text">
-            <div className="landing-badge" style={{ marginBottom: 20 }}>
+
+          {/* Cabeçalho: badge + título + descrição */}
+          <div className="landing-terra-header">
+            <div className="landing-badge" style={{ marginBottom: 16 }}>
               <span className="landing-badge-dot" style={{ background: '#84cc16' }} />
               Módulo Terra
             </div>
             <h2 className="landing-terra-title">
-              Suas fazendas no<br />
+              Suas fazendas no{' '}
               <span className="landing-terra-accent">mapa inteligente</span>
             </h2>
             <p className="landing-terra-sub">
               Georreferencie propriedades, desenhe talhões e acompanhe
               clima em tempo real — tudo sem sair do painel.
             </p>
-            <div className="landing-terra-features">
-              {[
-                { icon: '📍', title: 'Localização exata', desc: 'Marque a coordenada da fazenda no mapa com um clique.' },
-                { icon: '✏️', title: 'Desenhe talhões', desc: 'Trace os perímetros diretamente sobre o satélite.' },
-                { icon: '📝', title: 'Anotações no mapa', desc: 'Registre observações, plantios e histórico por talhão.' },
-                { icon: '🌧️', title: 'Radar de chuva ao vivo', desc: 'Sobreponha precipitação em tempo real sobre suas terras.' },
-                { icon: '🌡️', title: 'Clima por fazenda', desc: 'Temperatura, umidade e previsão de 7 dias por propriedade.' },
-                { icon: '🛰️', title: 'Visão de satélite', desc: 'Alterne entre satélite ESRI, mapa base e relevo.' },
-              ].map(({ icon, title, desc }) => (
-                <div key={title} className="landing-terra-feat">
-                  <span className="landing-terra-feat-icon">{icon}</span>
-                  <div>
-                    <div className="landing-terra-feat-title">{title}</div>
-                    <div className="landing-terra-feat-desc">{desc}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
           </div>
 
-          {/* Mapa público real — Lion Farm */}
-          <div className="landing-terra-map">
+          {/* Features em grid 3 colunas */}
+          <div className="landing-terra-feats-grid">
+            {[
+              { icon: '📍', title: 'Localização exata', desc: 'Marque a coordenada da fazenda no mapa com um clique.' },
+              { icon: '✏️', title: 'Desenhe talhões', desc: 'Trace os perímetros diretamente sobre o satélite.' },
+              { icon: '📝', title: 'Anotações no mapa', desc: 'Registre observações, plantios e histórico por talhão.' },
+              { icon: '🌧️', title: 'Radar de chuva ao vivo', desc: 'Sobreponha precipitação em tempo real sobre suas terras.' },
+              { icon: '🌡️', title: 'Clima por fazenda', desc: 'Temperatura, umidade e previsão de 7 dias por propriedade.' },
+              { icon: '🛰️', title: 'Visão de satélite', desc: 'Alterne entre satélite ESRI, mapa base e relevo.' },
+            ].map(({ icon, title, desc }) => (
+              <div key={title} className="landing-terra-feat">
+                <span className="landing-terra-feat-icon">{icon}</span>
+                <div>
+                  <div className="landing-terra-feat-title">{title}</div>
+                  <div className="landing-terra-feat-desc">{desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Mapa público real — Lion Farm (largura total) */}
+          <div className="landing-terra-map-full">
             <iframe
               src="https://braianoto-ai.github.io/lion-adiminstracao/#/mapa/30056726-5681-4e59-bb26-c0a83212c8e7"
               title="Lion Farm — mapa público"
-              className="landing-terra-iframe"
+              className="landing-terra-iframe-full"
               loading="lazy"
               allow="geolocation"
             />
           </div>
+
         </div>
       </section>
 
