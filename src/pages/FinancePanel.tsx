@@ -78,6 +78,9 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
   const [txs, setTxs] = useCloudTable<Transaction>('transactions', 'lion-txs')
   const [view, setView] = useState<'overview' | 'list' | 'add' | 'import'>('overview')
   const [filter, setFilter] = useState<'all' | TxType>('all')
+  const _now2 = new Date()
+  const _curMonth = `${_now2.getFullYear()}-${String(_now2.getMonth() + 1).padStart(2, '0')}`
+  const [analysisMonth, setAnalysisMonth] = useState(_curMonth)
   const [editId, setEditId] = useState<string | null>(null)
   const [recurring, setRecurring] = useState(false)
   const [recurringMonths, setRecurringMonths] = useState(12)
@@ -161,13 +164,6 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
     despesas: txs.filter(t => t.date === m && t.type === 'despesa').reduce((s, t) => s + t.amount, 0),
   }))
 
-  const _now = new Date()
-  const currentMonth = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}`
-  const txsAteMesAtual = txs.filter(t => t.date <= currentMonth)
-  const totalReceitas = txsAteMesAtual.reduce((s, t) => t.type === 'receita' ? s + t.amount : s, 0)
-  const totalDespesas = txsAteMesAtual.reduce((s, t) => t.type === 'despesa' ? s + t.amount : s, 0)
-  const saldo = totalReceitas - totalDespesas
-
   const maxVal = Math.max(...monthData.flatMap(m => [m.receitas, m.despesas]), 1)
   const fmtCurr = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
   const filtered = filter === 'all' ? txs : txs.filter(t => t.type === filter)
@@ -177,15 +173,8 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
   const gap = 6
   const groupW = barW * 2 + gap + 18
 
-  // ── Pie chart data ──
-  const PIE_COLORS = ['#ef4444','#f59e0b','#3b82f6','#10b981','#8b5cf6','#ec4899','#06b6d4','#84cc16']
-  const catTotals = TX_CATEGORIES.despesa.map((cat, i) => ({
-    cat,
-    val: txsAteMesAtual.filter(t => t.type === 'despesa' && t.category === cat).reduce((s, t) => s + t.amount, 0),
-    color: PIE_COLORS[i % PIE_COLORS.length],
-  })).filter(c => c.val > 0).sort((a, b) => b.val - a.val)
-
-  function donutSlices(data: typeof catTotals, cx: number, cy: number, r: number, ir: number) {
+  // ── Donut helper (used in analysis IIFE) ──
+  function donutSlices(data: { cat: string; val: number; color: string }[], cx: number, cy: number, r: number, ir: number) {
     const total = data.reduce((s, d) => s + d.val, 0)
     if (total === 0) return []
     let angle = -Math.PI / 2
@@ -202,7 +191,6 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
     })
   }
 
-  const slices = donutSlices(catTotals, 72, 72, 58, 34)
 
   return (
     <div className="fin-wrap">
@@ -230,82 +218,171 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
         </button>
       </div>
 
-      {view === 'overview' && (
-        <div className="fin-body">
-          <div className="fin-summary">
-            <div className="fin-stat fin-stat-green">
-              <span className="fin-stat-label">Receitas</span>
-              <span className="fin-stat-value">{fmtCurr(totalReceitas)}</span>
-            </div>
-            <div className="fin-stat fin-stat-red">
-              <span className="fin-stat-label">Despesas</span>
-              <span className="fin-stat-value">{fmtCurr(totalDespesas)}</span>
-            </div>
-            <div className={`fin-stat ${saldo >= 0 ? 'fin-stat-purple' : 'fin-stat-red'}`}>
-              <span className="fin-stat-label">Saldo</span>
-              <span className="fin-stat-value">{fmtCurr(saldo)}</span>
-            </div>
-          </div>
+      {view === 'overview' && (() => {
+        // ── analysis month data ──
+        const aTxs     = txs.filter(t => t.date === analysisMonth)
+        const aRec     = aTxs.filter(t => t.type === 'receita').reduce((s, t) => s + t.amount, 0)
+        const aDes     = aTxs.filter(t => t.type === 'despesa').reduce((s, t) => s + t.amount, 0)
+        const aSaldo   = aRec - aDes
+        const aMonthLabel = new Date(analysisMonth + '-15').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
 
-          <div className="fin-overview-grid">
+        const PIE_COLORS = ['#ef4444','#f59e0b','#3b82f6','#10b981','#8b5cf6','#ec4899','#06b6d4','#84cc16','#f97316','#a855f7']
+        const aCatDes = TX_CATEGORIES.despesa.map((cat, i) => ({
+          cat, color: PIE_COLORS[i % PIE_COLORS.length],
+          val: aTxs.filter(t => t.type === 'despesa' && t.category === cat).reduce((s, t) => s + t.amount, 0),
+        })).filter(c => c.val > 0).sort((a, b) => b.val - a.val)
+
+        const aCatRec = TX_CATEGORIES.receita.map((cat, i) => ({
+          cat, color: ['#10b981','#22c55e','#84cc16','#06b6d4','#3b82f6','#8b5cf6'][i % 6],
+          val: aTxs.filter(t => t.type === 'receita' && t.category === cat).reduce((s, t) => s + t.amount, 0),
+        })).filter(c => c.val > 0).sort((a, b) => b.val - a.val)
+
+        const aSlices = donutSlices(aCatDes, 60, 60, 48, 28)
+        const maxDes  = aCatDes[0]?.val || 1
+        const maxRec  = aCatRec[0]?.val || 1
+        const availMonths = [...new Set(txs.map(t => t.date))].sort().reverse().slice(0, 12)
+
+        return (
+          <div className="fin-body">
+            <div className="fin-summary">
+              <div className="fin-stat fin-stat-green">
+                <span className="fin-stat-label">Receitas</span>
+                <span className="fin-stat-value">{fmtCurr(aRec)}</span>
+              </div>
+              <div className="fin-stat fin-stat-red">
+                <span className="fin-stat-label">Despesas</span>
+                <span className="fin-stat-value">{fmtCurr(aDes)}</span>
+              </div>
+              <div className={`fin-stat ${aSaldo >= 0 ? 'fin-stat-purple' : 'fin-stat-red'}`}>
+                <span className="fin-stat-label">Saldo</span>
+                <span className="fin-stat-value">{fmtCurr(aSaldo)}</span>
+              </div>
+            </div>
+
             <div className="fin-chart-section">
-              <div className="fin-chart-title">Últimos 6 meses</div>
-              <svg width="100%" height="160" viewBox={`0 0 460 ${chartH + 32}`} className="fin-chart">
+              <div className="fin-chart-header-row">
+                <span className="fin-chart-title">Histórico — clique para analisar</span>
+                <div className="fin-legend">
+                  <span className="fin-leg-dot" style={{ background: 'var(--green)' }} />
+                  <span className="fin-leg-label">Receitas</span>
+                  <span className="fin-leg-dot" style={{ background: 'var(--red)' }} />
+                  <span className="fin-leg-label">Despesas</span>
+                </div>
+              </div>
+              <svg width="100%" height="152" viewBox={`0 0 460 ${chartH + 32}`} className="fin-chart">
                 {monthData.map((m, i) => {
                   const x = 20 + i * groupW
                   const rH = Math.max((m.receitas / maxVal) * chartH, m.receitas > 0 ? 3 : 2)
                   const dH = Math.max((m.despesas / maxVal) * chartH, m.despesas > 0 ? 3 : 2)
+                  const isSel = m.month === analysisMonth
                   return (
-                    <g key={m.month}>
-                      <rect x={x} y={chartH - rH} width={barW} height={rH} rx="4" fill="var(--green)" opacity={m.receitas === 0 ? 0.15 : 0.85} />
-                      <rect x={x + barW + gap} y={chartH - dH} width={barW} height={dH} rx="4" fill="var(--red)" opacity={m.despesas === 0 ? 0.15 : 0.85} />
-                      <text x={x + barW + gap / 2} y={chartH + 24} textAnchor="middle" fontSize="11" fill="var(--text)">{m.label}</text>
+                    <g key={m.month} onClick={() => setAnalysisMonth(m.month)} style={{ cursor: 'pointer' }}>
+                      {isSel && <rect x={x - 4} y={0} width={barW * 2 + gap + 8} height={chartH + 4} rx="4" fill="var(--accent)" opacity=".1" />}
+                      <rect x={x} y={chartH - rH} width={barW} height={rH} rx="4" fill="var(--green)" opacity={m.receitas === 0 ? 0.15 : isSel ? 1 : 0.65} />
+                      <rect x={x + barW + gap} y={chartH - dH} width={barW} height={dH} rx="4" fill="var(--red)" opacity={m.despesas === 0 ? 0.15 : isSel ? 1 : 0.65} />
+                      <text x={x + barW + gap / 2} y={chartH + 24} textAnchor="middle" fontSize="11" fill={isSel ? 'var(--accent)' : 'var(--text)'} fontWeight={isSel ? '700' : '400'}>{m.label}</text>
                     </g>
                   )
                 })}
               </svg>
-              <div className="fin-legend">
-                <span className="fin-leg-dot" style={{ background: 'var(--green)' }} />
-                <span className="fin-leg-label">Receitas</span>
-                <span className="fin-leg-dot" style={{ background: 'var(--red)' }} />
-                <span className="fin-leg-label">Despesas</span>
-              </div>
             </div>
 
-            {catTotals.length > 0 ? (
-              <div className="fin-pie-section">
-                <div className="fin-chart-title">Despesas por categoria</div>
-                <div className="fin-pie-wrap">
-                  <svg viewBox="0 0 144 144" className="fin-pie-svg">
-                    {slices.map((s, i) => (
-                      <path key={i} d={s.path} fill={s.color} opacity=".9">
-                        <title>{s.cat}: {fmtCurr(s.val)} ({s.pct}%)</title>
-                      </path>
-                    ))}
-                    <circle cx="72" cy="72" r="26" fill="var(--bg2)" />
-                    <text x="72" y="68" textAnchor="middle" fontSize="11" fontWeight="700" fill="var(--text3)">{fmtCurr(totalDespesas).replace('R$\u00a0','').split(',')[0]}</text>
-                    <text x="72" y="82" textAnchor="middle" fontSize="8" fill="var(--text)">total</text>
-                  </svg>
-                  <div className="fin-pie-legend">
-                    {slices.slice(0, 6).map((s, i) => (
-                      <div key={i} className="fin-pie-row">
-                        <span className="fin-pie-dot" style={{ background: s.color }} />
-                        <span className="fin-pie-cat">{s.cat}</span>
-                        <span className="fin-pie-pct">{s.pct}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
+            <div className="fin-analysis-header">
+              <span className="fin-chart-title">Análise · {aMonthLabel}</span>
+              {availMonths.length > 1 && (
+                <select className="fin-month-select" value={analysisMonth} onChange={e => setAnalysisMonth(e.target.value)}>
+                  {availMonths.map(m => (
+                    <option key={m} value={m}>
+                      {new Date(m + '-15').toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' })}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+
+            {aTxs.length === 0 ? (
+              <div className="fin-analysis-empty">Nenhuma transação em {aMonthLabel}</div>
             ) : (
-              <div className="fin-pie-section fin-pie-empty">
-                <div className="fin-chart-title">Despesas por categoria</div>
-                <div className="fin-pie-placeholder">Sem despesas categorizadas ainda</div>
+              <div className="fin-analysis-grid">
+                <div className="fin-cat-col">
+                  <div className="fin-cat-col-title">
+                    <span className="fin-cat-col-dot" style={{ background: 'var(--red)' }} />
+                    Despesas
+                    <span className="fin-cat-col-total">{fmtCurr(aDes)}</span>
+                  </div>
+                  {aCatDes.length === 0 ? (
+                    <div className="fin-cat-empty">Nenhuma despesa</div>
+                  ) : (
+                    <>
+                      <div className="fin-donut-row">
+                        <svg viewBox="0 0 120 120" className="fin-donut-svg">
+                          {aSlices.map((s, i) => (
+                            <path key={i} d={s.path} fill={s.color} opacity=".9">
+                              <title>{s.cat}: {fmtCurr(s.val)} ({s.pct}%)</title>
+                            </path>
+                          ))}
+                          <circle cx="60" cy="60" r="22" fill="var(--bg2)" />
+                          <text x="60" y="57" textAnchor="middle" fontSize="9" fontWeight="700" fill="var(--text3)">{aCatDes.length}</text>
+                          <text x="60" y="68" textAnchor="middle" fontSize="7" fill="var(--text)">categ.</text>
+                        </svg>
+                        <div className="fin-cat-bars">
+                          {aCatDes.map(c => (
+                            <div key={c.cat} className="fin-cat-bar-row">
+                              <span className="fin-cat-bar-name">{c.cat}</span>
+                              <div className="fin-cat-bar-track">
+                                <div className="fin-cat-bar-fill" style={{ width: `${(c.val / maxDes) * 100}%`, background: c.color }} />
+                              </div>
+                              <span className="fin-cat-bar-val">{fmtCurr(c.val)}</span>
+                              <span className="fin-cat-bar-pct">{Math.round((c.val / aDes) * 100)}%</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      {aCatDes[0] && (
+                        <div className="fin-top-cat fin-top-cat-red">
+                          🔺 Maior gasto: <strong>{aCatDes[0].cat}</strong> — {fmtCurr(aCatDes[0].val)} ({Math.round((aCatDes[0].val / aDes) * 100)}%)
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
+
+                <div className="fin-cat-col">
+                  <div className="fin-cat-col-title">
+                    <span className="fin-cat-col-dot" style={{ background: 'var(--green)' }} />
+                    Receitas
+                    <span className="fin-cat-col-total">{fmtCurr(aRec)}</span>
+                  </div>
+                  {aCatRec.length === 0 ? (
+                    <div className="fin-cat-empty">Nenhuma receita</div>
+                  ) : (
+                    <>
+                      <div className="fin-cat-bars fin-cat-bars-only">
+                        {aCatRec.map(c => (
+                          <div key={c.cat} className="fin-cat-bar-row">
+                            <span className="fin-cat-bar-name">{c.cat}</span>
+                            <div className="fin-cat-bar-track">
+                              <div className="fin-cat-bar-fill" style={{ width: `${(c.val / maxRec) * 100}%`, background: c.color }} />
+                            </div>
+                            <span className="fin-cat-bar-val">{fmtCurr(c.val)}</span>
+                            <span className="fin-cat-bar-pct">{Math.round((c.val / aRec) * 100)}%</span>
+                          </div>
+                        ))}
+                      </div>
+                      {aCatRec[0] && (
+                        <div className="fin-top-cat fin-top-cat-green">
+                          ✅ Maior receita: <strong>{aCatRec[0].cat}</strong> — {fmtCurr(aCatRec[0].val)}
+                        </div>
+                      )}
+                    </>
+                  )}
+                </div>
               </div>
             )}
           </div>
-        </div>
-      )}
+        )
+      })()}
+
 
       {view === 'list' && (
         <div className="fin-body">
