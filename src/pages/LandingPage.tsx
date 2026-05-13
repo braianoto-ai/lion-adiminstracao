@@ -187,6 +187,94 @@ export default function LandingPage() {
         </div>
       </section>
 
+
+      {/* ── Terra Section ───────────────────────────── */}
+      <section className="landing-terra">
+        <div className="landing-terra-inner">
+          <div className="landing-terra-text">
+            <div className="landing-badge" style={{ marginBottom: 20 }}>
+              <span className="landing-badge-dot" style={{ background: '#84cc16' }} />
+              Módulo Terra
+            </div>
+            <h2 className="landing-terra-title">
+              Suas fazendas no<br />
+              <span className="landing-terra-accent">mapa inteligente</span>
+            </h2>
+            <p className="landing-terra-sub">
+              Georreferencie propriedades, desenhe talhões e acompanhe
+              clima em tempo real — tudo sem sair do painel.
+            </p>
+            <div className="landing-terra-features">
+              {[
+                { icon: '📍', title: 'Localização exata', desc: 'Marque a coordenada da fazenda no mapa com um clique.' },
+                { icon: '✏️', title: 'Desenhe talhões', desc: 'Trace os perímetros diretamente sobre o satélite.' },
+                { icon: '📝', title: 'Anotações no mapa', desc: 'Registre observações, plantios e histórico por talhão.' },
+                { icon: '🌧️', title: 'Radar de chuva ao vivo', desc: 'Sobreponha precipitação em tempo real sobre suas terras.' },
+                { icon: '🌡️', title: 'Clima por fazenda', desc: 'Temperatura, umidade e previsão de 7 dias por propriedade.' },
+                { icon: '🛰️', title: 'Visão de satélite', desc: 'Alterne entre satélite ESRI, mapa base e relevo.' },
+              ].map(({ icon, title, desc }) => (
+                <div key={title} className="landing-terra-feat">
+                  <span className="landing-terra-feat-icon">{icon}</span>
+                  <div>
+                    <div className="landing-terra-feat-title">{title}</div>
+                    <div className="landing-terra-feat-desc">{desc}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Map mockup */}
+          <div className="landing-terra-map">
+            <div className="landing-terra-map-bg">
+              {/* Grid de satélite simulado */}
+              <div className="ltm-grid" />
+
+              {/* Talhão 1 — polígono SVG */}
+              <svg className="ltm-polygons" viewBox="0 0 400 300" fill="none">
+                <polygon points="60,80 180,60 220,140 140,180 60,160" fill="rgba(132,204,22,.25)" stroke="#84cc16" strokeWidth="1.5"/>
+                <polygon points="230,70 330,55 360,130 280,160 220,140" fill="rgba(59,130,246,.2)" stroke="#3b82f6" strokeWidth="1.5"/>
+                <polygon points="80,190 200,175 220,250 100,260" fill="rgba(139,92,246,.2)" stroke="#8b5cf6" strokeWidth="1.5"/>
+              </svg>
+
+              {/* Pin da fazenda */}
+              <div className="ltm-pin ltm-pin-a">
+                <div className="ltm-pin-dot" />
+                <div className="ltm-pin-label">Fazenda Santa Cruz</div>
+              </div>
+              <div className="ltm-pin ltm-pin-b">
+                <div className="ltm-pin-dot" style={{ background: '#3b82f6' }} />
+                <div className="ltm-pin-label">Talhão B</div>
+              </div>
+
+              {/* Weather widget mini */}
+              <div className="ltm-weather">
+                <span className="ltm-weather-icon">🌤️</span>
+                <div>
+                  <div className="ltm-weather-temp">24°C</div>
+                  <div className="ltm-weather-sub">Umidade 68%</div>
+                </div>
+              </div>
+
+              {/* Radar pulse */}
+              <div className="ltm-radar-pulse" />
+
+              {/* Annotation */}
+              <div className="ltm-note">
+                <span>📝</span> Plantio soja — 12/05
+              </div>
+            </div>
+
+            {/* Toolbar lateral mockup */}
+            <div className="ltm-toolbar">
+              {['✏️','⬡','🗑️','📍','🌧️'].map((ic, i) => (
+                <div key={i} className={`ltm-tool${i === 0 ? ' ltm-tool-active' : ''}`}>{ic}</div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── CTA Bottom ───────────────────────────────── */}
       <section className="landing-bottom-cta">
         <div className="landing-bottom-cta-glow" />
