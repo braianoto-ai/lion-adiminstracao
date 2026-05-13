@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://lion-adiminstracao-o3r2tlhbc-braianoto-ais-projects.vercel.app/sitemap.xml
