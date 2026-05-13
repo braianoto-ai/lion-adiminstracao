@@ -1,7 +1,36 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useCallback } from 'react'
 
 export default function LandingPage() {
   const statsRef = useRef<HTMLDivElement>(null)
+
+  // Scroll fade-in for all sections
+  const observeFadeIn = useCallback(() => {
+    const els = document.querySelectorAll<HTMLElement>('.lp-fade')
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('lp-fade-in')
+          io.unobserve(e.target)
+        }
+      })
+    }, { threshold: 0.12 })
+    els.forEach(el => io.observe(el))
+    return () => io.disconnect()
+  }, [])
+
+  useEffect(() => {
+    const cleanup = observeFadeIn()
+    return cleanup
+  }, [observeFadeIn])
+
+  // Nav scroll shadow
+  useEffect(() => {
+    const nav = document.querySelector('.landing-nav')
+    if (!nav) return
+    const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 20)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   // Animate counters when stats section enters viewport
   useEffect(() => {
@@ -161,7 +190,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── Stats bar ────────────────────────────────── */}
-      <div className="landing-stats-wrap" ref={statsRef}>
+      <div className="landing-stats-wrap lp-fade" ref={statsRef}>
         <div className="landing-stats">
           {stats.map(({ value, suffix, label }) => (
             <div key={label} className="landing-stat">
@@ -173,7 +202,7 @@ export default function LandingPage() {
       </div>
 
       {/* ── Features ─────────────────────────────────── */}
-      <section className="landing-features">
+      <section className="landing-features lp-fade">
         <h2 className="landing-section-title">Tudo que você precisa</h2>
         <p className="landing-section-sub">9 módulos integrados para gerenciar sua vida financeira e patrimonial</p>
         <div className="landing-grid">
@@ -188,8 +217,10 @@ export default function LandingPage() {
       </section>
 
 
+      <div className="landing-section-divider" />
+
       {/* ── Terra Section ───────────────────────────── */}
-      <section className="landing-terra">
+      <section className="landing-terra lp-fade">
         <div className="landing-terra-inner">
           <div className="landing-terra-text">
             <div className="landing-badge" style={{ marginBottom: 20 }}>
@@ -276,8 +307,10 @@ export default function LandingPage() {
       </section>
 
 
+      <div className="landing-section-divider" />
+
       {/* ── Família & Metas ─────────────────────────── */}
-      <section className="landing-famgoals">
+      <section className="landing-famgoals lp-fade">
         <div className="landing-famgoals-inner">
 
           {/* Text */}
@@ -374,8 +407,10 @@ export default function LandingPage() {
       </section>
 
 
+      <div className="landing-section-divider" />
+
       {/* ── Depoimentos ─────────────────────────────── */}
-      <section className="landing-testimonials">
+      <section className="landing-testimonials lp-fade">
         <div className="landing-testimonials-inner">
           <h2 className="landing-section-title">O que dizem os usuários</h2>
           <p className="landing-section-sub" style={{ marginBottom: 40 }}>Produtores rurais e famílias que organizam sua vida financeira com o Lion</p>
@@ -419,8 +454,10 @@ export default function LandingPage() {
         </div>
       </section>
 
+      <div className="landing-section-divider" />
+
       {/* ── Disponível em todo dispositivo ───────────── */}
-      <section className="landing-devices">
+      <section className="landing-devices lp-fade">
         <div className="landing-devices-inner">
           <div className="landing-devices-text">
             <div className="landing-badge" style={{ marginBottom: 20 }}>
@@ -494,7 +531,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── CTA Bottom ───────────────────────────────── */}
-      <section className="landing-bottom-cta">
+      <section className="landing-bottom-cta lp-fade">
         <div className="landing-bottom-cta-glow" />
         <h2>Pronto para começar?</h2>
         <p>Acesse seu painel com segurança e mantenha tudo sob controle.</p>
