@@ -784,6 +784,40 @@
 /* Success */
 .auth-success-icon { margin-bottom: 24px }
 
+/* Esqueci a senha */
+.auth-forgot-link {
+  background: none; border: none;
+  font-size: .75rem; color: #3b82f6;
+  cursor: pointer; padding: 0;
+  transition: color .15s;
+}
+.auth-forgot-link:hover { color: #60a5fa }
+
+.auth-forgot-box {
+  background: rgba(59,130,246,.05);
+  border: 1px solid rgba(59,130,246,.15);
+  border-radius: 14px;
+  padding: 20px;
+  margin-bottom: 4px;
+}
+.auth-forgot-title { font-size: .95rem; font-weight: 700; color: #f1f5f9; margin-bottom: 6px }
+.auth-forgot-desc  { font-size: .82rem; color: #64748b; margin-bottom: 14px; line-height: 1.6 }
+.auth-forgot-cancel {
+  background: rgba(255,255,255,.05);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 10px;
+  color: #94a3b8;
+  font-size: .85rem;
+  padding: 10px 16px;
+  cursor: pointer;
+  transition: background .15s;
+}
+.auth-forgot-cancel:hover { background: rgba(255,255,255,.09) }
+
+.auth-forgot-sent-icon { display: flex; justify-content: center; margin-bottom: 12px }
+.auth-forgot-sent-title { font-size: 1rem; font-weight: 700; color: #f1f5f9; text-align: center; margin-bottom: 6px }
+.auth-forgot-sent-desc  { font-size: .82rem; color: #64748b; text-align: center; line-height: 1.6; margin-bottom: 16px }
+
 /* ── Responsivo ── */
 @media (max-width: 760px) {
   .auth-wrap { grid-template-columns: 1fr }

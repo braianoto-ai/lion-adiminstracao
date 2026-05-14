@@ -4,6 +4,7 @@ import './App.css'
 import { supabase } from './lib/supabase'
 import LoginPage from './LoginPage'
 import RegisterPage from './RegisterPage'
+import ResetPasswordPage from './ResetPasswordPage'
 import type { User } from '@supabase/supabase-js'
 import { UserCtx, DATA_KEYS } from './context'
 import { useCloudTable, useSyncError } from './hooks'
@@ -928,6 +929,7 @@ export default function App() {
 
   const [user, setUser] = useState<User | null>(null)
   const [authReady, setAuthReady] = useState(false)
+  const [passwordRecovery, setPasswordRecovery] = useState(false)
   // Rastreia a hash atual para re-renderizar quando o usuário navega entre landing/login/register
   const [currentHash, setCurrentHash] = useState(() => window.location.hash)
   useEffect(() => {
@@ -942,8 +944,12 @@ export default function App() {
       setUser(data.session?.user ?? null)
       setAuthReady(true)
     })
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(session?.user ?? null)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') {
+        setPasswordRecovery(true)
+      } else {
+        setUser(session?.user ?? null)
+      }
     })
     return () => subscription.unsubscribe()
   }, [])
@@ -1025,6 +1031,14 @@ export default function App() {
 
   // Public map route — no auth required
   if (currentHash.startsWith('#/mapa')) return <PublicMapPage />
+
+  // Redefinição de senha via link do e-mail
+  if (passwordRecovery) return (
+    <ResetPasswordPage onDone={() => {
+      setPasswordRecovery(false)
+      window.location.hash = '#/login'
+    }} />
+  )
 
   if (supabase && !user) {
     if (currentHash === '#/login') return <LoginPage />

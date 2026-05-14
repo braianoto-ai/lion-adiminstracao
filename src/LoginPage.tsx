@@ -7,6 +7,10 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+  const [forgotMode, setForgotMode] = useState(false)
+  const [forgotEmail, setForgotEmail] = useState('')
+  const [forgotSent, setForgotSent] = useState(false)
+  const [forgotLoading, setForgotLoading] = useState(false)
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -15,6 +19,15 @@ export default function LoginPage() {
     const { error: err } = await supabase!.auth.signInWithPassword({ email, password })
     if (err) setError(err.message)
     setLoading(false)
+  }
+
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setForgotLoading(true)
+    const redirectTo = `${window.location.origin}${window.location.pathname}`
+    await supabase!.auth.resetPasswordForEmail(forgotEmail, { redirectTo })
+    setForgotSent(true)
+    setForgotLoading(false)
   }
 
   return (
@@ -68,7 +81,56 @@ export default function LoginPage() {
             <p className="auth-desc">Acesse seu painel financeiro</p>
           </div>
 
-          <form className="auth-form" onSubmit={handleLogin}>
+          {/* ── Modo esqueci a senha ── */}
+          {forgotMode && (
+            <div className="auth-forgot-box">
+              {forgotSent ? (
+                <>
+                  <div className="auth-forgot-sent-icon">
+                    <svg viewBox="0 0 40 40" fill="none" width="40" height="40">
+                      <circle cx="20" cy="20" r="19" stroke="#3b82f6" strokeWidth="1.2" opacity=".4"/>
+                      <path d="M8 18l6 2 4-8 4 10 4-6 6 4" stroke="#3b82f6" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                  </div>
+                  <p className="auth-forgot-sent-title">E-mail enviado!</p>
+                  <p className="auth-forgot-sent-desc">Verifique sua caixa de entrada em <strong>{forgotEmail}</strong> e clique no link para redefinir sua senha.</p>
+                  <button className="auth-forgot-cancel" onClick={() => { setForgotMode(false); setForgotSent(false) }}>
+                    ← Voltar para o login
+                  </button>
+                </>
+              ) : (
+                <form onSubmit={handleForgot}>
+                  <p className="auth-forgot-title">Recuperar senha</p>
+                  <p className="auth-forgot-desc">Digite seu e-mail e enviaremos um link para redefinir sua senha.</p>
+                  <div className="auth-input-wrap" style={{ marginBottom: 12 }}>
+                    <svg className="auth-input-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4">
+                      <rect x="2" y="4" width="16" height="12" rx="2"/><path d="M2 7l8 5 8-5" strokeLinecap="round"/>
+                    </svg>
+                    <input
+                      className="auth-input"
+                      type="email"
+                      placeholder="seu@email.com"
+                      value={forgotEmail}
+                      onChange={e => setForgotEmail(e.target.value)}
+                      required
+                      autoFocus
+                    />
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button type="button" className="auth-forgot-cancel" onClick={() => setForgotMode(false)}>Cancelar</button>
+                    <button className="auth-btn" type="submit" disabled={forgotLoading} style={{ flex: 1, marginTop: 0 }}>
+                      {forgotLoading
+                        ? <span className="auth-btn-loading"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14" className="auth-spin"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4" strokeLinecap="round"/></svg>Enviando…</span>
+                        : 'Enviar link'
+                      }
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          )}
+
+          <form className="auth-form" onSubmit={handleLogin} style={{ display: forgotMode ? 'none' : 'flex' }}>
             <div className="auth-field">
               <label className="auth-label">E-mail</label>
               <div className="auth-input-wrap">
@@ -88,7 +150,12 @@ export default function LoginPage() {
             </div>
 
             <div className="auth-field">
-              <label className="auth-label">Senha</label>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <label className="auth-label">Senha</label>
+                <button type="button" className="auth-forgot-link" onClick={() => { setForgotMode(true); setForgotEmail(email) }}>
+                  Esqueci a senha
+                </button>
+              </div>
               <div className="auth-input-wrap">
                 <svg className="auth-input-icon" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.4">
                   <rect x="3" y="8" width="14" height="10" rx="2"/><path d="M7 8V6a3 3 0 0 1 6 0v2" strokeLinecap="round"/>
