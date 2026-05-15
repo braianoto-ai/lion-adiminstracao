@@ -239,7 +239,7 @@ export default function LandingPage() {
             </p>
           </div>
 
-          {/* Features em grid 3 colunas */}
+          {/* Features em grid — 3 col desktop, 1 col mobile */}
           <div className="landing-terra-feats-grid">
             {[
               { icon: '📍', title: 'Localização exata', desc: 'Marque a coordenada da fazenda no mapa com um clique.' },
@@ -259,8 +259,8 @@ export default function LandingPage() {
             ))}
           </div>
 
-          {/* Mapa público real — Lion Farm (largura total) */}
-          <div className="landing-terra-map-full">
+          {/* Desktop: iframe real do mapa */}
+          <div className="landing-terra-map-full landing-terra-map-desktop">
             <iframe
               src="https://braianoto-ai.github.io/lion-adiminstracao/#/mapa/30056726-5681-4e59-bb26-c0a83212c8e7"
               title="Lion Farm — mapa público"
@@ -268,6 +268,29 @@ export default function LandingPage() {
               loading="lazy"
               allow="geolocation"
             />
+          </div>
+
+          {/* Mobile: preview leve com botão de abertura */}
+          <div className="landing-terra-map-mobile">
+            <div className="landing-terra-map-preview">
+              <div className="ltm-preview-grid" />
+              <div className="ltm-preview-content">
+                <div className="ltm-preview-icon">🗺️</div>
+                <p className="ltm-preview-title">Lion Farm</p>
+                <p className="ltm-preview-sub">Mapa interativo com talhões, clima e radar de chuva</p>
+                <a
+                  className="ltm-preview-btn"
+                  href="https://admlion.com/#/mapa/30056726-5681-4e59-bb26-c0a83212c8e7"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Abrir mapa completo
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.8" width="14" height="14">
+                    <path d="M3 8h10M9 4l4 4-4 4" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </a>
+              </div>
+            </div>
           </div>
 
         </div>
