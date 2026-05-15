@@ -4,14 +4,19 @@ import 'leaflet/dist/leaflet.css'
 import { UserCtx } from '../context'
 import { useCloudTable, useSyncStatus } from '../hooks'
 import { TALHAO_USOS, TERRA_BIOMAS, TERRA_CULTURAS, TERRA_RELEVOS, TERRA_SOLOS, TERRA_UFS, NOTA_CATEGORIAS, compressImage } from '../constants'
-import type { TerraFazenda, TerraTalhao, TalhaoUso, TerraNote, NotaCategoria } from '../types'
+import type { TerraFazenda, TerraTalhao, TalhaoUso, TerraNote, NotaCategoria, Camera } from '../types'
 
 export default function TerraPage() {
   const userId = useContext(UserCtx)
   const [fazendas, setFazendas] = useCloudTable<TerraFazenda>('terra_fazendas', 'lion-terra', { shared: true })
   const [talhoes, setTalhoes] = useCloudTable<TerraTalhao>('terra_talhoes', 'lion-talhoes', { shared: true })
   const [notas, setNotas] = useCloudTable<TerraNote>('terra_notas', 'lion-notas', { shared: true })
-  const [tab, setTab] = useState<'visao' | 'mapa' | 'talhoes' | 'docs' | 'fazendas'>('visao')
+  const [cameras, setCameras] = useCloudTable<Camera>('cameras', 'lion-cameras')
+  const [tab, setTab] = useState<'visao' | 'mapa' | 'talhoes' | 'docs' | 'fazendas' | 'cameras'>('visao')
+  const [camForm, setCamForm] = useState({ name: '', streamUrl: '', description: '' })
+  const [editCamId, setEditCamId] = useState<string | null>(null)
+  const [showCamForm, setShowCamForm] = useState(false)
+  const [activeCamId, setActiveCamId] = useState<string | null>(null)
   const [shareCopied, setShareCopied] = useState(false)
   const [showValores, setShowValores] = useState(false)
   const isSyncing = useSyncStatus('lion-terra', 'lion-talhoes', 'lion-notas')
@@ -1634,6 +1639,175 @@ export default function TerraPage() {
     </div>
   )
 
+  // ── Cameras ──────────────────────────────────────────────────────────────────
+  const fazCameras = cameras.filter(c => c.fazendaId === fazenda?.id)
+
+  const saveCam = (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!camForm.name.trim() || !camForm.streamUrl.trim() || !fazenda) return
+    const now = new Date().toISOString()
+    if (editCamId) {
+      setCameras(prev => prev.map(c => c.id === editCamId ? { ...c, ...camForm } : c))
+    } else {
+      const cam: Camera = { id: Date.now().toString(), fazendaId: fazenda.id, ...camForm, createdAt: now }
+      setCameras(prev => [...prev, cam])
+      setActiveCamId(cam.id)
+    }
+    setCamForm({ name: '', streamUrl: '', description: '' })
+    setShowCamForm(false); setEditCamId(null)
+  }
+
+  const deleteCam = (id: string) => {
+    if (!confirm('Remover câmera?')) return
+    setCameras(prev => prev.filter(c => c.id !== id))
+    if (activeCamId === id) setActiveCamId(fazCameras.find(c => c.id !== id)?.id ?? null)
+  }
+
+  function streamPlayer(url: string) {
+    if (!url) return null
+    const isMjpeg = /mjpeg|\.jpg(\?|$)/i.test(url)
+    if (isMjpeg) return <img src={url} className="cam-stream-img" alt="stream" />
+    return <iframe src={url} className="cam-stream-iframe" allow="autoplay; fullscreen" allowFullScreen title="camera" />
+  }
+
+  const renderCameras = () => (
+    <div className="cam-page">
+      <div className="cam-header">
+        <div>
+          <h2 className="cam-title">Câmeras ao vivo</h2>
+          <p className="cam-sub">{fazenda?.nome ?? 'Fazenda'} · {fazCameras.length} câmera{fazCameras.length !== 1 ? 's' : ''}</p>
+        </div>
+        <button className="btn-accent cam-add-btn" onClick={() => { setShowCamForm(v => !v); setEditCamId(null); setCamForm({ name: '', streamUrl: '', description: '' }) }}>
+          {showCamForm && !editCamId ? '✕ Cancelar' : '+ Câmera'}
+        </button>
+      </div>
+
+      {showCamForm && (
+        <form className="cam-form" onSubmit={saveCam}>
+          <div className="cam-form-grid">
+            <div className="fin-field">
+              <label>Nome *</label>
+              <input autoFocus value={camForm.name} onChange={e => setCamForm(p => ({ ...p, name: e.target.value }))} placeholder="Ex: Entrada, Curral, Silo…" required />
+            </div>
+            <div className="fin-field">
+              <label>Descrição</label>
+              <input value={camForm.description} onChange={e => setCamForm(p => ({ ...p, description: e.target.value }))} placeholder="Opcional" />
+            </div>
+            <div className="fin-field cam-form-url">
+              <label>URL do stream *</label>
+              <input value={camForm.streamUrl} onChange={e => setCamForm(p => ({ ...p, streamUrl: e.target.value }))} placeholder="https://cam.suafazenda.com/webrtc?src=camera1" required />
+            </div>
+          </div>
+          <div className="goal-form-actions">
+            <button type="button" className="btn-ghost" onClick={() => { setShowCamForm(false); setEditCamId(null) }}>Cancelar</button>
+            <button type="submit" className="btn-accent">{editCamId ? 'Salvar' : 'Adicionar câmera'}</button>
+          </div>
+        </form>
+      )}
+
+      {fazCameras.length === 0 && !showCamForm && (
+        <div className="cam-setup-guide">
+          <div className="cam-setup-icon">📡</div>
+          <h3 className="cam-setup-title">Configure sua câmera</h3>
+          <p className="cam-setup-desc">Sua câmera iCSee já está pronta. Quando você for à fazenda, siga estes passos:</p>
+          <div className="cam-steps">
+            <div className="cam-step">
+              <span className="cam-step-num">1</span>
+              <div>
+                <strong>Compre um Raspberry Pi 3B+ ou 4</strong>
+                <span>~R$ 250–350 no Mercado Livre. Leve também um cartão SD e cabo de rede.</span>
+              </div>
+            </div>
+            <div className="cam-step">
+              <span className="cam-step-num">2</span>
+              <div>
+                <strong>Conecte o Raspberry Pi no roteador Starlink</strong>
+                <span>Com o cabo de rede. Acesse via SSH ou teclado+monitor.</span>
+              </div>
+            </div>
+            <div className="cam-step">
+              <span className="cam-step-num">3</span>
+              <div>
+                <strong>Instale o go2rtc</strong>
+                <span className="cam-step-code">wget -O go2rtc https://github.com/AlexxIT/go2rtc/releases/latest/download/go2rtc_linux_arm64 && chmod +x go2rtc</span>
+              </div>
+            </div>
+            <div className="cam-step">
+              <span className="cam-step-num">4</span>
+              <div>
+                <strong>Configure com a câmera iCSee</strong>
+                <span className="cam-step-code">{'./go2rtc -config "streams: {camera1: rtsp://admin:SENHA@IP_CAMERA:554/11}"'}</span>
+              </div>
+            </div>
+            <div className="cam-step">
+              <span className="cam-step-num">5</span>
+              <div>
+                <strong>Instale o Cloudflare Tunnel</strong>
+                <span>Cria uma URL pública segura. Gratuito. Funciona com Starlink (sem IP fixo).</span>
+                <span className="cam-step-code">curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | sudo tee /usr/share/keyrings/cloudflare-main.gpg</span>
+              </div>
+            </div>
+            <div className="cam-step">
+              <span className="cam-step-num">6</span>
+              <div>
+                <strong>Adicione a URL aqui</strong>
+                <span>Depois do tunnel, você terá uma URL tipo <code>https://cam-fazenda.admlion.com</code>. Cole em "+ Câmera" acima.</span>
+              </div>
+            </div>
+          </div>
+          <button className="btn-accent" style={{ marginTop: 16 }} onClick={() => setShowCamForm(true)}>
+            + Já tenho a URL — adicionar câmera
+          </button>
+        </div>
+      )}
+
+      {fazCameras.length > 0 && (
+        <div className="cam-layout">
+          {/* Sidebar */}
+          <div className="cam-sidebar">
+            {fazCameras.map(c => (
+              <div key={c.id} className={`cam-sidebar-item${activeCamId === c.id ? ' active' : ''}`} onClick={() => setActiveCamId(c.id)}>
+                <div className="cam-sidebar-dot" />
+                <div className="cam-sidebar-info">
+                  <span className="cam-sidebar-name">{c.name}</span>
+                  {c.description && <span className="cam-sidebar-desc">{c.description}</span>}
+                </div>
+                <div className="cam-sidebar-actions">
+                  <button className="ph-icon-btn" onClick={e => { e.stopPropagation(); setCamForm({ name: c.name, streamUrl: c.streamUrl, description: c.description ?? '' }); setEditCamId(c.id); setShowCamForm(true) }} title="Editar">
+                    <svg viewBox="0 0 14 14" fill="none"><path d="M2 10l7-7 2 2-7 7H2v-2z" stroke="currentColor" strokeWidth="1.2" strokeLinejoin="round"/></svg>
+                  </button>
+                  <button className="ph-icon-btn ph-icon-btn-del" onClick={e => { e.stopPropagation(); deleteCam(c.id) }} title="Remover">
+                    <svg viewBox="0 0 14 14" fill="none"><path d="M4 4l6 6M10 4l-6 6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/></svg>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Player */}
+          <div className="cam-player">
+            {(() => {
+              const cam = fazCameras.find(c => c.id === activeCamId) ?? fazCameras[0]
+              if (!cam) return null
+              return (
+                <>
+                  <div className="cam-player-header">
+                    <span className="cam-player-name">🎥 {cam.name}</span>
+                    {cam.description && <span className="cam-player-desc">{cam.description}</span>}
+                    <a className="cam-player-link btn-ghost" href={cam.streamUrl} target="_blank" rel="noreferrer">↗ Abrir em nova aba</a>
+                  </div>
+                  <div className="cam-player-wrap">
+                    {streamPlayer(cam.streamUrl)}
+                  </div>
+                </>
+              )
+            })()}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
   return (
     <div className={`terra-page${tab === 'mapa' ? ' terra-page-fullmap' : ''}`}>
       {fazendas.length > 1 && (
@@ -1644,9 +1818,9 @@ export default function TerraPage() {
         </div>
       )}
       <div className="terra-tabs">
-        {(['visao', 'mapa', 'talhoes', 'docs', 'fazendas'] as const).map(t => (
+        {(['visao', 'mapa', 'talhoes', 'docs', 'fazendas', 'cameras'] as const).map(t => (
           <button key={t} className={`terra-tab${tab === t ? ' terra-tab-active' : ''}`} onClick={() => setTab(t)}>
-            {{ visao: 'Visão Geral', mapa: 'Mapa', talhoes: 'Talhões', docs: 'Documentos', fazendas: 'Fazendas' }[t]}
+            {{ visao: 'Visão Geral', mapa: 'Mapa', talhoes: 'Talhões', docs: 'Documentos', fazendas: 'Fazendas', cameras: '🎥 Câmeras' }[t]}
           </button>
         ))}
       </div>
@@ -1656,6 +1830,7 @@ export default function TerraPage() {
         {tab === 'talhoes' && renderTalhoes()}
         {tab === 'docs' && renderDocs()}
         {tab === 'fazendas' && renderFazendas()}
+        {tab === 'cameras' && renderCameras()}
       </div>
     </div>
   )
