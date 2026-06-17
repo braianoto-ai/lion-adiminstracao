@@ -3,6 +3,7 @@ import { useCloudTable } from '../hooks'
 import { TX_CATEGORIES } from '../constants'
 import type { Transaction, TxType } from '../types'
 import { exportTransactionsCSV, exportTransactionsPDF } from '../exportUtils'
+import BoletoScanner from '../components/BoletoScanner'
 
 
 function parseNubankCSV(text: string): Omit<Transaction, 'id'>[] {
@@ -85,6 +86,7 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
   const [recurring, setRecurring] = useState(false)
   const [recurringMonths, setRecurringMonths] = useState(12)
   const [confirmDel, setConfirmDel] = useState<{ tx: Transaction; others: number } | null>(null)
+  const [showScanner, setShowScanner] = useState(false)
   const [form, setForm] = useState({
     type: 'receita' as TxType,
     category: TX_CATEGORIES.receita[0],
@@ -444,10 +446,35 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
         </div>
       )}
 
+      {showScanner && (
+        <BoletoScanner
+          onResult={data => {
+            setForm(f => ({
+              ...f,
+              type: 'despesa',
+              category: TX_CATEGORIES.despesa[0],
+              description: data.description || f.description,
+              amount: data.amount || f.amount,
+              date: data.date || f.date,
+            }))
+          }}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
+
       {view === 'add' && (
         <div className="fin-body">
           <form className="fin-form" onSubmit={addTx}>
             {editId && <div className="fin-edit-title">Editando lançamento</div>}
+            {!editId && (
+              <button type="button" className="boleto-scan-btn" onClick={() => setShowScanner(true)}>
+                <svg viewBox="0 0 20 20" fill="none" width="15" height="15">
+                  <rect x="2" y="4" width="16" height="12" rx="2" stroke="currentColor" strokeWidth="1.4"/>
+                  <path d="M5 8h1v4H5zM7 7h1v5H7zM9 9h1v2H9zM11 7h1v5h-1zM13 8h1v4h-1z" fill="currentColor"/>
+                </svg>
+                Escanear Boleto
+              </button>
+            )}
             <div className="fin-type-toggle">
               <button type="button" className={`fin-type-btn${form.type === 'receita' ? ' fin-type-green' : ''}`}
                 onClick={() => setForm(f => ({ ...f, type: 'receita', category: TX_CATEGORIES.receita[0] }))}>↑ Receita</button>
