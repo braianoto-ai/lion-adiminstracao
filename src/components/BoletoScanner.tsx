@@ -44,7 +44,7 @@ function parseBoletoText(text: string): BoletoData {
   for (const pat of vencPatterns) {
     const m = text.match(pat)
     if (m) {
-      const [, d, mo, y] = m
+      const [, , mo, y] = m
       const year = parseInt(y)
       const month = parseInt(mo)
       if (year >= 2020 && year <= 2040 && month >= 1 && month <= 12) {
