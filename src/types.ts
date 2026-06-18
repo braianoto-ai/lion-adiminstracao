@@ -135,6 +135,15 @@ export interface Bill {
   updatedAt: string
 }
 
+export interface Camera {
+  id: string
+  fazendaId: string
+  name: string
+  streamUrl: string
+  description?: string
+  createdAt: string
+}
+
 export interface FamilyMember {
   id: string
   name: string
