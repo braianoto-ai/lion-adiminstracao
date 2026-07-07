@@ -8486,3 +8486,82 @@ html[data-theme="light"] .terra-field textarea { background: var(--bg2) }
 @media (max-width: 480px) {
   .boleto-row { grid-template-columns: 1fr }
 }
+
+/* ─── Documents – expiry & personal docs ───────────────────────────────── */
+
+.docs-cat-filter {
+  display: flex;
+  gap: 6px;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+.docs-cat-filter::-webkit-scrollbar { display: none }
+
+.docs-expiry-alert {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: rgba(239, 68, 68, 0.08);
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  border-radius: var(--radius);
+  font-size: calc(12px * var(--fs, 1));
+  color: #ef4444;
+  margin-bottom: 10px;
+}
+
+.docs-alert-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 99px;
+  background: #ef4444;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  margin-left: 4px;
+}
+
+.doc-expiry-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 7px;
+  border-radius: 99px;
+  font-size: calc(11px * var(--fs, 1));
+  font-weight: 600;
+  white-space: nowrap;
+  margin-top: 3px;
+}
+.doc-expiry-expired {
+  background: rgba(239, 68, 68, 0.12);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+.doc-expiry-soon {
+  background: rgba(245, 158, 11, 0.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245, 158, 11, 0.25);
+}
+.doc-expiry-ok {
+  background: rgba(16, 185, 129, 0.1);
+  color: #10b981;
+  border: 1px solid rgba(16, 185, 129, 0.2);
+}
+
+.doc-item-expired {
+  border-color: rgba(239, 68, 68, 0.2) !important;
+  background: rgba(239, 68, 68, 0.03);
+}
+
+.fin-label-opt {
+  font-size: calc(11px * var(--fs, 1));
+  color: var(--text3);
+  font-weight: 400;
+}
