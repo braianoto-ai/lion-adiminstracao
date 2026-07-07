@@ -76,7 +76,12 @@ export const MAINT_FORM_INIT = { asset: '', type: MAINT_TYPES[0], description: '
 
 // ─── Documents ──────────────────────────────────────────────────────────────
 
-export const DOC_CATEGORIES = ['Escritura', 'IPTU', 'Contrato', 'Seguro', 'Planta', 'Comprovante', 'Laudo', 'Outros']
+export const DOC_CATEGORY_GROUPS = [
+  { group: 'Imóveis & Patrimônio', items: ['Escritura', 'IPTU', 'Contrato', 'Seguro', 'Planta', 'Comprovante', 'Laudo'] },
+  { group: 'Documentos Pessoais', items: ['Passaporte', 'RG', 'CPF', 'CNH', 'Certidão de Nascimento', 'Certidão de Casamento', 'Título de Eleitor', 'Carteira de Trabalho', 'Diploma'] },
+  { group: 'Outros', items: ['Outros'] },
+]
+export const DOC_CATEGORIES = DOC_CATEGORY_GROUPS.flatMap(g => g.items)
 export const BUCKET = 'lion-docs'
 
 // ─── Vehicles ───────────────────────────────────────────────────────────────

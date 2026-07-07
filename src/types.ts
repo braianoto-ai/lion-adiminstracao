@@ -215,6 +215,7 @@ export interface DocMeta {
   fileUrl: string
   fileName: string
   createdAt: string
+  expiresAt?: string
 }
 
 export interface Vehicle {
