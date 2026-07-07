@@ -339,7 +339,7 @@ function PaymentHubPage() {
   const totalVencido  = bills.filter(b => effectiveStatus(b) === 'vencido').reduce((s, b) => s + b.amount, 0)
   const isPagoMes = (b: Bill) => b.status === 'pago' && (b.paidAt?.startsWith(thisMonth) || (!b.paidAt && (b.dueDate?.startsWith(thisMonth) || !b.dueDate)))
   const totalPagoMes  = bills.filter(isPagoMes).reduce((s, b) => s + b.amount, 0)
-  const totalMensal   = bills.filter(b => b.recurrence === 'mensal' && b.status !== 'cancelado').reduce((s, b) => s + b.amount, 0)
+  const totalMensal   = bills.filter(b => b.recurrence === 'mensal' && b.status !== 'cancelado' && b.dueDate?.startsWith(thisMonth)).reduce((s, b) => s + b.amount, 0)
 
   const countVencido  = bills.filter(b => effectiveStatus(b) === 'vencido').length
   const countAberto   = bills.filter(b => effectiveStatus(b) === 'em_aberto').length
