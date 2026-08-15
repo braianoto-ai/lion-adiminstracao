@@ -1218,6 +1218,10 @@
 }
 .dash-fazenda-card:hover { border-color: var(--accent) }
 
+/* Leaflet cria panes internos com z-index 400+. Sem um contexto de empilhamento
+   próprio, esses panes ficam na frente dos painéis flutuantes (z-index 150). */
+.leaflet-container { position: relative; z-index: 0 }
+
 /* ── Dashboard Finance Card (compact) ───────────────────────────────────── */
 .dash-fin-card {
   display: flex;
