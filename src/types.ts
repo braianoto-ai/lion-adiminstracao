@@ -162,6 +162,7 @@ export interface Transaction {
   date: string
   recurring?: boolean
   recurringId?: string
+  memberId?: string
 }
 
 export interface FieldDef {
