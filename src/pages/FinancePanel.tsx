@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useCloudTable } from '../hooks'
 import { TX_CATEGORIES } from '../constants'
-import type { Transaction, TxType } from '../types'
+import type { FamilyMember, Transaction, TxType } from '../types'
 import { exportTransactionsCSV, exportTransactionsPDF } from '../exportUtils'
 import BoletoScanner from '../components/BoletoScanner'
 
@@ -77,8 +77,10 @@ function detectAndParse(text: string, fileName: string): Omit<Transaction, 'id'>
 
 export default function FinancePanel({ onClose }: { onClose: () => void }) {
   const [txs, setTxs] = useCloudTable<Transaction>('transactions', 'lion-txs')
+  const [members] = useCloudTable<FamilyMember>('family_members', 'lion-family')
   const [view, setView] = useState<'overview' | 'list' | 'add' | 'import'>('overview')
   const [filter, setFilter] = useState<'all' | TxType>('all')
+  const [memberFilter, setMemberFilter] = useState<'all' | 'none' | string>('all')
   const _now2 = new Date()
   const _curMonth = `${_now2.getFullYear()}-${String(_now2.getMonth() + 1).padStart(2, '0')}`
   const [analysisMonth, setAnalysisMonth] = useState(_curMonth)
@@ -93,14 +95,17 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
     description: '',
     amount: '',
     date: new Date().toISOString().slice(0, 7),
+    memberId: '',
   })
 
-  function openAdd() { setEditId(null); setRecurring(false); setForm({ type: 'receita', category: TX_CATEGORIES.receita[0], description: '', amount: '', date: new Date().toISOString().slice(0, 7) }); setView('add') }
+  const memberById = (id?: string) => members.find(m => m.id === id)
+
+  function openAdd() { setEditId(null); setRecurring(false); setForm({ type: 'receita', category: TX_CATEGORIES.receita[0], description: '', amount: '', date: new Date().toISOString().slice(0, 7), memberId: '' }); setView('add') }
 
   function openEdit(tx: Transaction) {
     setEditId(tx.id)
     setRecurring(false)
-    setForm({ type: tx.type, category: tx.category, description: tx.description, amount: String(tx.amount), date: tx.date })
+    setForm({ type: tx.type, category: tx.category, description: tx.description, amount: String(tx.amount), date: tx.date, memberId: tx.memberId ?? '' })
     setView('add')
   }
 
@@ -108,9 +113,10 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
     e.preventDefault()
     if (!form.amount || !form.description.trim()) return
     const amt = parseFloat(form.amount)
+    const memberId = form.memberId || undefined
 
     if (editId) {
-      setTxs(prev => prev.map(t => t.id === editId ? { ...t, ...form, amount: amt } : t))
+      setTxs(prev => prev.map(t => t.id === editId ? { ...t, ...form, amount: amt, memberId } : t))
       setEditId(null)
       setView('list')
       return
@@ -131,11 +137,12 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
           date: d.toISOString().slice(0, 7),
           recurring: true,
           recurringId: rid,
+          memberId,
         })
       }
       setTxs(prev => [...newTxs, ...prev])
     } else {
-      setTxs(prev => [{ id: Date.now().toString(), type: form.type, category: form.category, description: form.description, amount: amt, date: form.date }, ...prev])
+      setTxs(prev => [{ id: Date.now().toString(), type: form.type, category: form.category, description: form.description, amount: amt, date: form.date, memberId }, ...prev])
     }
     setForm(f => ({ ...f, description: '', amount: '' }))
     setView('overview')
@@ -168,7 +175,10 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
 
   const maxVal = Math.max(...monthData.flatMap(m => [m.receitas, m.despesas]), 1)
   const fmtCurr = (n: number) => n.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
-  const filtered = filter === 'all' ? txs : txs.filter(t => t.type === filter)
+  const filtered = txs
+    .filter(t => filter === 'all' || t.type === filter)
+    .filter(t => memberFilter === 'all'
+      || (memberFilter === 'none' ? !t.memberId : t.memberId === memberFilter))
 
   const chartH = 120
   const barW = 22
@@ -238,6 +248,20 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
           cat, color: ['#10b981','#22c55e','#84cc16','#06b6d4','#3b82f6','#8b5cf6'][i % 6],
           val: aTxs.filter(t => t.type === 'receita' && t.category === cat).reduce((s, t) => s + t.amount, 0),
         })).filter(c => c.val > 0).sort((a, b) => b.val - a.val)
+
+        const aByMember = [
+          ...members.map(m => ({
+            id: m.id, name: m.name, color: m.color,
+            des: aTxs.filter(t => t.type === 'despesa' && t.memberId === m.id).reduce((s, t) => s + t.amount, 0),
+            rec: aTxs.filter(t => t.type === 'receita' && t.memberId === m.id).reduce((s, t) => s + t.amount, 0),
+          })),
+          {
+            id: '', name: 'Sem membro', color: 'var(--text)',
+            des: aTxs.filter(t => t.type === 'despesa' && !t.memberId).reduce((s, t) => s + t.amount, 0),
+            rec: aTxs.filter(t => t.type === 'receita' && !t.memberId).reduce((s, t) => s + t.amount, 0),
+          },
+        ].filter(m => m.des > 0 || m.rec > 0).sort((a, b) => b.des - a.des)
+        const maxMemberDes = Math.max(...aByMember.map(m => m.des), 1)
 
         const aSlices = donutSlices(aCatDes, 60, 60, 48, 28)
         const maxDes  = aCatDes[0]?.val || 1
@@ -381,6 +405,27 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
                 </div>
               </div>
             )}
+
+            {members.length > 0 && aByMember.length > 0 && (
+              <div className="fin-cat-col fin-member-section">
+                <div className="fin-cat-col-title">
+                  <span className="fin-cat-col-dot" style={{ background: 'var(--accent)' }} />
+                  Por membro
+                </div>
+                <div className="fin-cat-bars fin-cat-bars-only">
+                  {aByMember.map(m => (
+                    <div key={m.id || 'none'} className="fin-cat-bar-row">
+                      <span className="fin-cat-bar-name" title={m.name}>{m.name}</span>
+                      <div className="fin-cat-bar-track">
+                        <div className="fin-cat-bar-fill" style={{ width: `${(m.des / maxMemberDes) * 100}%`, background: m.color }} />
+                      </div>
+                      <span className="fin-cat-bar-val" title="Despesas">-{fmtCurr(m.des)}</span>
+                      <span className="fin-cat-bar-val fin-amt-green" title="Receitas">+{fmtCurr(m.rec)}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )
       })()}
@@ -392,6 +437,13 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
             <button className={`fin-chip${filter === 'all' ? ' fin-chip-active' : ''}`} onClick={() => setFilter('all')}>Todos ({txs.length})</button>
             <button className={`fin-chip fin-chip-green${filter === 'receita' ? ' fin-chip-active' : ''}`} onClick={() => setFilter('receita')}>Receitas</button>
             <button className={`fin-chip fin-chip-red${filter === 'despesa' ? ' fin-chip-active' : ''}`} onClick={() => setFilter('despesa')}>Despesas</button>
+            {members.length > 0 && (
+              <select className="fin-member-filter" value={memberFilter} onChange={e => setMemberFilter(e.target.value)}>
+                <option value="all">Todos os membros</option>
+                {members.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                <option value="none">Sem membro</option>
+              </select>
+            )}
           </div>
           {confirmDel && (
             <div className="fin-confirm-banner">
@@ -425,6 +477,15 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
                         {tx.recurring && <span className="fin-recurring-badge" title="Recorrente">
                           <svg viewBox="0 0 12 12" fill="none"><path d="M2 6a4 4 0 0 1 7-2.6M10 6a4 4 0 0 1-7 2.6" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round"/><path d="M8.5 2l.5 1.4-1.4.5M3.5 10l-.5-1.4 1.4-.5" stroke="currentColor" strokeWidth="1.1" strokeLinecap="round" strokeLinejoin="round"/></svg>
                         </span>}
+                        {(() => {
+                          const m = memberById(tx.memberId)
+                          return m ? (
+                            <span className="fin-member-chip" title={`${m.name} · ${m.role}`}>
+                              <span className="fin-member-dot" style={{ background: m.color }} />
+                              {m.name}
+                            </span>
+                          ) : null
+                        })()}
                       </td>
                       <td className="fin-td-cat">{tx.category}</td>
                       <td className={`fin-td-amt ${tx.type === 'receita' ? 'fin-amt-green' : 'fin-amt-red'}`}>
@@ -495,11 +556,24 @@ export default function FinancePanel({ onClose }: { onClose: () => void }) {
                 <input type="month" value={form.date} onChange={e => setForm(f => ({ ...f, date: e.target.value }))} required />
               </div>
             </div>
-            <div className="fin-field">
-              <label>Categoria</label>
-              <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
-                {TX_CATEGORIES[form.type].map(c => <option key={c}>{c}</option>)}
-              </select>
+            <div className="fin-row">
+              <div className="fin-field">
+                <label>Categoria</label>
+                <select value={form.category} onChange={e => setForm(f => ({ ...f, category: e.target.value }))}>
+                  {TX_CATEGORIES[form.type].map(c => <option key={c}>{c}</option>)}
+                </select>
+              </div>
+              <div className="fin-field">
+                <label>Membro da família</label>
+                {members.length === 0 ? (
+                  <div className="fin-member-hint">Cadastre membros em Família para vincular</div>
+                ) : (
+                  <select value={form.memberId} onChange={e => setForm(f => ({ ...f, memberId: e.target.value }))}>
+                    <option value="">Ninguém / da casa</option>
+                    {members.map(m => <option key={m.id} value={m.id}>{m.name} · {m.role}</option>)}
+                  </select>
+                )}
+              </div>
             </div>
             {!editId && (
               <div className="fin-recurring-row">

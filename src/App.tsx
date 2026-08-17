@@ -188,6 +188,7 @@ const MEMBER_FORM_INIT = { name: '', role: MEMBER_ROLES[0], color: MEMBER_COLORS
 
 function FamilyPage() {
   const [members, setMembers] = useCloudTable<FamilyMember>('family_members', 'lion-family')
+  const [txs] = useCloudTable<Transaction>('transactions', 'lion-txs')
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [form, setForm] = useState(MEMBER_FORM_INIT)
@@ -213,8 +214,8 @@ function FamilyPage() {
 
   // spending per member from transactions
   const txs: Transaction[] = (() => { try { return JSON.parse(localStorage.getItem('lion-txs') || '[]') } catch { return [] } })()
-  const spending = (id: string) => txs.filter(t => (t as Transaction & { memberId?: string }).memberId === id && t.type === 'despesa').reduce((s, t) => s + t.amount, 0)
-  const income   = (id: string) => txs.filter(t => (t as Transaction & { memberId?: string }).memberId === id && t.type === 'receita').reduce((s, t) => s + t.amount, 0)
+  const spending = (id: string) => txs.filter(t => t.memberId === id && t.type === 'despesa').reduce((s, t) => s + t.amount, 0)
+  const income   = (id: string) => txs.filter(t => t.memberId === id && t.type === 'receita').reduce((s, t) => s + t.amount, 0)
   const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 })
 
   return (
