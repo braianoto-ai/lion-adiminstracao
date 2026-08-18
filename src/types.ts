@@ -253,6 +253,7 @@ export interface AppAlert {
   category: string
   title: string
   detail: string
+  collectorId?: string
 }
 
 export interface EmailJSConfig {
@@ -260,6 +261,8 @@ export interface EmailJSConfig {
   templateId: string
   publicKey: string
   toEmail: string
+  emailCategories?: string[]
+  emailCollectorIds?: string[]
 }
 
 export interface ActivityItem {

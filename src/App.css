@@ -4741,6 +4741,26 @@ html[data-theme="light"] .share-file-btn { background: var(--bg3); border-color:
 .email-actions .btn-ghost,
 .email-actions .btn-accent { flex: 1; justify-content: center }
 
+.email-filter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 10px;
+  background: var(--bg3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+}
+.email-filter-indent { margin-left: 12px }
+.email-filter-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: calc(12px * var(--fs, 1));
+  color: var(--text2);
+  cursor: pointer;
+}
+.email-filter-item input[type="checkbox"] { accent-color: var(--purple, #7c5cff); cursor: pointer }
+
 /* ═══════════════════════════════════════════════════════════
    SHARE PANEL
 ═══════════════════════════════════════════════════════════ */

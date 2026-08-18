@@ -2,11 +2,14 @@ import { useState, useEffect } from 'react'
 import emailjs from '@emailjs/browser'
 import { EMAILJS_CONFIG_KEY, EMAILJS_INIT } from '../constants'
 import { buildAlerts } from '../utils'
-import type { AppAlert, EmailJSConfig } from '../types'
+import type { AppAlert, EmailJSConfig, Collector } from '../types'
 
-export default 
+export default
 function AlertsPanel({ onClose }: { onClose: () => void }) {
   const [alerts, setAlerts] = useState<AppAlert[]>(() => buildAlerts())
+  const [collectors] = useState<Collector[]>(() => {
+    try { return JSON.parse(localStorage.getItem('lion-collectors') || '[]') } catch { return [] }
+  })
   const [showEmail, setShowEmail] = useState(false)
   const [cfg, setCfg] = useState<EmailJSConfig>(() => {
     try { return JSON.parse(localStorage.getItem(EMAILJS_CONFIG_KEY) || 'null') || EMAILJS_INIT } catch { return EMAILJS_INIT }
@@ -25,16 +28,41 @@ function AlertsPanel({ onClose }: { onClose: () => void }) {
   const saveConfig = () => { localStorage.setItem(EMAILJS_CONFIG_KEY, JSON.stringify(cfg)); setSendResult(null) }
   const isConfigured = cfg.serviceId && cfg.templateId && cfg.publicKey && cfg.toEmail
 
+  const categories = [...new Set(alerts.map(a => a.category))]
+  const billCollectorIds = [...new Set(alerts.filter(a => a.category === 'Conta' && a.collectorId).map(a => a.collectorId as string))]
+
+  // `emailCategories`/`emailCollectorIds` undefined = nothing deselected yet (everything enabled).
+  // Once set, it's the exact explicit list — an empty array means everything was deselected, not "all".
+  const categoryEnabled = (cat: string) => !cfg.emailCategories || cfg.emailCategories.includes(cat)
+  const collectorEnabled = (id?: string) => !id || !cfg.emailCollectorIds || cfg.emailCollectorIds.includes(id)
+
+  const toggleCategory = (cat: string) => {
+    setCfg(p => {
+      const current = p.emailCategories ?? categories
+      const next = current.includes(cat) ? current.filter(c => c !== cat) : [...current, cat]
+      return { ...p, emailCategories: next }
+    })
+  }
+  const toggleCollector = (id: string) => {
+    setCfg(p => {
+      const current = p.emailCollectorIds ?? billCollectorIds
+      const next = current.includes(id) ? current.filter(c => c !== id) : [...current, id]
+      return { ...p, emailCollectorIds: next }
+    })
+  }
+
+  const filteredAlerts = alerts.filter(a => categoryEnabled(a.category) && (a.category !== 'Conta' || collectorEnabled(a.collectorId)))
+
   async function sendEmail() {
-    if (!isConfigured) return
+    if (!isConfigured || filteredAlerts.length === 0) return
     setSending(true); setSendResult(null)
-    const lines = alerts.map(a => `[${a.severity === 'danger' ? '🔴' : '🟡'} ${a.category}] ${a.title} — ${a.detail}`)
+    const lines = filteredAlerts.map(a => `[${a.severity === 'danger' ? '🔴' : '🟡'} ${a.category}] ${a.title} — ${a.detail}`)
     try {
       await emailjs.send(cfg.serviceId, cfg.templateId, {
         to_email: cfg.toEmail,
         alerts_text: lines.join('\n'),
-        alert_count: String(alerts.length),
-        danger_count: String(alerts.filter(a => a.severity === 'danger').length),
+        alert_count: String(filteredAlerts.length),
+        danger_count: String(filteredAlerts.filter(a => a.severity === 'danger').length),
         date: new Date().toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' }),
       }, cfg.publicKey)
       setSendResult('ok')
@@ -44,8 +72,6 @@ function AlertsPanel({ onClose }: { onClose: () => void }) {
       setSending(false)
     }
   }
-
-  const categories = [...new Set(alerts.map(a => a.category))]
 
   return (
     <div className="alerts-wrap">
@@ -113,6 +139,36 @@ function AlertsPanel({ onClose }: { onClose: () => void }) {
                     Configure o <strong>EmailJS</strong> (emailjs.com — grátis até 200 emails/mês).<br/>
                     Variáveis do template: <code>{'{{alerts_text}}'}</code>, <code>{'{{alert_count}}'}</code>, <code>{'{{date}}'}</code>, <code>{'{{to_email}}'}</code>
                   </p>
+
+                  <div className="fin-field">
+                    <label>Categorias no email</label>
+                    <div className="email-filter-list">
+                      {categories.map(cat => (
+                        <label key={cat} className="email-filter-item">
+                          <input type="checkbox" checked={categoryEnabled(cat)} onChange={() => toggleCategory(cat)} />
+                          {cat}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {categoryEnabled('Conta') && billCollectorIds.length > 0 && (
+                    <div className="fin-field">
+                      <label>Contas/credores no email</label>
+                      <div className="email-filter-list email-filter-indent">
+                        {billCollectorIds.map(id => {
+                          const name = collectors.find(c => c.id === id)?.name || id
+                          return (
+                            <label key={id} className="email-filter-item">
+                              <input type="checkbox" checked={collectorEnabled(id)} onChange={() => toggleCollector(id)} />
+                              {name}
+                            </label>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )}
+
                   <div className="fin-field">
                     <label>Service ID</label>
                     <input type="text" placeholder="service_xxxxxxx" value={cfg.serviceId} onChange={e => fc('serviceId', e.target.value)} />
@@ -131,8 +187,8 @@ function AlertsPanel({ onClose }: { onClose: () => void }) {
                   </div>
                   <div className="email-actions">
                     <button className="btn-ghost" onClick={saveConfig}>Salvar</button>
-                    <button className="btn-accent" onClick={sendEmail} disabled={!isConfigured || sending}>
-                      {sending ? 'Enviando…' : `Enviar ${alerts.length} alerta${alerts.length !== 1 ? 's' : ''}`}
+                    <button className="btn-accent" onClick={sendEmail} disabled={!isConfigured || sending || filteredAlerts.length === 0}>
+                      {sending ? 'Enviando…' : `Enviar ${filteredAlerts.length} alerta${filteredAlerts.length !== 1 ? 's' : ''}`}
                     </button>
                   </div>
                   {sendResult === 'ok' && <div className="share-success">✓ Email enviado com sucesso!</div>}
